@@ -4,27 +4,27 @@
 
 ## 📈 Repository Statistics
 
-| Repository | Total Views | Unique Visitors | Total Clones | Unique Cloners | ⭐ Stars | 🔱 Forks | Tracking Since |
-|------------|-------------|-----------------|--------------|----------------|----------|----------|----------------|
-| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | **19,896** | **8,328** | **1,568** | **1,134** | 2 | 0 | Oct 24, 2025 |
-| [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 28 | 28 | 60 | 58 | 0 | 0 | Oct 24, 2025 |
-| [opena2a-org/opena2a-website](https://github.com/opena2a-org/opena2a-website) | 108 | 12 | 72 | 9 | 0 | 0 | Oct 24, 2025 |
+| Repository | Total Views | Unique Visitors | Total Clones | Unique Cloners | ⭐ Stars | 🔱 Forks | Days Tracked |
+|------------|-------------|-----------------|--------------|----------------|----------|----------|--------------|
+| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | **1,658** | **694** | **112** | **81** | 2 | 0 | 14 days |
+| [opena2a-org/opena2a-website](https://github.com/opena2a-org/opena2a-website) | 54 | 6 | 15 | 2 | 0 | 0 | 3 days |
+| [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 2 | 2 | 8 | 7 | 0 | 0 | 2 days |
 
 ---
 
 ## 🎯 Key Insights
 
 ### 🏆 Top Performer: agent-identity-management
-- **19,896 total views** with **8,328 unique visitors**
-- **1,568 total clones** from **1,134 unique developers**
-- Strong developer interest with high clone rate
+- **1,658 total views** with **694 unique visitors** (14 days of data)
+- **112 total clones** from **81 unique developers**
+- Strong developer interest with consistent engagement
 - 2 stars showing growing community engagement
 
 ### 📊 Traffic Summary
-- **Total Views Across All Repos:** 20,032
-- **Total Unique Visitors:** 8,368
-- **Total Clones:** 1,700
-- **Total Unique Cloners:** 1,201
+- **Total Views Across All Repos:** 1,714
+- **Total Unique Visitors:** 702
+- **Total Clones:** 135
+- **Total Unique Cloners:** 90
 
 ---
 
