@@ -1,6 +1,7 @@
 # 📊 GitHub Analytics Dashboard
 
 > **Last Updated:** 2025-11-06
+> 📋 **[View Detailed Daily Report →](./ANALYTICS_DETAILED.md)**
 
 ## 📈 Repository Statistics
 
