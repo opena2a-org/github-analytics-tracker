@@ -6,9 +6,7 @@ package-lock.json
 .next/
 out/
 
-# Database
-data/
-*.db
+# Database temp files (keep analytics.db tracked)
 *.db-shm
 *.db-wal
 

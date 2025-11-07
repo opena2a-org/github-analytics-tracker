@@ -2,8 +2,8 @@ name: Collect GitHub Stats
 
 on:
   schedule:
-    # Run daily at 02:00 UTC
-    - cron: '0 2 * * *'
+    # Run daily at 12:00 PM UTC (7am EST / 4am PST)
+    - cron: '0 12 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_STATS_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -28,7 +30,7 @@ jobs:
       - name: Collect stats
         env:
           GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
-          REPOS_TO_TRACK: ${{ vars.REPOS_TO_TRACK }}
+          REPOS_TO_TRACK: opena2a-org/agent-identity-management
         run: npm run collect
 
       - name: Commit and push database
