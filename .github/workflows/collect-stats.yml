@@ -33,10 +33,13 @@ jobs:
           REPOS_TO_TRACK: opena2a-org/agent-identity-management
         run: npm run collect
 
-      - name: Commit and push database
+      - name: Generate markdown files
+        run: npm run generate-md
+
+      - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db
+          git add data/analytics.db ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"
