@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "collect": "node scripts/collect-stats.js",
-    "setup-db": "node scripts/setup-database.js"
+    "setup-db": "node scripts/setup-database.js",
+    "generate-md": "node scripts/generate-markdown.js"
   },
   "keywords": ["github", "analytics", "tracking", "statistics"],
   "author": "OpenA2A",
