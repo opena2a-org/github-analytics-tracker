@@ -181,6 +181,75 @@ async function collectStatsForRepo(fullName) {
   await collectStarsAndForks(owner, repo, repoRecord.id);
 }
 
+async function generateBadgeJson() {
+  // Generate shields.io endpoint badge JSON for each repo
+  const repos = db.prepare('SELECT * FROM repositories').all();
+
+  for (const repo of repos) {
+    // Get total clones
+    const cloneStats = db.prepare(`
+      SELECT SUM(count) as total_clones, SUM(uniques) as unique_cloners
+      FROM traffic_clones
+      WHERE repo_id = ?
+    `).get(repo.id);
+
+    // Get total views
+    const viewStats = db.prepare(`
+      SELECT SUM(count) as total_views, SUM(uniques) as unique_visitors
+      FROM traffic_views
+      WHERE repo_id = ?
+    `).get(repo.id);
+
+    // Get latest stars/forks
+    const latestStats = db.prepare(`
+      SELECT s.total_stars, f.total_forks
+      FROM stargazers s
+      LEFT JOIN forks f ON s.repo_id = f.repo_id AND s.date = f.date
+      WHERE s.repo_id = ?
+      ORDER BY s.date DESC
+      LIMIT 1
+    `).get(repo.id);
+
+    // Create badge JSON for shields.io endpoint
+    const badgeData = {
+      schemaVersion: 1,
+      label: "clones",
+      message: (cloneStats?.total_clones || 0).toLocaleString(),
+      color: "blue",
+      namedLogo: "github",
+      style: "social"
+    };
+
+    // Create comprehensive stats JSON
+    const statsData = {
+      lastUpdated: new Date().toISOString(),
+      repository: repo.full_name,
+      stats: {
+        clones: {
+          total: cloneStats?.total_clones || 0,
+          unique: cloneStats?.unique_cloners || 0
+        },
+        views: {
+          total: viewStats?.total_views || 0,
+          unique: viewStats?.unique_visitors || 0
+        },
+        stars: latestStats?.total_stars || 0,
+        forks: latestStats?.total_forks || 0
+      }
+    };
+
+    // Write badge JSON files
+    const safeRepoName = repo.full_name.replace('/', '_');
+    const badgePath = path.join(__dirname, '..', 'data', `badge-${safeRepoName}.json`);
+    const statsPath = path.join(__dirname, '..', 'data', `stats-${safeRepoName}.json`);
+
+    fs.writeFileSync(badgePath, JSON.stringify(badgeData, null, 2));
+    fs.writeFileSync(statsPath, JSON.stringify(statsData, null, 2));
+
+    console.log(`  📛 Badge JSON: ${cloneStats?.total_clones || 0} clones`);
+  }
+}
+
 async function main() {
   console.log('🚀 GitHub Analytics Collector');
   console.log(`📅 Date: ${today}`);
@@ -193,6 +262,10 @@ async function main() {
       console.error(`❌ Failed to collect stats for ${repo}:`, error.message);
     }
   }
+
+  // Generate badge JSON files for shields.io
+  console.log('\n📛 Generating badge JSON files...');
+  await generateBadgeJson();
 
   console.log('\n✅ Collection complete!');
   db.close();
