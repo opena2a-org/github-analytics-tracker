@@ -269,8 +269,40 @@ function generateDetailedMD(repoStats) {
   return md;
 }
 
+function generateBadgeJSON(repo) {
+  // Badge JSON for shields.io endpoint
+  return {
+    schemaVersion: 1,
+    label: "clones",
+    message: String(repo.total_clones),
+    color: "blue",
+    namedLogo: "github",
+    style: "social"
+  };
+}
+
+function generateStatsJSON(repo) {
+  // Stats JSON with all metrics
+  return {
+    lastUpdated: new Date().toISOString(),
+    repository: repo.full_name,
+    stats: {
+      clones: {
+        total: repo.total_clones,
+        unique: repo.unique_cloners
+      },
+      views: {
+        total: repo.total_views,
+        unique: repo.unique_visitors
+      },
+      stars: repo.stars,
+      forks: repo.forks
+    }
+  };
+}
+
 function main() {
-  console.log('📝 Generating markdown files from database...');
+  console.log('📝 Generating markdown and JSON files from database...');
 
   try {
     const repoStats = getRepositoryStats();
@@ -292,9 +324,25 @@ function main() {
     fs.writeFileSync(detailedPath, detailedMD);
     console.log('✅ Generated ANALYTICS_DETAILED.md');
 
-    console.log('\n🎉 Markdown generation complete!');
+    // Generate badge and stats JSON files for each repo
+    const dataDir = path.join(__dirname, '..', 'data');
+    repoStats.forEach(repo => {
+      const safeName = repo.full_name.replace('/', '_');
+
+      // Badge JSON for shields.io
+      const badgePath = path.join(dataDir, `badge-${safeName}.json`);
+      fs.writeFileSync(badgePath, JSON.stringify(generateBadgeJSON(repo), null, 2));
+      console.log(`✅ Generated badge-${safeName}.json`);
+
+      // Stats JSON with full metrics
+      const statsPath = path.join(dataDir, `stats-${safeName}.json`);
+      fs.writeFileSync(statsPath, JSON.stringify(generateStatsJSON(repo), null, 2));
+      console.log(`✅ Generated stats-${safeName}.json`);
+    });
+
+    console.log('\n🎉 All files generated successfully!');
   } catch (error) {
-    console.error('❌ Error generating markdown:', error.message);
+    console.error('❌ Error generating files:', error.message);
     process.exit(1);
   } finally {
     db.close();
