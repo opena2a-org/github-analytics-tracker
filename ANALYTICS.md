@@ -1,13 +1,13 @@
 # 📊 GitHub Analytics Dashboard
 
-> **Last Updated:** Feb 10, 2026
+> **Last Updated:** Feb 11, 2026
 > 📋 **[View Detailed Daily Report →](./ANALYTICS_DETAILED.md)**
 
 ## 📈 Repository Statistics
 
 | Repository | Total Views | Unique Visitors | Total Clones | Unique Cloners | ⭐ Stars | 🔱 Forks | Days Tracked |
 |------------|-------------|-----------------|--------------|----------------|----------|----------|--------------|
-| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | **3407** | **1453** | **2555** | **1078** | 30 | 9 | 89 days |
+| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | **3433** | **1460** | **2679** | **1112** | 30 | 9 | 90 days |
 | [opena2a-org/opena2a-website](https://github.com/opena2a-org/opena2a-website) | 54 | 6 | 56 | 12 | 0 | 0 | 3 days |
 | [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 4 | 3 | 44 | 43 | 0 | 0 | 3 days |
 
@@ -16,16 +16,16 @@
 ## 🎯 Key Insights
 
 ### 🏆 Top Performer: agent-identity-management
-- **3407 total views** with **1453 unique visitors** (89 days of data)
-- **2555 total clones** from **1078 unique developers**
+- **3433 total views** with **1460 unique visitors** (90 days of data)
+- **2679 total clones** from **1112 unique developers**
 - Strong developer interest with consistent engagement
 - 30 stars showing growing community engagement
 
 ### 📊 Traffic Summary
-- **Total Views Across All Repos:** 3465
-- **Total Unique Visitors:** 1462
-- **Total Clones:** 2655
-- **Total Unique Cloners:** 1133
+- **Total Views Across All Repos:** 3491
+- **Total Unique Visitors:** 1469
+- **Total Clones:** 2779
+- **Total Unique Cloners:** 1167
 
 ---
 
