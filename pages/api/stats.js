@@ -36,23 +36,29 @@ export default function handler(req, res) {
       ORDER BY date ASC
     `).all(repoId, startDateStr);
 
-    // Get referrers (aggregate over time period)
-    const referrers = db.prepare(`
-      SELECT referrer, SUM(count) as count, SUM(uniques) as uniques
-      FROM referrers
-      WHERE repo_id = ? AND date >= ?
-      GROUP BY referrer
-      ORDER BY count DESC
-    `).all(repoId, startDateStr);
+    // Get latest referrer snapshot (most recent date, not aggregated across dates)
+    const latestReferrerDate = db.prepare(`
+      SELECT MAX(date) as date FROM referrers WHERE repo_id = ? AND date >= ?
+    `).get(repoId, startDateStr);
 
-    // Get popular paths (aggregate over time period)
-    const paths = db.prepare(`
-      SELECT path, title, SUM(count) as count, SUM(uniques) as uniques
-      FROM popular_paths
-      WHERE repo_id = ? AND date >= ?
-      GROUP BY path, title
+    const referrers = latestReferrerDate?.date ? db.prepare(`
+      SELECT referrer, count, uniques
+      FROM referrers
+      WHERE repo_id = ? AND date = ?
       ORDER BY count DESC
-    `).all(repoId, startDateStr);
+    `).all(repoId, latestReferrerDate.date) : [];
+
+    // Get latest popular paths snapshot (most recent date)
+    const latestPathDate = db.prepare(`
+      SELECT MAX(date) as date FROM popular_paths WHERE repo_id = ? AND date >= ?
+    `).get(repoId, startDateStr);
+
+    const paths = latestPathDate?.date ? db.prepare(`
+      SELECT path, title, count, uniques
+      FROM popular_paths
+      WHERE repo_id = ? AND date = ?
+      ORDER BY count DESC
+    `).all(repoId, latestPathDate.date) : [];
 
     // Get latest stars and forks
     const latestStats = db.prepare(`
@@ -63,16 +69,25 @@ export default function handler(req, res) {
         (SELECT total_forks FROM forks WHERE repo_id = ? AND date >= ? ORDER BY date ASC LIMIT 1) as start_forks
     `).get(repoId, repoId, startDateStr, repoId, repoId, startDateStr);
 
-    // Calculate summary stats
+    // Get most recent 14-day API summary (accurate unique counts)
+    const recentSummary = db.prepare(`
+      SELECT views_count, views_uniques, clones_count, clones_uniques
+      FROM traffic_summary
+      WHERE repo_id = ?
+      ORDER BY date DESC
+      LIMIT 1
+    `).get(repoId);
+
     const summary = {
-      total_views: views.reduce((sum, v) => sum + v.count, 0),
-      unique_views: views.reduce((sum, v) => sum + v.uniques, 0),
-      total_clones: clones.reduce((sum, c) => sum + c.count, 0),
-      unique_clones: clones.reduce((sum, c) => sum + c.uniques, 0),
-      latest_stars: latestStats?.latest_stars || 0,
-      stars_growth: (latestStats?.latest_stars || 0) - (latestStats?.start_stars || 0),
-      latest_forks: latestStats?.latest_forks || 0,
-      forks_growth: (latestStats?.latest_forks || 0) - (latestStats?.start_forks || 0),
+      totalViews: views.reduce((sum, v) => sum + v.count, 0),
+      totalClones: clones.reduce((sum, c) => sum + c.count, 0),
+      // 14-day API uniques (properly deduplicated by GitHub)
+      recentUniqueVisitors: recentSummary?.views_uniques || 0,
+      recentUniqueCloners: recentSummary?.clones_uniques || 0,
+      latestStars: latestStats?.latest_stars || 0,
+      starsGrowth: (latestStats?.latest_stars || 0) - (latestStats?.start_stars || 0),
+      latestForks: latestStats?.latest_forks || 0,
+      forksGrowth: (latestStats?.latest_forks || 0) - (latestStats?.start_forks || 0),
     };
 
     res.status(200).json({
