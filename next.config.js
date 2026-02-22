@@ -4,6 +4,11 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/api/**': ['./data/**'],
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/**': ['./data/**'],
+    },
+  },
 };
 
 module.exports = nextConfig;
