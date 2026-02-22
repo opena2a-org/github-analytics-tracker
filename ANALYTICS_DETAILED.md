@@ -178,6 +178,53 @@
 
 ---
 
+## ecolibria/cryptoserve
+
+**Summary** (14 days tracked)
+
+| Metric | All-Time Total | Last 14 Days (API) |
+|--------|---------------|-------------------|
+| Views | 258 | 258 |
+| Unique Visitors | -- | 27 |
+| Clones | 1,416 | 1,416 |
+| Unique Cloners | -- | 221 |
+| Stars | 2 | -- |
+| Forks | 2 | -- |
+
+**Top Referrers** (last 14 days)
+
+| Source | Views | Unique Visitors |
+|--------|-------|----------------|
+| github.com | 27 | 6 |
+| Google | 7 | 5 |
+| qramm.org | 2 | 2 |
+| com.linkedin.android | 1 | 1 |
+
+**Daily Breakdown** (last 14 days)
+
+| Date | Views | Unique Visitors | Clones | Unique Cloners |
+|------|-------|-----------------|--------|----------------|
+| Feb 21, 2026 | 13 | 1 | 0 | 0 |
+| Feb 20, 2026 | 12 | 3 | 32 | 10 |
+| Feb 19, 2026 | 33 | 3 | 141 | 38 |
+| Feb 18, 2026 | 12 | 3 | 325 | 43 |
+| Feb 17, 2026 | 3 | 2 | 2 | 2 |
+| Feb 16, 2026 | 12 | 1 | 1 | 1 |
+| Feb 15, 2026 | 4 | 3 | 4 | 4 |
+| Feb 14, 2026 | 9 | 5 | 0 | 0 |
+| Feb 13, 2026 | 2 | 2 | 1 | 1 |
+| Feb 12, 2026 | 49 | 4 | 5 | 5 |
+| Feb 11, 2026 | 5 | 3 | 3 | 3 |
+| Feb 10, 2026 | 32 | 2 | 329 | 62 |
+| Feb 9, 2026 | 34 | 10 | 202 | 43 |
+| Feb 8, 2026 | 38 | 6 | 371 | 89 |
+
+**Insights**
+- Average: ~18 views/day, ~101 clones/day (last 14 days)
+- Peak traffic: Feb 12, 2026 with 49 views
+
+---
+
 ## opena2a-org/damn-vulnerable-ai-agent
 
 **Summary** (14 days tracked)
@@ -451,6 +498,7 @@
 | agent-identity-management | 3,655 | 3,140 | 100 | 32 |
 | hackmyagent | 394 | 615 | 123 | 16 |
 | secretless-ai | 279 | 271 | 124 | 5 |
+| cryptoserve | 258 | 1,416 | 27 | 2 |
 | damn-vulnerable-ai-agent | 140 | 290 | 20 | 2 |
 | opena2a-website | 54 | 56 | 0 | 0 |
 | arp | 44 | 142 | 12 | 1 |
