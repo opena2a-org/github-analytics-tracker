@@ -344,25 +344,165 @@ function generateStatsJSON(repo) {
   };
 }
 
+function getNpmStats() {
+  // Check if npm tables exist
+  const tableCheck = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='npm_packages'"
+  ).get();
+  if (!tableCheck) return [];
+
+  const packages = db.prepare('SELECT * FROM npm_packages ORDER BY name').all();
+
+  return packages.map(pkg => {
+    const allTime = db.prepare(`
+      SELECT
+        COALESCE(SUM(downloads), 0) as total_downloads,
+        COUNT(DISTINCT date) as days_tracked,
+        MIN(date) as first_date,
+        MAX(date) as last_date
+      FROM npm_downloads
+      WHERE package_id = ?
+    `).get(pkg.id);
+
+    const last7 = db.prepare(`
+      SELECT COALESCE(SUM(downloads), 0) as downloads
+      FROM npm_downloads
+      WHERE package_id = ? AND date >= date('now', '-7 days')
+    `).get(pkg.id);
+
+    const last30 = db.prepare(`
+      SELECT COALESCE(SUM(downloads), 0) as downloads
+      FROM npm_downloads
+      WHERE package_id = ? AND date >= date('now', '-30 days')
+    `).get(pkg.id);
+
+    const last90 = db.prepare(`
+      SELECT COALESCE(SUM(downloads), 0) as downloads
+      FROM npm_downloads
+      WHERE package_id = ? AND date >= date('now', '-90 days')
+    `).get(pkg.id);
+
+    // Daily data for charts (last 30 days)
+    const dailyDownloads = db.prepare(`
+      SELECT date, downloads
+      FROM npm_downloads
+      WHERE package_id = ? AND date >= date('now', '-30 days')
+      ORDER BY date DESC
+    `).all(pkg.id);
+
+    return {
+      ...pkg,
+      total_downloads: allTime.total_downloads,
+      days_tracked: allTime.days_tracked,
+      first_date: allTime.first_date,
+      last_date: allTime.last_date,
+      last7_downloads: last7.downloads,
+      last30_downloads: last30.downloads,
+      last90_downloads: last90.downloads,
+      dailyDownloads,
+    };
+  });
+}
+
+function generateNpmSection(npmStats) {
+  if (npmStats.length === 0) return '';
+
+  const sorted = [...npmStats].sort((a, b) => b.total_downloads - a.total_downloads);
+  const totalDownloads = npmStats.reduce((sum, p) => sum + p.total_downloads, 0);
+  const total30d = npmStats.reduce((sum, p) => sum + p.last30_downloads, 0);
+
+  let md = `
+---
+
+## npm Package Downloads
+
+| Package | Version | Last 7d | Last 30d | Last 90d | All-Time | Days Tracked |
+|---------|---------|---------|----------|----------|----------|-------------|
+`;
+
+  sorted.forEach(pkg => {
+    const npmUrl = `https://www.npmjs.com/package/${pkg.name}`;
+    md += `| [${pkg.name}](${npmUrl}) | ${pkg.version} | ${formatNumber(pkg.last7_downloads)} | ${formatNumber(pkg.last30_downloads)} | ${formatNumber(pkg.last90_downloads)} | ${formatNumber(pkg.total_downloads)} | ${pkg.days_tracked} |\n`;
+  });
+
+  md += `
+### npm Totals
+
+| Metric | Value |
+|--------|-------|
+| Packages tracked | ${npmStats.length} |
+| All-time downloads | ${formatNumber(totalDownloads)} |
+| Last 30 days | ${formatNumber(total30d)} |
+
+`;
+
+  return md;
+}
+
+function generateNpmDetailedSection(npmStats) {
+  if (npmStats.length === 0) return '';
+
+  const sorted = [...npmStats].sort((a, b) => b.total_downloads - a.total_downloads);
+
+  let md = `## npm Package Details\n\n`;
+
+  sorted.forEach(pkg => {
+    md += `### ${pkg.name} v${pkg.version}\n\n`;
+    if (pkg.description) {
+      md += `> ${pkg.description}\n\n`;
+    }
+
+    md += `| Period | Downloads |\n`;
+    md += `|--------|-----------|\n`;
+    md += `| Last 7 days | ${formatNumber(pkg.last7_downloads)} |\n`;
+    md += `| Last 30 days | ${formatNumber(pkg.last30_downloads)} |\n`;
+    md += `| Last 90 days | ${formatNumber(pkg.last90_downloads)} |\n`;
+    md += `| All time | ${formatNumber(pkg.total_downloads)} |\n\n`;
+
+    if (pkg.dailyDownloads.length > 0) {
+      const avg = Math.round(pkg.dailyDownloads.reduce((s, d) => s + d.downloads, 0) / pkg.dailyDownloads.length);
+      const peak = pkg.dailyDownloads.reduce((max, d) => d.downloads > max.downloads ? d : max, pkg.dailyDownloads[0]);
+
+      md += `**Insights**\n`;
+      md += `- Average: ~${formatNumber(avg)} downloads/day (last ${pkg.dailyDownloads.length} days)\n`;
+      if (peak.downloads > avg * 2 && peak.downloads > 10) {
+        md += `- Peak: ${formatDate(peak.date)} with ${formatNumber(peak.downloads)} downloads\n`;
+      }
+      md += '\n';
+    }
+
+    md += `---\n\n`;
+  });
+
+  return md;
+}
+
 function main() {
   console.log('Generating markdown and JSON files from database...');
 
   try {
     const repoStats = getRepositoryStats();
+    const npmStats = getNpmStats();
 
-    if (repoStats.length === 0) {
-      console.log('No repository data found in database');
+    if (repoStats.length === 0 && npmStats.length === 0) {
+      console.log('No data found in database');
       process.exit(0);
     }
 
-    // Generate ANALYTICS.md
-    const analyticsMD = generateAnalyticsMD(repoStats);
+    // Generate ANALYTICS.md (with npm section appended)
+    let analyticsMD = repoStats.length > 0
+      ? generateAnalyticsMD(repoStats)
+      : '# Analytics Dashboard\n\n';
+    analyticsMD += generateNpmSection(npmStats);
     const analyticsPath = path.join(__dirname, '..', 'ANALYTICS.md');
     fs.writeFileSync(analyticsPath, analyticsMD);
-    console.log('Generated ANALYTICS.md (%d repos)', repoStats.length);
+    console.log('Generated ANALYTICS.md (%d repos, %d npm packages)', repoStats.length, npmStats.length);
 
-    // Generate ANALYTICS_DETAILED.md
-    const detailedMD = generateDetailedMD(repoStats);
+    // Generate ANALYTICS_DETAILED.md (with npm details appended)
+    let detailedMD = repoStats.length > 0
+      ? generateDetailedMD(repoStats)
+      : '# Analytics - Detailed Report\n\n';
+    detailedMD += generateNpmDetailedSection(npmStats);
     const detailedPath = path.join(__dirname, '..', 'ANALYTICS_DETAILED.md');
     fs.writeFileSync(detailedPath, detailedMD);
     console.log('Generated ANALYTICS_DETAILED.md');

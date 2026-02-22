@@ -118,6 +118,28 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_stargazers_date ON stargazers(date);
   CREATE INDEX IF NOT EXISTS idx_forks_date ON forks(date);
   CREATE INDEX IF NOT EXISTS idx_summary_repo ON traffic_summary(repo_id);
+
+  -- npm package tracking
+  CREATE TABLE IF NOT EXISTS npm_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    version TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS npm_downloads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    package_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    downloads INTEGER NOT NULL,
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES npm_packages(id),
+    UNIQUE(package_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_npm_downloads_pkg ON npm_downloads(package_id);
+  CREATE INDEX IF NOT EXISTS idx_npm_downloads_date ON npm_downloads(date);
 `);
 
 console.log('Database setup complete: %s', dbPath);
