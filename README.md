@@ -7,7 +7,7 @@ Track and visualize repository traffic, clones, stars, forks, referrers, and pop
 ## Features
 
 - **Historical Data** - Store unlimited history (GitHub only keeps 14 days)
-- **Auto-Discovery** - Automatically tracks all public repos in a GitHub organization
+- **Auto-Discovery** - Automatically tracks all public repos across multiple GitHub organizations
 - **Accurate Metrics** - Uses GitHub's 14-day API summaries for proper unique visitor counts
 - **Automated Collection** - Daily GitHub Actions workflow
 - **Multi-Repo Support** - Track unlimited repositories
@@ -64,10 +64,10 @@ Edit `.env`:
 
 ```bash
 GITHUB_TOKEN=ghp_your_token_here
-GITHUB_ORG=opena2a-org
+GITHUB_ORG=opena2a-org,ecolibria
 ```
 
-The `GITHUB_ORG` setting auto-discovers all public, non-archived, non-fork repos in the org. You can optionally add `REPOS_TO_TRACK=owner/repo1,owner/repo2` to track additional repos outside the org.
+The `GITHUB_ORG` setting auto-discovers all public, non-archived, non-fork repos in the listed orgs (comma-separated). You can optionally add `REPOS_TO_TRACK=owner/repo1,owner/repo2` to track additional repos outside those orgs.
 
 ### 4. Run
 
@@ -86,7 +86,7 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at 12:0
 1. Go to repo **Settings** > **Secrets and variables** > **Actions**
 2. Add secret: `GH_STATS_TOKEN` - your GitHub Personal Access Token
 
-The workflow auto-discovers all public repos in `opena2a-org` via the API. No manual repo list maintenance needed. When new repos are created in the org, they're automatically picked up on the next run.
+The workflow auto-discovers all public repos in `opena2a-org` and `ecolibria` via the API. No manual repo list maintenance needed. When new repos are created in either org, they're automatically picked up on the next run.
 
 ## Database Schema
 
@@ -172,8 +172,11 @@ As far back as when you started collecting. The first run captures up to 14 days
 **What if I miss a day of collection?**
 GitHub keeps 14 days, so you have a 2-week buffer. Run the collector again to backfill.
 
-**Can I track repos outside the org?**
+**Can I track repos outside the configured orgs?**
 Yes, add them to `REPOS_TO_TRACK` in addition to `GITHUB_ORG`.
+
+**Can I track multiple orgs?**
+Yes, comma-separate them: `GITHUB_ORG=opena2a-org,ecolibria,another-org`.
 
 **How much storage does it use?**
 Very little. 1 year of daily data for 20 repos is approximately 10-20 MB.
