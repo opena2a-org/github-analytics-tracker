@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   ComposedChart,
 } from 'recharts';
-import { GitFork, Star, Eye, GitPullRequest, Calendar, Users, Download, Package, TrendingUp, BarChart3 } from 'lucide-react';
+import { GitFork, Star, Eye, GitPullRequest, Calendar, Users, Download, Package, TrendingUp, BarChart3, Container } from 'lucide-react';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -20,6 +20,12 @@ export default function Dashboard() {
   const [npmData, setNpmData] = useState(null);
   const [npmLoading, setNpmLoading] = useState(false);
 
+  // docker state
+  const [dockerImages, setDockerImages] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [dockerData, setDockerData] = useState(null);
+  const [dockerLoading, setDockerLoading] = useState(false);
+
   // overview state
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
@@ -27,6 +33,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchRepos();
     fetchNpmPackages();
+    fetchDockerImages();
     fetchOverview();
   }, []);
 
@@ -41,6 +48,12 @@ export default function Dashboard() {
       fetchNpmData(selectedPackage, timeRange);
     }
   }, [selectedPackage, timeRange]);
+
+  useEffect(() => {
+    if (selectedImage) {
+      fetchDockerData(selectedImage, timeRange);
+    }
+  }, [selectedImage, timeRange]);
 
   const fetchRepos = async () => {
     try {
@@ -112,6 +125,34 @@ export default function Dashboard() {
       console.error('Failed to fetch npm data:', error);
     } finally {
       setNpmLoading(false);
+    }
+  };
+
+  const fetchDockerImages = async () => {
+    try {
+      const res = await fetch('/api/docker-stats');
+      if (!res.ok) return;
+      const data = await res.json();
+      setDockerImages(data.images || []);
+      if (data.images && data.images.length > 0) {
+        setSelectedImage(data.images[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Docker images:', error);
+    }
+  };
+
+  const fetchDockerData = async (imageId, days) => {
+    setDockerLoading(true);
+    try {
+      const res = await fetch(`/api/docker-stats?image_id=${imageId}&days=${days}`);
+      if (!res.ok) return;
+      const result = await res.json();
+      setDockerData(result);
+    } catch (error) {
+      console.error('Failed to fetch Docker data:', error);
+    } finally {
+      setDockerLoading(false);
     }
   };
 
@@ -226,6 +267,16 @@ export default function Dashboard() {
           >
             npm
           </button>
+          <button
+            onClick={() => setActiveTab('docker')}
+            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'docker'
+                ? 'bg-sky-600 text-white'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Docker
+          </button>
         </div>
 
         {activeTab === 'overview' ? (
@@ -243,7 +294,7 @@ export default function Dashboard() {
             getWeeklyData={getWeeklyData}
             formatDateLabel={formatDateLabel}
           />
-        ) : (
+        ) : activeTab === 'npm' ? (
           <NpmTab
             packages={npmPackages}
             selectedPackage={selectedPackage}
@@ -253,6 +304,17 @@ export default function Dashboard() {
             npmData={npmData}
             loading={npmLoading}
             getNpmWeeklyData={getNpmWeeklyData}
+            formatDateLabel={formatDateLabel}
+          />
+        ) : (
+          <DockerTab
+            images={dockerImages}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            timeRange={timeRange}
+            setTimeRange={setTimeRange}
+            dockerData={dockerData}
+            loading={dockerLoading}
             formatDateLabel={formatDateLabel}
           />
         )}
@@ -616,7 +678,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
             <span className="text-sm font-medium opacity-80">Total Adoption</span>
           </div>
           <p className="text-3xl font-bold">{(totals.combined.totalAdoption || 0).toLocaleString()}</p>
-          <p className="text-xs opacity-60 mt-1">Git clones + npm downloads</p>
+          <p className="text-xs opacity-60 mt-1">Clones + npm + Docker pulls</p>
         </div>
         <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg shadow-lg p-6 text-white">
           <div className="flex items-center mb-2">
@@ -655,6 +717,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
                 <th className="text-right py-3 px-3 font-semibold text-gray-700">GitHub Views</th>
                 <th className="text-right py-3 px-3 font-semibold text-gray-700">Git Clones</th>
                 <th className="text-right py-3 px-3 font-semibold text-gray-700">npm Downloads</th>
+                <th className="text-right py-3 px-3 font-semibold text-gray-700">Docker Pulls</th>
                 <th className="text-right py-3 px-3 font-semibold text-gray-700">Stars</th>
                 <th className="text-right py-3 pl-3 font-semibold text-gray-900">Total Adoption</th>
               </tr>
@@ -669,6 +732,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
                   <td className="py-3 px-3 text-right text-gray-600">{(product.github.views || 0).toLocaleString()}</td>
                   <td className="py-3 px-3 text-right text-gray-600">{(product.github.clones || 0).toLocaleString()}</td>
                   <td className="py-3 px-3 text-right text-gray-600">{(product.npm.allTimeDownloads || 0).toLocaleString()}</td>
+                  <td className="py-3 px-3 text-right text-gray-600">{(product.docker?.totalPulls || 0).toLocaleString()}</td>
                   <td className="py-3 px-3 text-right text-gray-600">{product.github.stars || 0}</td>
                   <td className="py-3 pl-3 text-right font-bold text-gray-900">{(product.totalAdoption || 0).toLocaleString()}</td>
                 </tr>
@@ -680,6 +744,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
                 <td className="py-3 px-3 text-right font-bold">{(totals.github.totalViews || 0).toLocaleString()}</td>
                 <td className="py-3 px-3 text-right font-bold">{(totals.github.totalClones || 0).toLocaleString()}</td>
                 <td className="py-3 px-3 text-right font-bold">{(totals.npm.allTimeDownloads || 0).toLocaleString()}</td>
+                <td className="py-3 px-3 text-right font-bold">{(totals.docker?.totalPulls || 0).toLocaleString()}</td>
                 <td className="py-3 px-3 text-right font-bold">{totals.github.totalStars || 0}</td>
                 <td className="py-3 pl-3 text-right font-bold text-gray-900">{(totals.combined.totalAdoption || 0).toLocaleString()}</td>
               </tr>
@@ -700,7 +765,8 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
               <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
               <Legend />
               <Bar dataKey="github.clones" fill="#3b82f6" name="Git Clones" stackId="adoption" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="npm.allTimeDownloads" fill="#dc2626" name="npm Downloads" stackId="adoption" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="npm.allTimeDownloads" fill="#dc2626" name="npm Downloads" stackId="adoption" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="docker.totalPulls" fill="#0ea5e9" name="Docker Pulls" stackId="adoption" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -727,7 +793,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
       )}
 
       {/* Ecosystem Summary */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="grid md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">GitHub Ecosystem</h3>
           <div className="space-y-3">
@@ -747,7 +813,148 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
             <MetricRow label="Last 7 days" value={totals.npm.last7Downloads} />
           </div>
         </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Docker Ecosystem</h3>
+          <div className="space-y-3">
+            <MetricRow label="Published images" value={totals.docker?.images || 0} />
+            <MetricRow label="Total pulls" value={totals.docker?.totalPulls || 0} />
+          </div>
+        </div>
       </div>
+    </>
+  );
+}
+
+function DockerTab({ images, selectedImage, setSelectedImage, timeRange, setTimeRange, dockerData, loading, formatDateLabel }) {
+  return (
+    <>
+      {/* Image Overview */}
+      {images.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Docker Images</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 pr-4 font-medium text-gray-600">Image</th>
+                  <th className="text-right py-2 px-4 font-medium text-gray-600">Total Pulls</th>
+                  <th className="text-right py-2 pl-4 font-medium text-gray-600">Stars</th>
+                </tr>
+              </thead>
+              <tbody>
+                {images.map(img => (
+                  <tr
+                    key={img.id}
+                    className={`border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedImage === img.id ? 'bg-sky-50' : ''}`}
+                    onClick={() => setSelectedImage(img.id)}
+                  >
+                    <td className="py-2 pr-4 font-medium text-gray-900">{img.full_name}</td>
+                    <td className="py-2 px-4 text-right font-semibold">{(img.totalPulls || 0).toLocaleString()}</td>
+                    <td className="py-2 pl-4 text-right">{img.stars || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Image Selector and Time Range */}
+      {images.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+              <select
+                value={selectedImage || ''}
+                onChange={(e) => setSelectedImage(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                {images.map(img => (
+                  <option key={img.id} value={img.id}>{img.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="14">Last 14 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <LoadingSpinner />
+      ) : dockerData ? (
+        <>
+          {/* Summary Cards */}
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <StatCard
+              icon={<Container className="text-sky-600" size={24} />}
+              title="Total Pulls"
+              value={(dockerData.summary?.totalPulls || 0).toLocaleString()}
+              subtitle="All time"
+            />
+            <StatCard
+              icon={<TrendingUp className="text-green-600" size={24} />}
+              title="Pull Growth"
+              value={`+${(dockerData.summary?.pullGrowth || 0).toLocaleString()}`}
+              subtitle="During tracked period"
+            />
+            <StatCard
+              icon={<Star className="text-yellow-600" size={24} />}
+              title="Docker Hub Stars"
+              value={(dockerData.summary?.stars || 0).toLocaleString()}
+              subtitle={dockerData.image?.full_name || ''}
+            />
+          </div>
+
+          {/* Cumulative Pull Count Chart */}
+          {dockerData.pulls && dockerData.pulls.length > 1 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Cumulative Pulls</h2>
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={dockerData.pulls}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tickFormatter={formatDateLabel} fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip labelFormatter={formatDateLabel} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                  <Area type="monotone" dataKey="totalPulls" stroke="#0ea5e9" fill="#7dd3fc" fillOpacity={0.3} name="Total Pulls" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Daily Pull Delta Chart */}
+          {dockerData.pulls && dockerData.pulls.length > 2 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Daily Pulls</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dockerData.pulls.slice(1)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tickFormatter={formatDateLabel} fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip labelFormatter={formatDateLabel} contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                  <Bar dataKey="dailyPulls" fill="#0ea5e9" name="Pulls" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </>
+      ) : images.length === 0 ? (
+        <EmptyState message="No Docker data available yet." command="npm run collect-docker" />
+      ) : null}
     </>
   );
 }

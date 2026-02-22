@@ -141,6 +141,31 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_npm_downloads_pkg ON npm_downloads(package_id);
   CREATE INDEX IF NOT EXISTS idx_npm_downloads_date ON npm_downloads(date);
+
+  -- Docker image tracking
+  CREATE TABLE IF NOT EXISTS docker_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    namespace TEXT NOT NULL,
+    name TEXT NOT NULL,
+    full_name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(namespace, name)
+  );
+
+  CREATE TABLE IF NOT EXISTS docker_pulls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    pull_count INTEGER NOT NULL,
+    star_count INTEGER NOT NULL DEFAULT 0,
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (image_id) REFERENCES docker_images(id),
+    UNIQUE(image_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_docker_pulls_image ON docker_pulls(image_id);
+  CREATE INDEX IF NOT EXISTS idx_docker_pulls_date ON docker_pulls(date);
 `);
 
 console.log('Database setup complete: %s', dbPath);
