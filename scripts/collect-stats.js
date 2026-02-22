@@ -7,7 +7,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_ORG = process.env.GITHUB_ORG || '';
+const GITHUB_ORGS = (process.env.GITHUB_ORG || '').split(',').map(o => o.trim()).filter(Boolean);
 const REPOS_TO_TRACK = process.env.REPOS_TO_TRACK?.split(',').map(r => r.trim()).filter(Boolean) || [];
 
 if (!GITHUB_TOKEN) {
@@ -17,9 +17,9 @@ if (!GITHUB_TOKEN) {
   process.exit(1);
 }
 
-if (!GITHUB_ORG && REPOS_TO_TRACK.length === 0) {
+if (GITHUB_ORGS.length === 0 && REPOS_TO_TRACK.length === 0) {
   console.error('Error: Either GITHUB_ORG or REPOS_TO_TRACK environment variable is required');
-  console.error('  GITHUB_ORG=opena2a-org  (auto-discovers all public repos)');
+  console.error('  GITHUB_ORG=opena2a-org,ecolibria  (auto-discovers all public repos, comma-separated)');
   console.error('  REPOS_TO_TRACK=owner/repo1,owner/repo2  (explicit list)');
   process.exit(1);
 }
@@ -361,12 +361,13 @@ async function main() {
   // Build the repo list: org discovery OR explicit list
   let repos = [...REPOS_TO_TRACK];
 
-  if (GITHUB_ORG) {
-    const orgRepos = await discoverOrgRepos(GITHUB_ORG);
-    // Merge: org repos + any explicit repos, deduplicated
-    const repoSet = new Set([...orgRepos, ...repos]);
-    repos = Array.from(repoSet);
+  for (const org of GITHUB_ORGS) {
+    const orgRepos = await discoverOrgRepos(org);
+    repos.push(...orgRepos);
   }
+
+  // Deduplicate
+  repos = Array.from(new Set(repos));
 
   if (repos.length === 0) {
     console.error('Error: No repositories found to track');
