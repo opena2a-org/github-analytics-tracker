@@ -7,14 +7,14 @@
 
 | Repository | All-Time Views | All-Time Clones | Last 14d Unique Visitors | Stars | Forks | Days Tracked |
 |------------|---------------|-----------------|-------------------------|-------|-------|-------------|
-| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | 3,655 | 3,140 | 100 | 32 | 10 | 100 |
+| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | 3,679 | 3,152 | 101 | 32 | 10 | 101 |
 | [opena2a-org/hackmyagent](https://github.com/opena2a-org/hackmyagent) | 394 | 615 | 123 | 16 | 0 | 14 |
-| [opena2a-org/secretless-ai](https://github.com/opena2a-org/secretless-ai) | 279 | 271 | 124 | 5 | 0 | 14 |
+| [opena2a-org/secretless-ai](https://github.com/opena2a-org/secretless-ai) | 319 | 273 | 144 | 5 | 0 | 15 |
 | [ecolibria/cryptoserve](https://github.com/ecolibria/cryptoserve) | 258 | 1,416 | 27 | 2 | 2 | 14 |
 | [opena2a-org/damn-vulnerable-ai-agent](https://github.com/opena2a-org/damn-vulnerable-ai-agent) | 140 | 290 | 20 | 2 | 1 | 14 |
 | [opena2a-org/opena2a-website](https://github.com/opena2a-org/opena2a-website) | 54 | 56 | 0 | 0 | 0 | 3 |
-| [opena2a-org/arp](https://github.com/opena2a-org/arp) | 44 | 142 | 12 | 1 | 0 | 14 |
-| [opena2a-org/oasb](https://github.com/opena2a-org/oasb) | 27 | 144 | 8 | 1 | 0 | 14 |
+| [opena2a-org/arp](https://github.com/opena2a-org/arp) | 46 | 142 | 13 | 1 | 0 | 15 |
+| [opena2a-org/oasb](https://github.com/opena2a-org/oasb) | 29 | 145 | 9 | 1 | 0 | 15 |
 | [opena2a-org/.github](https://github.com/opena2a-org/.github) | 17 | 76 | 6 | 0 | 0 | 14 |
 | [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 4 | 44 | 0 | 0 | 0 | 3 |
 
@@ -25,15 +25,15 @@
 | Metric | Value |
 |--------|-------|
 | Repositories tracked | 10 |
-| All-time page views | 4,872 |
-| All-time clones | 6,194 |
+| All-time page views | 4,940 |
+| All-time clones | 6,209 |
 | Total stars | 59 |
 
 ## Top Repository: opena2a-org/agent-identity-management
 
-- **3,655 all-time views** across 100 days of tracking
-- **3,140 all-time clones**
-- **100 unique visitors** in the last 14 days (GitHub API deduplicated)
+- **3,679 all-time views** across 101 days of tracking
+- **3,152 all-time clones**
+- **101 unique visitors** in the last 14 days (GitHub API deduplicated)
 - 32 stars
 
 ---
