@@ -45,7 +45,9 @@ export default function Dashboard() {
   const fetchRepos = async () => {
     try {
       const res = await fetch('/api/repos');
+      if (!res.ok) return;
       const data = await res.json();
+      if (!Array.isArray(data)) return;
       setRepos(data);
       if (data.length > 0) {
         setSelectedRepo(data[0].id);
@@ -58,6 +60,7 @@ export default function Dashboard() {
   const fetchNpmPackages = async () => {
     try {
       const res = await fetch('/api/npm-stats');
+      if (!res.ok) return;
       const data = await res.json();
       setNpmPackages(data.packages || []);
       if (data.packages && data.packages.length > 0) {
@@ -72,8 +75,11 @@ export default function Dashboard() {
     setOverviewLoading(true);
     try {
       const res = await fetch('/api/overview');
+      if (!res.ok) return;
       const data = await res.json();
-      setOverview(data);
+      if (data && data.totals) {
+        setOverview(data);
+      }
     } catch (error) {
       console.error('Failed to fetch overview:', error);
     } finally {
@@ -85,6 +91,7 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const res = await fetch(`/api/stats?repo_id=${repoId}&days=${days}`);
+      if (!res.ok) return;
       const result = await res.json();
       setData(result);
     } catch (error) {
@@ -98,6 +105,7 @@ export default function Dashboard() {
     setNpmLoading(true);
     try {
       const res = await fetch(`/api/npm-stats?package_id=${packageId}&days=${days}`);
+      if (!res.ok) return;
       const result = await res.json();
       setNpmData(result);
     } catch (error) {
@@ -596,7 +604,7 @@ function OverviewTab({ overview, loading, formatDateLabel }) {
   if (loading) return <LoadingSpinner />;
   if (!overview) return <EmptyState message="No data available yet." command="npm run collect-all" />;
 
-  const { totals, products, weeklyTrend } = overview;
+  const { totals, products = [], weeklyTrend = [] } = overview;
 
   return (
     <>
