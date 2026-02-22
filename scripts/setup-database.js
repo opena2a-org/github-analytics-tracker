@@ -11,8 +11,9 @@ if (!fs.existsSync(dataDir)) {
 const dbPath = path.join(dataDir, 'analytics.db');
 const db = new Database(dbPath);
 
-// Enable WAL mode for better concurrent access
-db.pragma('journal_mode = WAL');
+// Use DELETE journal mode for compatibility with read-only filesystems (Vercel).
+// WAL mode requires writable -shm/-wal files which don't work on Vercel's read-only fs.
+db.pragma('journal_mode = DELETE');
 
 // Create tables
 db.exec(`
