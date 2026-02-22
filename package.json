@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "collect": "node scripts/collect-stats.js",
+    "collect-npm": "node scripts/collect-npm-stats.js",
+    "collect-all": "node scripts/collect-stats.js && node scripts/collect-npm-stats.js",
     "setup-db": "node scripts/setup-database.js",
     "generate-md": "node scripts/generate-markdown.js"
   },

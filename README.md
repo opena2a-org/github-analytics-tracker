@@ -1,20 +1,20 @@
-# 📊 GitHub Analytics Tracker
+# GitHub Analytics Tracker
 
-> Preserve your GitHub repository analytics beyond the 14-day retention limit.
+Preserve GitHub repository analytics beyond the 14-day retention limit.
 
-Track and visualize repository traffic, clones, stars, forks, referrers, and popular content with historical data storage and a beautiful dashboard.
+Track and visualize repository traffic, clones, stars, forks, referrers, and popular content with historical data storage and a dashboard.
 
-## 🎯 Features
+## Features
 
-- **📈 Historical Data** - Store unlimited history (GitHub only keeps 14 days)
-- **📊 Beautiful Dashboard** - Interactive charts and statistics
-- **🔄 Automated Collection** - Daily cron job to collect stats automatically
-- **🎯 Multi-Repo Support** - Track unlimited repositories
-- **💾 SQLite Database** - Lightweight, no external database required
-- **📱 Responsive UI** - Works on desktop and mobile
-- **🔒 Secure** - No data leaves your control
+- **Historical Data** - Store unlimited history (GitHub only keeps 14 days)
+- **Auto-Discovery** - Automatically tracks all public repos in a GitHub organization
+- **Accurate Metrics** - Uses GitHub's 14-day API summaries for proper unique visitor counts
+- **Automated Collection** - Daily GitHub Actions workflow
+- **Multi-Repo Support** - Track unlimited repositories
+- **SQLite Database** - Lightweight, no external database required
+- **Dashboard** - Interactive charts via Next.js + Recharts
 
-## 📦 What Gets Tracked
+## What Gets Tracked
 
 | Metric | Description | GitHub Retention |
 |--------|-------------|------------------|
@@ -24,210 +24,120 @@ Track and visualize repository traffic, clones, stars, forks, referrers, and pop
 | **Popular Paths** | Most visited files/pages | 14 days |
 | **Stars** | Star count over time | No history |
 | **Forks** | Fork count over time | No history |
+| **14-Day Summary** | Properly deduplicated unique visitor/cloner counts | Current only |
 
-## 🚀 Quick Start
+## How Metrics Work
 
-### 1. Clone the Repository
+GitHub's traffic API has important characteristics that affect how metrics should be interpreted:
+
+1. **Daily data vs. period summaries:** The API returns per-day view/clone counts *and* a 14-day rolling summary. Daily `uniques` counts are per-day (a visitor on 3 different days = 3 in the daily sum). The 14-day summary properly deduplicates (that same visitor = 1).
+
+2. **Today's data is partial:** The current day's traffic is still accumulating. This tracker skips today's data point and only stores completed days to avoid inaccurate entries.
+
+3. **Referrers and Popular Paths are 14-day snapshots:** These endpoints return cumulative data for the last 14 days, not daily breakdowns. We store one snapshot per day and replace it on re-runs to avoid duplicates.
+
+4. **All-time unique counts are unavailable:** Because daily uniques can't be summed to get period uniques (double-counting), all-time unique visitor counts are not reported. Instead, we show the 14-day API figure which is accurately deduplicated by GitHub.
+
+## Quick Start
+
+### 1. Clone and Install
 
 ```bash
 git clone https://github.com/opena2a-org/github-analytics-tracker.git
 cd github-analytics-tracker
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
 ```
 
-### 3. Create GitHub Token
+### 2. Create GitHub Token
 
 1. Go to https://github.com/settings/tokens/new
-2. Generate a new **Personal Access Token** with these scopes:
-   - `repo` (for private repos)
-   - OR `public_repo` (for public repos only)
-3. Copy the token (starts with `ghp_`)
+2. Generate a **Personal Access Token** with `repo` scope (or `public_repo` for public repos only)
+3. Copy the token
 
-### 4. Configure Environment Variables
+### 3. Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your token and repositories:
+Edit `.env`:
 
 ```bash
 GITHUB_TOKEN=ghp_your_token_here
-REPOS_TO_TRACK=opena2a-org/agent-identity-management,opena2a-org/opena2a-website
+GITHUB_ORG=opena2a-org
 ```
 
-### 5. Setup Database
+The `GITHUB_ORG` setting auto-discovers all public, non-archived, non-fork repos in the org. You can optionally add `REPOS_TO_TRACK=owner/repo1,owner/repo2` to track additional repos outside the org.
+
+### 4. Run
 
 ```bash
-npm run setup-db
+npm run setup-db    # Create database tables
+npm run collect     # Fetch data from GitHub API
+npm run generate-md # Generate markdown reports
+npm run dev         # Start the dashboard at http://localhost:3000
 ```
 
-This creates `data/analytics.db` with all required tables.
+## Automated Collection (GitHub Actions)
 
-### 6. Collect Initial Data
+The included workflow (`.github/workflows/collect-stats.yml`) runs daily at 12:00 PM UTC.
 
-```bash
-npm run collect
+**Setup:**
+1. Go to repo **Settings** > **Secrets and variables** > **Actions**
+2. Add secret: `GH_STATS_TOKEN` - your GitHub Personal Access Token
+
+The workflow auto-discovers all public repos in `opena2a-org` via the API. No manual repo list maintenance needed. When new repos are created in the org, they're automatically picked up on the next run.
+
+## Database Schema
+
+SQLite database (`data/analytics.db`):
+
+| Table | Purpose |
+|-------|---------|
+| `repositories` | Tracked repositories |
+| `traffic_views` | Daily view counts (completed days only) |
+| `traffic_clones` | Daily clone counts (completed days only) |
+| `traffic_summary` | 14-day API summary with deduplicated uniques |
+| `referrers` | Traffic source snapshots (one per day) |
+| `popular_paths` | Most visited content snapshots (one per day) |
+| `stargazers` | Star count history |
+| `forks` | Fork count history |
+
+## API Endpoints
+
+### GET /api/repos
+
+Returns list of tracked repositories.
+
+### GET /api/stats?repo_id=1&days=30
+
+Returns statistics for a repository.
+
+**Parameters:**
+- `repo_id` (required) - Repository ID
+- `days` (optional) - Time range: 7, 14, 30, 90, 365, or "all"
+
+**Response:**
+```json
+{
+  "summary": {
+    "totalViews": 1523,
+    "totalClones": 45,
+    "recentUniqueVisitors": 89,
+    "recentUniqueCloners": 23,
+    "latestStars": 32,
+    "starsGrowth": 5,
+    "latestForks": 10,
+    "forksGrowth": 2
+  },
+  "views": [{ "date": "2026-02-01", "count": 52, "uniques": 31 }],
+  "clones": [],
+  "referrers": [],
+  "paths": []
+}
 ```
 
-This fetches the latest 14 days of data from GitHub and stores it locally.
-
-### 7. Start the Dashboard
-
-```bash
-npm run dev
-```
-
-Open http://localhost:3000 to view your analytics! 🎉
-
-## 📅 Automated Daily Collection
-
-### Option 1: Cron Job (Linux/Mac)
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add this line to run daily at 2 AM
-0 2 * * * cd /path/to/github-analytics-tracker && /usr/local/bin/node scripts/collect-stats.js >> logs/collector.log 2>&1
-```
-
-### Option 2: GitHub Actions (Recommended)
-
-Create `.github/workflows/collect-stats.yml`:
-
-```yaml
-name: Collect GitHub Stats
-
-on:
-  schedule:
-    # Run daily at 02:00 UTC
-    - cron: '0 2 * * *'
-  workflow_dispatch:  # Allow manual trigger
-
-jobs:
-  collect:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Setup database
-        run: npm run setup-db
-
-      - name: Collect stats
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
-          REPOS_TO_TRACK: ${{ vars.REPOS_TO_TRACK }}
-        run: npm run collect
-
-      - name: Commit and push
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add data/analytics.db
-          git commit -m "chore: update analytics data [skip ci]" || echo "No changes"
-          git push
-```
-
-**Setup GitHub Actions:**
-1. Go to repo **Settings** → **Secrets and variables** → **Actions**
-2. Add secret: `GH_STATS_TOKEN` (your GitHub token)
-3. Add variable: `REPOS_TO_TRACK` (your repos list)
-
-### Option 3: System Service (systemd)
-
-Create `/etc/systemd/system/github-analytics.service`:
-
-```ini
-[Unit]
-Description=GitHub Analytics Collector
-After=network.target
-
-[Service]
-Type=oneshot
-User=your-user
-WorkingDirectory=/path/to/github-analytics-tracker
-ExecStart=/usr/bin/node scripts/collect-stats.js
-```
-
-Create timer `/etc/systemd/system/github-analytics.timer`:
-
-```ini
-[Unit]
-Description=Run GitHub Analytics Collector Daily
-
-[Timer]
-OnCalendar=daily
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
-
-Enable and start:
-```bash
-sudo systemctl enable github-analytics.timer
-sudo systemctl start github-analytics.timer
-```
-
-## 📊 Dashboard Features
-
-### Repository Selector
-- Switch between tracked repositories
-- View stats for each repo independently
-
-### Time Range Filters
-- Last 7 days
-- Last 14 days (GitHub's retention)
-- Last 30 days
-- Last 90 days
-- Last year
-- All time (complete history)
-
-### Metrics Displayed
-1. **Summary Cards**
-   - Total views (with unique visitors)
-   - Total clones (with unique cloners)
-   - Current stars (with growth)
-   - Current forks (with growth)
-
-2. **Interactive Charts**
-   - Views over time (line chart)
-   - Clones over time (line chart)
-
-3. **Top Lists**
-   - Top 10 referrers (where traffic comes from)
-   - Top 10 popular paths (most viewed files/pages)
-
-## 🗄️ Database Schema
-
-The SQLite database includes these tables:
-
-- `repositories` - Tracked repositories
-- `traffic_views` - Daily view counts
-- `traffic_clones` - Daily clone counts
-- `referrers` - Traffic sources
-- `popular_paths` - Most visited content
-- `stargazers` - Star count history
-- `forks` - Fork count history
-
-All data is stored locally in `data/analytics.db`.
-
-## 🔧 Maintenance
+## Maintenance
 
 ### Backup Database
 
@@ -235,156 +145,46 @@ All data is stored locally in `data/analytics.db`.
 cp data/analytics.db data/analytics-backup-$(date +%Y%m%d).db
 ```
 
-### View Database
+### Query Database
 
 ```bash
 sqlite3 data/analytics.db
 ```
 
 ```sql
--- Example queries
 SELECT * FROM repositories;
 SELECT date, count, uniques FROM traffic_views WHERE repo_id = 1 ORDER BY date DESC LIMIT 30;
-SELECT SUM(count) as total_views FROM traffic_views WHERE repo_id = 1;
+SELECT views_count, views_uniques FROM traffic_summary WHERE repo_id = 1 ORDER BY date DESC LIMIT 1;
 ```
 
-### Clean Old Referrer Data
-
-Referrers and popular paths accumulate over time. Clean old entries:
+### Clean Old Referrer/Path Snapshots
 
 ```sql
 DELETE FROM referrers WHERE date < date('now', '-90 days');
 DELETE FROM popular_paths WHERE date < date('now', '-90 days');
 ```
 
-## 🚢 Deployment
+## FAQ
 
-### Deploy to Vercel
+**How far back can I see data?**
+As far back as when you started collecting. The first run captures up to 14 days (GitHub's limit), then each subsequent run adds new data.
 
-```bash
-npm install -g vercel
-vercel
-```
+**What if I miss a day of collection?**
+GitHub keeps 14 days, so you have a 2-week buffer. Run the collector again to backfill.
 
-Add environment variables in Vercel dashboard:
-- `GITHUB_TOKEN`
-- `REPOS_TO_TRACK`
+**Can I track repos outside the org?**
+Yes, add them to `REPOS_TO_TRACK` in addition to `GITHUB_ORG`.
 
-### Deploy to Railway
+**How much storage does it use?**
+Very little. 1 year of daily data for 20 repos is approximately 10-20 MB.
 
-```bash
-railway login
-railway init
-railway up
-```
+**Why aren't all-time unique visitor counts shown?**
+Because daily unique counts can't be accurately summed across days (a visitor on 5 different days would be counted 5 times). The 14-day API figure is the most accurate unique count available.
 
-### Deploy with Docker
+## License
 
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --production
-COPY . .
-RUN npm run setup-db
-CMD ["npm", "start"]
-EXPOSE 3000
-```
-
-## 📝 API Endpoints
-
-The dashboard uses these API routes:
-
-### GET /api/repos
-Get list of tracked repositories.
-
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "owner": "opena2a-org",
-    "repo": "agent-identity-management",
-    "full_name": "opena2a-org/agent-identity-management"
-  }
-]
-```
-
-### GET /api/stats?repo_id=1&days=30
-Get statistics for a repository.
-
-**Parameters:**
-- `repo_id` (required) - Repository ID
-- `days` (optional) - Time range (7, 14, 30, 90, 365, or "all")
-
-**Response:**
-```json
-{
-  "summary": {
-    "total_views": 1523,
-    "unique_views": 892,
-    "total_clones": 45,
-    "unique_clones": 23,
-    "latest_stars": 156,
-    "stars_growth": 12,
-    "latest_forks": 34,
-    "forks_growth": 3
-  },
-  "views": [
-    { "date": "2025-01-01", "count": 52, "uniques": 31 }
-  ],
-  "clones": [...],
-  "referrers": [...],
-  "paths": [...]
-}
-```
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📄 License
-
-MIT License - feel free to use this for your projects!
-
-## 🙋 FAQ
-
-### Q: How far back can I see data?
-**A:** As far back as when you started collecting! The first run captures 14 days (GitHub's limit), then each subsequent run adds new data.
-
-### Q: Can I track private repositories?
-**A:** Yes, use a token with `repo` scope instead of `public_repo`.
-
-### Q: How much storage does it use?
-**A:** Very little. 1 year of daily data for 10 repos ≈ 5-10 MB.
-
-### Q: What if I miss a day of collection?
-**A:** GitHub keeps 14 days, so you have a 2-week buffer. Just run the collector again.
-
-### Q: Can I export the data?
-**A:** Yes, the SQLite database can be queried directly or exported to CSV/JSON.
-
-## 🔗 Links
-
-- [GitHub API Documentation](https://docs.github.com/en/rest/metrics/traffic)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Recharts Documentation](https://recharts.org/)
-
-## 💡 Tips
-
-1. **Run collection immediately after setup** to capture the available 14 days
-2. **Set up automated collection within 14 days** to avoid data gaps
-3. **Backup your database regularly** - it's your only copy of historical data
-4. **Monitor token rate limits** - GitHub allows 5,000 requests/hour with auth
+MIT
 
 ---
 
-Built with ❤️ by [OpenA2A](https://opena2a.org)
-
-**Need help?** Open an issue on GitHub!
+Built by [OpenA2A](https://opena2a.org)
