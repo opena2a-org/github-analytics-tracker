@@ -90,9 +90,38 @@ export default function handler(req, res) {
       });
     }
 
+    // --- Docker Metrics ---
+    const dockerTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='docker_images'"
+    ).get();
+
+    let dockerStats = [];
+    if (dockerTableExists) {
+      const images = db.prepare('SELECT * FROM docker_images ORDER BY name').all();
+      dockerStats = images.map(img => {
+        const latest = db.prepare(`
+          SELECT pull_count, star_count
+          FROM docker_pulls WHERE image_id = ?
+          ORDER BY date DESC LIMIT 1
+        `).get(img.id);
+
+        return {
+          fullName: img.full_name,
+          totalPulls: latest?.pull_count || 0,
+          stars: latest?.star_count || 0,
+        };
+      });
+    }
+
     // --- Product-Level Aggregation ---
     // Map repos and packages to products for combined metrics
     const productMap = {
+      'DVAA': {
+        repos: ['damn-vulnerable-ai-agent'],
+        packages: [],
+        dockerImages: ['opena2a/dvaa'],
+        description: 'Vulnerable AI agent platform for security testing',
+      },
       'HackMyAgent': {
         repos: ['hackmyagent'],
         packages: ['hackmyagent', 'hackmyagent-core'],
@@ -133,9 +162,11 @@ export default function handler(req, res) {
     const products = Object.entries(productMap).map(([name, config]) => {
       const matchedRepos = repoStats.filter(r => config.repos.some(rn => r.repo === rn));
       const matchedPackages = npmStats.filter(p => config.packages.includes(p.name));
+      const matchedDocker = dockerStats.filter(d => (config.dockerImages || []).includes(d.fullName));
 
       const githubClones = matchedRepos.reduce((s, r) => s + r.totalClones, 0);
       const npmDownloads = matchedPackages.reduce((s, p) => s + p.allTimeDownloads, 0);
+      const dockerPulls = matchedDocker.reduce((s, d) => s + d.totalPulls, 0);
 
       return {
         name,
@@ -153,12 +184,17 @@ export default function handler(req, res) {
           last7Downloads: matchedPackages.reduce((s, p) => s + p.last7Downloads, 0),
           packageCount: matchedPackages.length,
         },
-        // Combined adoption: clones + npm downloads (both represent "someone used this")
-        totalAdoption: githubClones + npmDownloads,
+        docker: {
+          totalPulls: dockerPulls,
+          imageCount: matchedDocker.length,
+        },
+        // Combined adoption: clones + npm downloads + docker pulls
+        totalAdoption: githubClones + npmDownloads + dockerPulls,
       };
     });
 
     // --- Aggregate Totals ---
+    const totalDockerPulls = dockerStats.reduce((s, d) => s + d.totalPulls, 0);
     const totals = {
       github: {
         repos: repos.length,
@@ -173,9 +209,14 @@ export default function handler(req, res) {
         last30Downloads: npmStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: npmStats.reduce((s, p) => s + p.last7Downloads, 0),
       },
+      docker: {
+        images: dockerStats.length,
+        totalPulls: totalDockerPulls,
+      },
       combined: {
         totalAdoption: repoStats.reduce((s, r) => s + r.totalClones, 0) +
-                       npmStats.reduce((s, p) => s + p.allTimeDownloads, 0),
+                       npmStats.reduce((s, p) => s + p.allTimeDownloads, 0) +
+                       totalDockerPulls,
         totalPageViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
       },
     };
@@ -203,6 +244,7 @@ export default function handler(req, res) {
       weeklyTrend,
       repositories: repoStats,
       npmPackages: npmStats,
+      dockerImages: dockerStats,
     });
   } catch (error) {
     console.error('Error fetching overview:', error);
