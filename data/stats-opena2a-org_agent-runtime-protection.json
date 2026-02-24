@@ -1,14 +1,14 @@
 {
   "lastUpdated": "2026-02-24T12:08:49.368Z",
-  "repository": "opena2a-org/arp",
+  "repository": "opena2a-org/agent-runtime-protection",
   "stats": {
     "allTime": {
-      "views": 55,
+      "views": 63,
       "clones": 142
     },
     "recent14Days": {
-      "views": 55,
-      "viewsUnique": 14,
+      "views": 63,
+      "viewsUnique": 17,
       "clones": 142,
       "clonesUnique": 79
     },
