@@ -1,16 +1,16 @@
 {
   "lastUpdated": "2026-02-25T12:07:56.777Z",
-  "repository": "opena2a-org/oasb",
+  "repository": "opena2a-org/open-agent-security-benchmark",
   "stats": {
     "allTime": {
-      "views": 33,
-      "clones": 150
+      "views": 29,
+      "clones": 44
     },
     "recent14Days": {
-      "views": 33,
+      "views": 29,
       "viewsUnique": 10,
-      "clones": 150,
-      "clonesUnique": 63
+      "clones": 44,
+      "clonesUnique": 25
     },
     "stars": 1,
     "forks": 0
