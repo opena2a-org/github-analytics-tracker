@@ -90,6 +90,40 @@ export default function handler(req, res) {
       });
     }
 
+    // --- PyPI Metrics ---
+    const pypiTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_packages'"
+    ).get();
+
+    let pypiStats = [];
+    if (pypiTableExists) {
+      const pypiPackages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
+      pypiStats = pypiPackages.map(pkg => {
+        const allTime = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM pypi_downloads WHERE package_id = ?
+        `).get(pkg.id);
+
+        const last30 = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-30 days')
+        `).get(pkg.id);
+
+        const last7 = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
+        `).get(pkg.id);
+
+        return {
+          name: pkg.name,
+          version: pkg.version,
+          allTimeDownloads: allTime.total,
+          last30Downloads: last30.total,
+          last7Downloads: last7.total,
+        };
+      });
+    }
+
     // --- Docker Metrics ---
     const dockerTableExists = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='docker_images'"
@@ -119,42 +153,50 @@ export default function handler(req, res) {
       'DVAA': {
         repos: ['damn-vulnerable-ai-agent'],
         packages: [],
+        pypiPackages: [],
         dockerImages: ['opena2a/dvaa'],
         description: 'Vulnerable AI agent platform for security testing',
       },
       'HackMyAgent': {
         repos: ['hackmyagent'],
         packages: ['hackmyagent', 'hackmyagent-core'],
+        pypiPackages: [],
         description: 'Security scanner for AI agents',
       },
       'AIM': {
         repos: ['agent-identity-management'],
         packages: ['@opena2a/aim-core'],
+        pypiPackages: ['aim-sdk'],
         description: 'Agent Identity Management',
       },
       'OASB': {
         repos: ['oasb'],
         packages: ['@opena2a/oasb'],
+        pypiPackages: [],
         description: 'Open Agent Security Benchmark',
       },
       'Secretless AI': {
         repos: ['secretless-ai'],
         packages: ['secretless-ai'],
+        pypiPackages: [],
         description: 'Keep secrets out of AI tools',
       },
       'CryptoServe': {
         repos: ['cryptoserve'],
         packages: ['cryptoserve'],
+        pypiPackages: ['cryptoserve', 'cryptoserve-core', 'cryptoserve-auto', 'cryptoserve-client'],
         description: 'Cryptographic scanning and PQC analysis',
       },
       'ARP': {
         repos: ['arp'],
         packages: ['@opena2a/arp'],
+        pypiPackages: [],
         description: 'Agent Runtime Protection',
       },
       'OpenClaw Plugins': {
         repos: ['openclaw'],
         packages: ['@opena2a/plugin-core', '@opena2a/credvault-openclaw', '@opena2a/signcrypt-openclaw', '@opena2a/skillguard-openclaw', '@opena2a/semantic-engine'],
+        pypiPackages: [],
         description: 'Security plugins for OpenClaw bots',
       },
     };
@@ -162,10 +204,12 @@ export default function handler(req, res) {
     const products = Object.entries(productMap).map(([name, config]) => {
       const matchedRepos = repoStats.filter(r => config.repos.some(rn => r.repo === rn));
       const matchedPackages = npmStats.filter(p => config.packages.includes(p.name));
+      const matchedPypi = pypiStats.filter(p => (config.pypiPackages || []).includes(p.name));
       const matchedDocker = dockerStats.filter(d => (config.dockerImages || []).includes(d.fullName));
 
       const githubClones = matchedRepos.reduce((s, r) => s + r.totalClones, 0);
       const npmDownloads = matchedPackages.reduce((s, p) => s + p.allTimeDownloads, 0);
+      const pypiDownloads = matchedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
       const dockerPulls = matchedDocker.reduce((s, d) => s + d.totalPulls, 0);
 
       return {
@@ -184,17 +228,24 @@ export default function handler(req, res) {
           last7Downloads: matchedPackages.reduce((s, p) => s + p.last7Downloads, 0),
           packageCount: matchedPackages.length,
         },
+        pypi: {
+          allTimeDownloads: pypiDownloads,
+          last30Downloads: matchedPypi.reduce((s, p) => s + p.last30Downloads, 0),
+          last7Downloads: matchedPypi.reduce((s, p) => s + p.last7Downloads, 0),
+          packageCount: matchedPypi.length,
+        },
         docker: {
           totalPulls: dockerPulls,
           imageCount: matchedDocker.length,
         },
-        // Combined adoption: clones + npm downloads + docker pulls
-        totalAdoption: githubClones + npmDownloads + dockerPulls,
+        // Combined adoption: clones + npm downloads + pypi downloads + docker pulls
+        totalAdoption: githubClones + npmDownloads + pypiDownloads + dockerPulls,
       };
     });
 
     // --- Aggregate Totals ---
     const totalDockerPulls = dockerStats.reduce((s, d) => s + d.totalPulls, 0);
+    const totalPypiDownloads = pypiStats.reduce((s, p) => s + p.allTimeDownloads, 0);
     const totals = {
       github: {
         repos: repos.length,
@@ -209,6 +260,12 @@ export default function handler(req, res) {
         last30Downloads: npmStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: npmStats.reduce((s, p) => s + p.last7Downloads, 0),
       },
+      pypi: {
+        packages: pypiStats.length,
+        allTimeDownloads: totalPypiDownloads,
+        last30Downloads: pypiStats.reduce((s, p) => s + p.last30Downloads, 0),
+        last7Downloads: pypiStats.reduce((s, p) => s + p.last7Downloads, 0),
+      },
       docker: {
         images: dockerStats.length,
         totalPulls: totalDockerPulls,
@@ -216,6 +273,7 @@ export default function handler(req, res) {
       combined: {
         totalAdoption: repoStats.reduce((s, r) => s + r.totalClones, 0) +
                        npmStats.reduce((s, p) => s + p.allTimeDownloads, 0) +
+                       totalPypiDownloads +
                        totalDockerPulls,
         totalPageViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
       },
@@ -223,9 +281,9 @@ export default function handler(req, res) {
 
     // --- Growth Trends ---
     // Get weekly npm download trends (last 12 weeks)
-    let weeklyTrend = [];
+    let weeklyNpmTrend = [];
     if (npmTableExists) {
-      weeklyTrend = db.prepare(`
+      weeklyNpmTrend = db.prepare(`
         SELECT
           strftime('%Y-W%W', date) as week,
           MIN(date) as week_start,
@@ -237,6 +295,36 @@ export default function handler(req, res) {
       `).all();
     }
 
+    // Get weekly PyPI download trends (last 12 weeks)
+    let weeklyPypiTrend = [];
+    if (pypiTableExists) {
+      weeklyPypiTrend = db.prepare(`
+        SELECT
+          strftime('%Y-W%W', date) as week,
+          MIN(date) as week_start,
+          SUM(downloads) as downloads
+        FROM pypi_downloads
+        WHERE date >= date('now', '-84 days')
+        GROUP BY strftime('%Y-W%W', date)
+        ORDER BY week ASC
+      `).all();
+    }
+
+    // Merge npm and pypi weekly trends into a combined trend
+    const weekMap = {};
+    for (const w of weeklyNpmTrend) {
+      weekMap[w.week] = { week: w.week, week_start: w.week_start, npm: w.downloads, pypi: 0 };
+    }
+    for (const w of weeklyPypiTrend) {
+      if (!weekMap[w.week]) {
+        weekMap[w.week] = { week: w.week, week_start: w.week_start, npm: 0, pypi: 0 };
+      }
+      weekMap[w.week].pypi = w.downloads;
+    }
+    const weeklyTrend = Object.values(weekMap)
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .map(w => ({ ...w, downloads: w.npm + w.pypi }));
+
     res.status(200).json({
       lastUpdated: new Date().toISOString(),
       totals,
@@ -244,6 +332,7 @@ export default function handler(req, res) {
       weeklyTrend,
       repositories: repoStats,
       npmPackages: npmStats,
+      pypiPackages: pypiStats,
       dockerImages: dockerStats,
     });
   } catch (error) {
