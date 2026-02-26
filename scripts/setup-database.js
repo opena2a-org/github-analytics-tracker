@@ -166,6 +166,28 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_docker_pulls_image ON docker_pulls(image_id);
   CREATE INDEX IF NOT EXISTS idx_docker_pulls_date ON docker_pulls(date);
+
+  -- PyPI package tracking
+  CREATE TABLE IF NOT EXISTS pypi_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    version TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS pypi_downloads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    package_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    downloads INTEGER NOT NULL,
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES pypi_packages(id),
+    UNIQUE(package_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_pypi_downloads_pkg ON pypi_downloads(package_id);
+  CREATE INDEX IF NOT EXISTS idx_pypi_downloads_date ON pypi_downloads(date);
 `);
 
 console.log('Database setup complete: %s', dbPath);
