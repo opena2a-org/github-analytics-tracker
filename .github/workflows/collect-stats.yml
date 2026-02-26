@@ -46,7 +46,7 @@ jobs:
 
       - name: Collect Docker stats
         env:
-          DOCKER_IMAGES: opena2a/dvaa
+          DOCKER_IMAGES: opena2a/dvaa,opena2a/aim-server,opena2a/aim-dashboard
         run: npm run collect-docker
 
       - name: Generate markdown files
