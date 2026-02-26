@@ -19,7 +19,7 @@
 | [opena2a-org/oasb](https://github.com/opena2a-org/oasb) | 33 | 150 | 10 | 1 | 0 | 17 |
 | [opena2a-org/.github](https://github.com/opena2a-org/.github) | 24 | 89 | 5 | 0 | 0 | 18 |
 | [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 4 | 44 | 0 | 0 | 0 | 3 |
-| [opena2a-org/opena2a](https://github.com/opena2a-org/opena2a) | 0 | 0 | 0 | 0 | 0 | 13 |
+| [opena2a-org/opena2a](https://github.com/opena2a-org/opena2a) | 0 | 0 | 0 | 2 | 0 | 13 |
 
 ---
 
@@ -30,7 +30,7 @@
 | Repositories tracked | 13 |
 | All-time page views | 5,763 |
 | All-time clones | 6,566 |
-| Total stars | 69 |
+| Total stars | 71 |
 
 ## Top Repository: opena2a-org/agent-identity-management
 
@@ -75,9 +75,9 @@
 
 | Package | Version | Last 7d | Last 30d | Last 90d | All-Time | Days Tracked |
 |---------|---------|---------|----------|----------|----------|-------------|
-| [hackmyagent](https://www.npmjs.com/package/hackmyagent) | 0.7.1 | 228 | 3,192 | 3,192 | 3,192 | 394 |
-| [hackmyagent-core](https://www.npmjs.com/package/hackmyagent-core) | 0.6.1 | 251 | 2,849 | 2,849 | 2,849 | 394 |
-| [secretless-ai](https://www.npmjs.com/package/secretless-ai) | 0.8.0 | 167 | 1,019 | 1,019 | 1,019 | 394 |
+| [hackmyagent](https://www.npmjs.com/package/hackmyagent) | 0.7.2 | 228 | 3,192 | 3,192 | 3,192 | 394 |
+| [hackmyagent-core](https://www.npmjs.com/package/hackmyagent-core) | 0.6.2 | 251 | 2,849 | 2,849 | 2,849 | 394 |
+| [secretless-ai](https://www.npmjs.com/package/secretless-ai) | 0.8.1 | 167 | 1,019 | 1,019 | 1,019 | 394 |
 | [cryptoserve](https://www.npmjs.com/package/cryptoserve) | 0.3.3 | 323 | 885 | 885 | 885 | 394 |
 | [@opena2a/plugin-core](https://www.npmjs.com/package/@opena2a/plugin-core) | 0.1.2 | 52 | 463 | 463 | 463 | 394 |
 | [@opena2a/skillguard-openclaw](https://www.npmjs.com/package/@opena2a/skillguard-openclaw) | 0.1.2 | 52 | 405 | 405 | 405 | 394 |
