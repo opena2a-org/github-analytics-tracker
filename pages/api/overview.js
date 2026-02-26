@@ -167,6 +167,7 @@ export default function handler(req, res) {
         repos: ['agent-identity-management'],
         packages: ['@opena2a/aim-core'],
         pypiPackages: ['aim-sdk'],
+        dockerImages: ['opena2a/aim-server', 'opena2a/aim-dashboard'],
         description: 'Agent Identity Management',
       },
       'OASB': {
