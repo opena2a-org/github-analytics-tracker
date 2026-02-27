@@ -1,6 +1,6 @@
 # GitHub Analytics - Detailed Daily Report
 
-> **Last Updated:** Feb 26, 2026
+> **Last Updated:** Feb 27, 2026
 > **Tracking Period:** Feb 7, 2026 - Feb 25, 2026
 
 ---
@@ -137,7 +137,7 @@
 | Unique Visitors | -- | 99 |
 | Clones | 648 | 194 |
 | Unique Cloners | -- | 78 |
-| Stars | 16 | -- |
+| Stars | 17 | -- |
 | Forks | 0 | -- |
 
 **Top Referrers** (last 14 days)
@@ -607,7 +607,7 @@
 
 ## opena2a-org/opena2a
 
-**Summary** (13 days tracked)
+**Summary** (14 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
@@ -618,10 +618,11 @@
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
-**Daily Breakdown** (last 13 days)
+**Daily Breakdown** (last 14 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Feb 26, 2026 | 0 | 0 | 0 | 0 |
 | Feb 25, 2026 | 0 | 0 | 0 | 0 |
 | Feb 24, 2026 | 0 | 0 | 0 | 0 |
 | Feb 23, 2026 | 0 | 0 | 0 | 0 |
@@ -637,7 +638,7 @@
 | Feb 13, 2026 | 0 | 0 | 0 | 0 |
 
 **Insights**
-- Average: ~0 views/day, ~0 clones/day (last 13 days)
+- Average: ~0 views/day, ~0 clones/day (last 14 days)
 
 ---
 
@@ -647,7 +648,7 @@
 |------------|---------------|-----------------|--------------------|----|
 | agent-identity-management | 3,834 | 3,178 | 152 | 34 |
 | secretless-ai | 626 | 319 | 276 | 11 |
-| hackmyagent | 498 | 648 | 99 | 16 |
+| hackmyagent | 498 | 648 | 99 | 17 |
 | cryptoserve | 335 | 1,421 | 19 | 2 |
 | damn-vulnerable-ai-agent | 179 | 326 | 25 | 2 |
 | agent-runtime-protection | 77 | 146 | 14 | 1 |
@@ -682,7 +683,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 228 |
+| Last 7 days | 141 |
 | Last 30 days | 3,192 |
 | Last 90 days | 3,192 |
 | All time | 3,192 |
@@ -699,7 +700,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 251 |
+| Last 7 days | 152 |
 | Last 30 days | 2,849 |
 | Last 90 days | 2,849 |
 | All time | 2,849 |
@@ -716,7 +717,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 167 |
+| Last 7 days | 106 |
 | Last 30 days | 1,019 |
 | Last 90 days | 1,019 |
 | All time | 1,019 |
@@ -733,7 +734,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 323 |
+| Last 7 days | 137 |
 | Last 30 days | 885 |
 | Last 90 days | 885 |
 | All time | 885 |
@@ -750,7 +751,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 52 |
+| Last 7 days | 40 |
 | Last 30 days | 463 |
 | Last 90 days | 463 |
 | All time | 463 |
@@ -767,7 +768,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 52 |
+| Last 7 days | 41 |
 | Last 30 days | 405 |
 | Last 90 days | 405 |
 | All time | 405 |
@@ -784,7 +785,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 47 |
+| Last 7 days | 38 |
 | Last 30 days | 397 |
 | Last 90 days | 397 |
 | All time | 397 |
@@ -801,7 +802,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 49 |
+| Last 7 days | 38 |
 | Last 30 days | 388 |
 | Last 90 days | 388 |
 | All time | 388 |
@@ -818,7 +819,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 108 |
+| Last 7 days | 16 |
 | Last 30 days | 303 |
 | Last 90 days | 303 |
 | All time | 303 |
@@ -835,7 +836,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 102 |
+| Last 7 days | 22 |
 | Last 30 days | 295 |
 | Last 90 days | 295 |
 | All time | 295 |
@@ -852,7 +853,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 62 |
+| Last 7 days | 46 |
 | Last 30 days | 281 |
 | Last 90 days | 281 |
 | All time | 281 |
@@ -869,7 +870,7 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 53 |
+| Last 7 days | 40 |
 | Last 30 days | 268 |
 | Last 90 days | 268 |
 | All time | 268 |
@@ -888,13 +889,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 200 |
-| Last 30 days | 3,074 |
-| Last 90 days | 3,074 |
-| All time | 3,074 |
+| Last 7 days | 223 |
+| Last 30 days | 3,102 |
+| Last 90 days | 3,102 |
+| All time | 3,102 |
 
 **Insights**
-- Average: ~128 downloads/day (last 24 days)
+- Average: ~124 downloads/day (last 25 days)
 - Peak: Feb 2, 2026 with 1,009 downloads
 
 ---
@@ -905,13 +906,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 293 |
-| Last 30 days | 2,039 |
-| Last 90 days | 2,039 |
-| All time | 2,039 |
+| Last 7 days | 246 |
+| Last 30 days | 2,093 |
+| Last 90 days | 2,093 |
+| All time | 2,093 |
 
 **Insights**
-- Average: ~102 downloads/day (last 20 days)
+- Average: ~100 downloads/day (last 21 days)
 - Peak: Feb 6, 2026 with 389 downloads
 
 ---
@@ -922,13 +923,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 261 |
-| Last 30 days | 1,853 |
-| Last 90 days | 1,853 |
-| All time | 1,853 |
+| Last 7 days | 224 |
+| Last 30 days | 1,899 |
+| Last 90 days | 1,899 |
+| All time | 1,899 |
 
 **Insights**
-- Average: ~93 downloads/day (last 20 days)
+- Average: ~90 downloads/day (last 21 days)
 - Peak: Feb 8, 2026 with 455 downloads
 
 ---
@@ -939,13 +940,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 131 |
-| Last 30 days | 1,173 |
-| Last 90 days | 1,173 |
-| All time | 1,173 |
+| Last 7 days | 139 |
+| Last 30 days | 1,203 |
+| Last 90 days | 1,203 |
+| All time | 1,203 |
 
 **Insights**
-- Average: ~59 downloads/day (last 20 days)
+- Average: ~57 downloads/day (last 21 days)
 - Peak: Feb 7, 2026 with 276 downloads
 
 ---
@@ -956,13 +957,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 83 |
-| Last 30 days | 1,020 |
-| Last 90 days | 1,020 |
-| All time | 1,020 |
+| Last 7 days | 89 |
+| Last 30 days | 1,044 |
+| Last 90 days | 1,044 |
+| All time | 1,044 |
 
 **Insights**
-- Average: ~54 downloads/day (last 19 days)
+- Average: ~52 downloads/day (last 20 days)
 - Peak: Feb 7, 2026 with 251 downloads
 
 ---
