@@ -285,6 +285,20 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_docker_tags_img ON docker_tags(image_id);
   CREATE INDEX IF NOT EXISTS idx_docker_tags_date ON docker_tags(date);
+
+  -- PyPI downloads by country (from Google BigQuery public dataset)
+  CREATE TABLE IF NOT EXISTS pypi_country_downloads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    package_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    downloads INTEGER NOT NULL DEFAULT 0,
+    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES pypi_packages(id),
+    UNIQUE(package_id, date, country_code)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_pypi_country_pkg_date ON pypi_country_downloads(package_id, date);
 `);
 
 console.log('Database setup complete: %s', dbPath);

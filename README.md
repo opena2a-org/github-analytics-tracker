@@ -88,6 +88,45 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at 12:0
 
 The workflow auto-discovers all public repos in `opena2a-org` and `ecolibria` via the API. No manual repo list maintenance needed. When new repos are created in either org, they're automatically picked up on the next run.
 
+## PyPI Country-Level Downloads (BigQuery)
+
+Country-level PyPI download statistics are available via Google BigQuery's public dataset. This feature is **optional** -- the tracker works without it, and country stats are simply skipped when BigQuery credentials are not configured.
+
+### Setup
+
+1. Create a [Google Cloud project](https://console.cloud.google.com/) (or use an existing one)
+2. Enable the [BigQuery API](https://console.cloud.google.com/apis/library/bigquery.googleapis.com)
+3. Create a service account and download the JSON key file
+4. Set the environment variable:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+```
+
+5. Run the collector:
+
+```bash
+npm run collect:pypi-countries
+```
+
+### Cost
+
+Queries against the `bigquery-public-data.pypi.file_downloads` public dataset are free up to 1 TB/month of data processed. A typical query for one package scans approximately 1-5 GB, so daily collection for a handful of packages will remain well within the free tier.
+
+### GitHub Actions
+
+To enable automated collection, add `GOOGLE_APPLICATION_CREDENTIALS_JSON` as a GitHub Actions secret containing the JSON key file contents. Then decode it to a file in the workflow before running the collector:
+
+```yaml
+- name: Setup BigQuery credentials
+  if: env.GOOGLE_APPLICATION_CREDENTIALS_JSON != ''
+  run: |
+    echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /tmp/gcp-key.json
+    echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+  env:
+    GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+```
+
 ## Database Schema
 
 SQLite database (`data/analytics.db`):
@@ -102,6 +141,7 @@ SQLite database (`data/analytics.db`):
 | `popular_paths` | Most visited content snapshots (one per day) |
 | `stargazers` | Star count history |
 | `forks` | Fork count history |
+| `pypi_country_downloads` | PyPI downloads by country (from BigQuery, optional) |
 
 ## API Endpoints
 

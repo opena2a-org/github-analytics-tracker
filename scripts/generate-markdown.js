@@ -585,6 +585,10 @@ function getPypiStats() {
     "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_system_stats'"
   ).get();
 
+  const countryTableCheck = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_downloads'"
+  ).get();
+
   const packages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
 
   return packages.map(pkg => {
@@ -653,6 +657,21 @@ function getPypiStats() {
       }
     }
 
+    // Country download breakdown (latest snapshot from BigQuery)
+    let countryDownloads = [];
+    if (countryTableCheck) {
+      const latestCountryDate = db.prepare(
+        'SELECT MAX(date) as date FROM pypi_country_downloads WHERE package_id = ?'
+      ).get(pkg.id);
+      if (latestCountryDate?.date) {
+        countryDownloads = db.prepare(`
+          SELECT country_code, downloads
+          FROM pypi_country_downloads WHERE package_id = ? AND date = ?
+          ORDER BY downloads DESC LIMIT 20
+        `).all(pkg.id, latestCountryDate.date);
+      }
+    }
+
     return {
       ...pkg,
       total_downloads: allTime.total_downloads,
@@ -665,6 +684,7 @@ function getPypiStats() {
       dailyDownloads,
       pythonVersions,
       systemStats,
+      countryDownloads,
     };
   });
 }
@@ -754,6 +774,17 @@ function generatePypiDetailedSection(pypiStats) {
       md += `|----|----------|\n`;
       pkg.systemStats.forEach(s => {
         md += `| ${s.os_name} | ${formatNumber(s.downloads)} |\n`;
+      });
+      md += '\n';
+    }
+
+    // Country breakdown (from BigQuery)
+    if (pkg.countryDownloads && pkg.countryDownloads.length > 0) {
+      md += `**Downloads by Country** (last 30 days, source: BigQuery)\n\n`;
+      md += `| Country | Downloads |\n`;
+      md += `|---------|----------|\n`;
+      pkg.countryDownloads.forEach(c => {
+        md += `| ${c.country_code} | ${formatNumber(c.downloads)} |\n`;
       });
       md += '\n';
     }
