@@ -139,6 +139,51 @@ async function collectDownloads(pkg) {
   }
 }
 
+/**
+ * Collect downloads broken down by version for the last week.
+ *
+ * Uses the npm versions API: GET https://api.npmjs.org/versions/{package}/last-week
+ * This returns { "versions": { "1.0.0": 100, "1.1.0": 200, ... } }
+ *
+ * We store a snapshot per date with version breakdowns.
+ */
+async function collectVersionDownloads(pkg) {
+  try {
+    const url = `https://api.npmjs.org/versions/${encodeURIComponent(pkg.name)}/last-week`;
+    const data = await httpGet(url);
+
+    if (!data.downloads) {
+      console.log('  Version downloads: no data available');
+      return;
+    }
+
+    const insert = db.prepare(`
+      INSERT INTO npm_version_downloads (package_id, date, version, downloads)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(package_id, date, version) DO UPDATE SET
+        downloads = excluded.downloads,
+        collected_at = CURRENT_TIMESTAMP
+    `);
+
+    let versionCount = 0;
+    for (const [version, downloads] of Object.entries(data.downloads)) {
+      if (downloads > 0) {
+        insert.run(pkg.id, today, version, downloads);
+        versionCount++;
+      }
+    }
+
+    console.log('  Version downloads: %d versions with downloads last week', versionCount);
+  } catch (error) {
+    // This endpoint may 404 for very new or private packages
+    if (error.message && error.message.includes('404')) {
+      console.log('  Version downloads: not available for this package');
+    } else {
+      console.error('  Version downloads: failed - %s', error.message);
+    }
+  }
+}
+
 async function generateNpmBadgeJson() {
   const packages = db.prepare('SELECT * FROM npm_packages').all();
 
@@ -197,6 +242,7 @@ async function main() {
     console.log('\nCollecting stats for %s...', pkg.name);
     const pkgRecord = getOrCreatePackage(pkg.name, pkg.description, pkg.version);
     await collectDownloads(pkgRecord);
+    await collectVersionDownloads(pkgRecord);
   }
 
   console.log('\nGenerating npm badge JSON files...');

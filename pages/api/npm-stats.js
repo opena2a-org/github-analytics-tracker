@@ -50,6 +50,26 @@ export default function handler(req, res) {
         WHERE package_id = ?
       `).get(pkgId);
 
+      // Get version download breakdown (latest snapshot)
+      let versionDownloads = [];
+      const verTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='npm_version_downloads'"
+      ).get();
+      if (verTableCheck) {
+        const latestVerDate = db.prepare(
+          'SELECT MAX(date) as date FROM npm_version_downloads WHERE package_id = ?'
+        ).get(pkgId);
+
+        if (latestVerDate?.date) {
+          versionDownloads = db.prepare(`
+            SELECT version, downloads
+            FROM npm_version_downloads
+            WHERE package_id = ? AND date = ?
+            ORDER BY downloads DESC
+          `).all(pkgId, latestVerDate.date);
+        }
+      }
+
       return res.status(200).json({
         package: pkg,
         summary: {
@@ -57,6 +77,7 @@ export default function handler(req, res) {
           allTimeDownloads: allTime.total,
         },
         downloads,
+        versionDownloads,
       });
     }
 

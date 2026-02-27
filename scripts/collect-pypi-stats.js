@@ -126,6 +126,108 @@ async function collectDownloads(pkg) {
   }
 }
 
+/**
+ * Collect downloads by Python version from pypistats.org.
+ *
+ * Uses: GET https://pypistats.org/api/packages/{package}/python_minor
+ * Returns { data: [{ category: "3.11", date: "2025-01-15", downloads: 100 }, ...] }
+ *
+ * We aggregate across all dates to get a recent snapshot per version,
+ * then store one row per (package, date, python_version).
+ */
+async function collectPythonVersionStats(pkg) {
+  try {
+    const url = `https://pypistats.org/api/packages/${encodeURIComponent(pkg.name)}/python_minor?mirrors=false`;
+    const data = await httpGet(url);
+
+    if (!data.data || data.data.length === 0) {
+      console.log('  Python versions: no data available');
+      return;
+    }
+
+    // Aggregate downloads per python version across all dates in the response
+    const versionMap = {};
+    for (const entry of data.data) {
+      if (!entry.category || entry.category === 'null') continue;
+      if (!versionMap[entry.category]) {
+        versionMap[entry.category] = 0;
+      }
+      versionMap[entry.category] += entry.downloads || 0;
+    }
+
+    const insert = db.prepare(`
+      INSERT INTO pypi_python_versions (package_id, date, python_version, downloads)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(package_id, date, python_version) DO UPDATE SET
+        downloads = excluded.downloads,
+        collected_at = CURRENT_TIMESTAMP
+    `);
+
+    let count = 0;
+    for (const [version, downloads] of Object.entries(versionMap)) {
+      if (downloads > 0) {
+        insert.run(pkg.id, today, version, downloads);
+        count++;
+      }
+    }
+
+    console.log('  Python versions: %d versions tracked', count);
+  } catch (error) {
+    console.error('  Python versions: failed - %s', error.message);
+  }
+}
+
+/**
+ * Collect downloads by operating system from pypistats.org.
+ *
+ * Uses: GET https://pypistats.org/api/packages/{package}/system
+ * Returns { data: [{ category: "Linux", date: "2025-01-15", downloads: 500 }, ...] }
+ *
+ * We aggregate across all dates to get a recent snapshot per OS,
+ * then store one row per (package, date, os).
+ */
+async function collectSystemStats(pkg) {
+  try {
+    const url = `https://pypistats.org/api/packages/${encodeURIComponent(pkg.name)}/system?mirrors=false`;
+    const data = await httpGet(url);
+
+    if (!data.data || data.data.length === 0) {
+      console.log('  OS breakdown: no data available');
+      return;
+    }
+
+    // Aggregate downloads per OS across all dates
+    const osMap = {};
+    for (const entry of data.data) {
+      const osName = entry.category || 'unknown';
+      if (!osMap[osName]) {
+        osMap[osName] = 0;
+      }
+      osMap[osName] += entry.downloads || 0;
+    }
+
+    const insert = db.prepare(`
+      INSERT INTO pypi_system_stats (package_id, date, os_name, downloads)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(package_id, date, os_name) DO UPDATE SET
+        downloads = excluded.downloads,
+        collected_at = CURRENT_TIMESTAMP
+    `);
+
+    let count = 0;
+    for (const [osName, downloads] of Object.entries(osMap)) {
+      if (downloads > 0) {
+        insert.run(pkg.id, today, osName, downloads);
+        count++;
+      }
+    }
+
+    console.log('  OS breakdown: %d systems tracked', count);
+  } catch (error) {
+    console.error('  OS breakdown: failed - %s', error.message);
+  }
+}
+
 async function generatePypiBadgeJson() {
   const packages = db.prepare('SELECT * FROM pypi_packages').all();
 
@@ -169,6 +271,8 @@ async function main() {
     const metadata = await fetchPackageMetadata(name);
     const pkgRecord = getOrCreatePackage(name, metadata.description, metadata.version);
     await collectDownloads(pkgRecord);
+    await collectPythonVersionStats(pkgRecord);
+    await collectSystemStats(pkgRecord);
   }
 
   console.log('\nGenerating PyPI badge JSON files...');

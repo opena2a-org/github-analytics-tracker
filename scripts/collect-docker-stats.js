@@ -80,6 +80,36 @@ async function collectImageStats(fullName) {
 
     console.log('  Pulls: %d | Stars: %d', data.pull_count || 0, data.star_count || 0);
 
+    // Collect tag information
+    try {
+      const tagsData = await httpGet(`https://hub.docker.com/v2/repositories/${namespace}/${name}/tags/?page_size=25&ordering=last_updated`);
+      if (tagsData.results && tagsData.results.length > 0) {
+        const tagInsert = db.prepare(`
+          INSERT INTO docker_tags (image_id, tag, full_size, last_updated, date)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(image_id, date, tag) DO UPDATE SET
+            full_size = excluded.full_size,
+            last_updated = excluded.last_updated,
+            collected_at = CURRENT_TIMESTAMP
+        `);
+
+        let tagCount = 0;
+        for (const tag of tagsData.results) {
+          tagInsert.run(
+            imageRecord.id,
+            tag.name || 'unknown',
+            tag.full_size || 0,
+            tag.last_updated || '',
+            today
+          );
+          tagCount++;
+        }
+        console.log('  Tags: %d tags tracked', tagCount);
+      }
+    } catch (tagError) {
+      console.log('  Tags: failed - %s', tagError.message);
+    }
+
     // Generate badge JSON
     const badgeData = {
       schemaVersion: 1,

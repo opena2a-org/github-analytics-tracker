@@ -47,6 +47,26 @@ export default function handler(req, res) {
       const earliest = pulls.length > 0 ? pulls[0] : null;
       const pullGrowth = latest && earliest ? latest.pull_count - earliest.pull_count : 0;
 
+      // Get tag information (latest snapshot)
+      let tags = [];
+      const tagTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='docker_tags'"
+      ).get();
+      if (tagTableCheck) {
+        const latestTagDate = db.prepare(
+          'SELECT MAX(date) as date FROM docker_tags WHERE image_id = ?'
+        ).get(imgId);
+
+        if (latestTagDate?.date) {
+          tags = db.prepare(`
+            SELECT tag, full_size, last_updated
+            FROM docker_tags
+            WHERE image_id = ? AND date = ?
+            ORDER BY last_updated DESC
+          `).all(imgId, latestTagDate.date);
+        }
+      }
+
       return res.status(200).json({
         image,
         summary: {
@@ -56,6 +76,7 @@ export default function handler(req, res) {
           daysTracked: pulls.length,
         },
         pulls: dailyPulls,
+        tags,
       });
     }
 

@@ -3,12 +3,12 @@ import Head from 'next/head';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ComposedChart,
+  ComposedChart, PieChart, Pie, Cell,
 } from 'recharts';
 import {
   GitFork, Star, Eye, GitPullRequest, Calendar, Users, Download,
   Package, TrendingUp, TrendingDown, BarChart3, Container,
-  Github, Box, Layers,
+  Github, Box, Layers, Tag, Monitor, Code, FileDown,
 } from 'lucide-react';
 
 /* ============================================
@@ -45,6 +45,10 @@ const C = {
   amber: '#f59e0b', amberFill: 'rgba(245,158,11,0.15)',
   sky: '#38bdf8', skyFill: 'rgba(56,189,248,0.15)',
   dark: '#1a2035',
+  green: '#22c55e', greenFill: 'rgba(34,197,94,0.15)',
+  orange: '#fb923c', orangeFill: 'rgba(251,146,60,0.15)',
+  cyan: '#06b6d4', cyanFill: 'rgba(6,182,212,0.15)',
+  rose: '#f43f5e', roseFill: 'rgba(244,63,94,0.15)',
 };
 
 const axProps = { fontSize: 11, tick: { fill: C.axisLabel } };
@@ -74,6 +78,19 @@ function formatNumber(n) {
 }
 function formatFullNumber(n) {
   return (n || 0).toLocaleString();
+}
+
+const BREAKDOWN_COLORS = [
+  '#4c9aff', '#00d4aa', '#f59e0b', '#ff6b6b', '#a78bfa',
+  '#38bdf8', '#f472b6', '#22c55e', '#fb923c', '#06b6d4',
+  '#e879f9', '#fbbf24', '#34d399', '#818cf8', '#f87171',
+];
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
 }
 
 /* ============================================
@@ -145,6 +162,61 @@ function Selector({ label, value, onChange, items, nameKey = 'name', idKey = 'id
             {items.map(it => <option key={it[idKey]} value={it[idKey]}>{it.full_name || it[nameKey]}</option>)}
           </select>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function BreakdownChart({ title, sub, data, nameKey, valueKey, maxItems = 10, color }) {
+  if (!data || data.length === 0) return null;
+  const sorted = [...data].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0));
+  const top = sorted.slice(0, maxItems);
+
+  return (
+    <ChartWrap title={title} sub={sub}>
+      <ResponsiveContainer width="100%" height={Math.max(200, top.length * 36)}>
+        <BarChart data={top} layout="vertical" margin={{ left: 80 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+          <XAxis type="number" {...axProps} />
+          <YAxis type="category" dataKey={nameKey} {...axProps} width={80} />
+          <Tooltip {...ttProps} />
+          <Bar dataKey={valueKey} name="Downloads" radius={[0, 4, 4, 0]}>
+            {top.map((entry, idx) => (
+              <Cell key={idx} fill={color || BREAKDOWN_COLORS[idx % BREAKDOWN_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartWrap>
+  );
+}
+
+function BreakdownTable({ title, columns, data }) {
+  if (!data || data.length === 0) return null;
+  return (
+    <div className="section-card">
+      <div className="section-header"><div className="section-title">{title}</div></div>
+      <div className="table-scroll">
+        <table className="data-table">
+          <thead>
+            <tr>
+              {columns.map(col => (
+                <th key={col.key} className={col.align === 'right' ? 'r' : ''}>{col.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={i}>
+                {columns.map(col => (
+                  <td key={col.key} className={col.align === 'right' ? 'num' : ''}>
+                    {col.format ? col.format(row[col.key], row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -334,14 +406,17 @@ export default function Dashboard() {
                 packages={npmPackages} selectedPackage={selectedNpmPackage}
                 setSelectedPackage={setSelectedNpmPackage}
                 pkgData={npmData} loading={npmLoading}
-                getWeeklyData={() => getWeeklyDownloadData(npmData?.downloads)} />
+                getWeeklyData={() => getWeeklyDownloadData(npmData?.downloads)}
+                versionDownloads={npmData?.versionDownloads} />
             )}
             {activeTab === 'pypi' && (
               <PackageTab ecosystem="PyPI" color={C.amber} fillColor={C.amberFill} barColor={C.amber}
                 packages={pypiPackages} selectedPackage={selectedPypiPackage}
                 setSelectedPackage={setSelectedPypiPackage}
                 pkgData={pypiData} loading={pypiLoading}
-                getWeeklyData={() => getWeeklyDownloadData(pypiData?.downloads)} />
+                getWeeklyData={() => getWeeklyDownloadData(pypiData?.downloads)}
+                pythonVersions={pypiData?.pythonVersions}
+                systemStats={pypiData?.systemStats} />
             )}
             {activeTab === 'docker' && (
               <DockerTab images={dockerImages} selectedImage={selectedImage}
@@ -481,6 +556,8 @@ function OverviewTab({ overview, loading }) {
           { label: 'Git clones', value: totals.github.totalClones },
           { label: 'Stars', value: totals.github.totalStars },
           { label: 'Forks', value: totals.github.totalForks },
+          { label: 'Contributors', value: totals.github.totalContributors || 0 },
+          { label: 'Release downloads', value: totals.github.totalReleaseDownloads || 0 },
         ]} />
         <EcoCard name="npm" color={C.red} icon={<Box size={14} color={C.red} />} rows={[
           { label: 'Packages', value: totals.npm.packages },
@@ -619,6 +696,33 @@ function GitHubTab({ repos, selectedRepo, setSelectedRepo, data, loading, getCom
               </ResponsiveContainer>
             </ChartWrap>
           )}
+
+          {/* Contributors */}
+          {data.contributors?.length > 0 && (
+            <BreakdownChart
+              title="Top Contributors"
+              sub="Total commits per contributor"
+              data={data.contributors}
+              nameKey="login"
+              valueKey="contributions"
+              maxItems={15}
+              color={C.teal}
+            />
+          )}
+
+          {/* Release Downloads */}
+          {data.releases?.length > 0 && (
+            <BreakdownTable
+              title="Release Downloads"
+              columns={[
+                { key: 'tag_name', label: 'Tag' },
+                { key: 'release_name', label: 'Release' },
+                { key: 'published_at', label: 'Published', format: v => v ? formatDateLabel(v.split('T')[0]) : '--' },
+                { key: 'total_downloads', label: 'Downloads', align: 'right', format: v => formatFullNumber(v) },
+              ]}
+              data={data.releases}
+            />
+          )}
         </>
       ) : (
         <Empty message="No GitHub data available yet." command="npm run collect" />
@@ -630,7 +734,7 @@ function GitHubTab({ repos, selectedRepo, setSelectedRepo, data, loading, getCom
 /* ============================================
    Unified Package Tab (npm + PyPI)
    ============================================ */
-function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData }) {
+function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData, versionDownloads, pythonVersions, systemStats }) {
   const sorted = [...packages].sort((a, b) => b.allTimeDownloads - a.allTimeDownloads);
   const totals7 = packages.reduce((s, p) => s + (p.last7Downloads || 0), 0);
   const totals30 = packages.reduce((s, p) => s + (p.last30Downloads || 0), 0);
@@ -722,6 +826,45 @@ function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedP
               </ResponsiveContainer>
             </ChartWrap>
           )}
+
+          {/* Advanced metrics: version downloads, Python versions, OS breakdown */}
+          <div className="grid grid-2-lg">
+            {/* npm version downloads */}
+            {versionDownloads?.length > 0 && (
+              <BreakdownChart
+                title="Downloads by Version"
+                sub="Last week per-version breakdown"
+                data={versionDownloads}
+                nameKey="version"
+                valueKey="downloads"
+                maxItems={12}
+              />
+            )}
+
+            {/* PyPI Python version breakdown */}
+            {pythonVersions?.length > 0 && (
+              <BreakdownChart
+                title="Downloads by Python Version"
+                sub="Aggregated from recent data (mirrors excluded)"
+                data={pythonVersions}
+                nameKey="python_version"
+                valueKey="downloads"
+                maxItems={10}
+              />
+            )}
+
+            {/* PyPI OS breakdown */}
+            {systemStats?.length > 0 && (
+              <BreakdownChart
+                title="Downloads by Operating System"
+                sub="Aggregated from recent data (mirrors excluded)"
+                data={systemStats}
+                nameKey="os_name"
+                valueKey="downloads"
+                maxItems={8}
+              />
+            )}
+          </div>
         </>
       ) : packages.length === 0 ? (
         <Empty message={`No ${ecosystem} data available yet.`} command={`npm run collect-${ecosystem.toLowerCase()}`} />
@@ -807,6 +950,19 @@ function DockerTab({ images, selectedImage, setSelectedImage, dockerData, loadin
                 </BarChart>
               </ResponsiveContainer>
             </ChartWrap>
+          )}
+
+          {/* Docker tag information */}
+          {dockerData.tags?.length > 0 && (
+            <BreakdownTable
+              title="Image Tags"
+              columns={[
+                { key: 'tag', label: 'Tag' },
+                { key: 'full_size', label: 'Size', align: 'right', format: v => formatBytes(v) },
+                { key: 'last_updated', label: 'Last Updated', format: v => v ? formatDateLabel(v.split('T')[0]) : '--' },
+              ]}
+              data={dockerData.tags}
+            />
           )}
         </>
       ) : images.length === 0 ? (

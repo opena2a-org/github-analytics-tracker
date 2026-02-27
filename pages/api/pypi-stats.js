@@ -50,6 +50,46 @@ export default function handler(req, res) {
         WHERE package_id = ?
       `).get(pkgId);
 
+      // Get Python version breakdown (latest snapshot)
+      let pythonVersions = [];
+      const pyVerTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_python_versions'"
+      ).get();
+      if (pyVerTableCheck) {
+        const latestPyVerDate = db.prepare(
+          'SELECT MAX(date) as date FROM pypi_python_versions WHERE package_id = ?'
+        ).get(pkgId);
+
+        if (latestPyVerDate?.date) {
+          pythonVersions = db.prepare(`
+            SELECT python_version, downloads
+            FROM pypi_python_versions
+            WHERE package_id = ? AND date = ?
+            ORDER BY downloads DESC
+          `).all(pkgId, latestPyVerDate.date);
+        }
+      }
+
+      // Get OS breakdown (latest snapshot)
+      let systemStats = [];
+      const sysTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_system_stats'"
+      ).get();
+      if (sysTableCheck) {
+        const latestSysDate = db.prepare(
+          'SELECT MAX(date) as date FROM pypi_system_stats WHERE package_id = ?'
+        ).get(pkgId);
+
+        if (latestSysDate?.date) {
+          systemStats = db.prepare(`
+            SELECT os_name, downloads
+            FROM pypi_system_stats
+            WHERE package_id = ? AND date = ?
+            ORDER BY downloads DESC
+          `).all(pkgId, latestSysDate.date);
+        }
+      }
+
       return res.status(200).json({
         package: pkg,
         summary: {
@@ -57,6 +97,8 @@ export default function handler(req, res) {
           allTimeDownloads: allTime.total,
         },
         downloads,
+        pythonVersions,
+        systemStats,
       });
     }
 

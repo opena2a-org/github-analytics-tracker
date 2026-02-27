@@ -272,6 +272,110 @@ async function collectStarsAndForks(owner, repo, repoId) {
   }
 }
 
+/**
+ * GitHub contributor stats API returns weekly commit counts per contributor.
+ * We store a daily snapshot of total contributions per contributor.
+ * Note: This endpoint may return 202 (processing) on first call - we handle
+ * that by retrying once after a short delay.
+ */
+async function collectContributorStats(owner, repo, repoId) {
+  try {
+    let data;
+    try {
+      const response = await octokit.rest.repos.getContributorsStats({ owner, repo });
+      data = response.data;
+    } catch (error) {
+      if (error.status === 202) {
+        // GitHub is computing stats - wait and retry once
+        console.log('  Contributors: stats being computed, retrying in 3s...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const response = await octokit.rest.repos.getContributorsStats({ owner, repo });
+        data = response.data;
+      } else {
+        throw error;
+      }
+    }
+
+    if (!Array.isArray(data)) {
+      console.log('  Contributors: no data available');
+      return;
+    }
+
+    // Delete existing rows for this repo+date to prevent duplicates on re-runs
+    db.prepare('DELETE FROM github_contributors WHERE repo_id = ? AND date = ?').run(repoId, today);
+
+    const insert = db.prepare(`
+      INSERT INTO github_contributors (repo_id, date, login, contributions)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    let count = 0;
+    for (const contributor of data) {
+      if (!contributor.author) continue;
+      insert.run(repoId, today, contributor.author.login, contributor.total);
+      count++;
+    }
+
+    console.log('  Contributors: %d contributors tracked', count);
+  } catch (error) {
+    if (error.status === 403) {
+      console.log('  Contributors: skipped (rate limit or no access)');
+    } else {
+      console.error('  Contributors: failed - %s', error.message);
+    }
+  }
+}
+
+/**
+ * GitHub releases API returns all releases with their assets.
+ * Each asset has a download_count field.
+ * We sum all asset downloads per release for a total release download count.
+ */
+async function collectReleaseDownloads(owner, repo, repoId) {
+  try {
+    const { data } = await octokit.rest.repos.listReleases({
+      owner,
+      repo,
+      per_page: 30
+    });
+
+    if (!data || data.length === 0) {
+      console.log('  Releases: no releases found');
+      return;
+    }
+
+    const insert = db.prepare(`
+      INSERT INTO github_releases (repo_id, tag_name, release_name, published_at, total_downloads, date)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(repo_id, date, tag_name) DO UPDATE SET
+        total_downloads = excluded.total_downloads,
+        collected_at = CURRENT_TIMESTAMP
+    `);
+
+    let totalReleaseDownloads = 0;
+    for (const release of data) {
+      const assetDownloads = (release.assets || []).reduce((sum, asset) => sum + (asset.download_count || 0), 0);
+      insert.run(
+        repoId,
+        release.tag_name,
+        release.name || release.tag_name,
+        release.published_at || '',
+        assetDownloads,
+        today
+      );
+      totalReleaseDownloads += assetDownloads;
+    }
+
+    console.log('  Releases: %d releases, %d total asset downloads', data.length, totalReleaseDownloads);
+  } catch (error) {
+    if (error.status === 404) {
+      console.log('  Releases: none found');
+    } else {
+      console.error('  Releases: failed - %s', error.message);
+    }
+  }
+}
+
 async function collectStatsForRepo(fullName) {
   const [owner, repo] = fullName.split('/');
 
@@ -284,6 +388,8 @@ async function collectStatsForRepo(fullName) {
   await collectReferrers(owner, repo, repoRecord.id);
   await collectPopularPaths(owner, repo, repoRecord.id);
   await collectStarsAndForks(owner, repo, repoRecord.id);
+  await collectContributorStats(owner, repo, repoRecord.id);
+  await collectReleaseDownloads(owner, repo, repoRecord.id);
 }
 
 async function generateBadgeJson() {
