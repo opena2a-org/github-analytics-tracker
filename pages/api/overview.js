@@ -326,6 +326,39 @@ export default function handler(req, res) {
       .sort((a, b) => a.week.localeCompare(b.week))
       .map(w => ({ ...w, downloads: w.npm + w.pypi }));
 
+    // --- Advanced Metrics Summaries ---
+
+    // Total contributor count across all repos
+    let totalContributors = 0;
+    const contribTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_contributors'"
+    ).get();
+    if (contribTableExists) {
+      const contribCount = db.prepare(`
+        SELECT COUNT(DISTINCT login) as count
+        FROM github_contributors
+        WHERE date = (SELECT MAX(date) FROM github_contributors)
+      `).get();
+      totalContributors = contribCount?.count || 0;
+    }
+
+    // Total release downloads across all repos
+    let totalReleaseDownloads = 0;
+    const relTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_releases'"
+    ).get();
+    if (relTableExists) {
+      const relDl = db.prepare(`
+        SELECT COALESCE(SUM(total_downloads), 0) as total
+        FROM github_releases
+        WHERE date = (SELECT MAX(date) FROM github_releases)
+      `).get();
+      totalReleaseDownloads = relDl?.total || 0;
+    }
+
+    totals.github.totalContributors = totalContributors;
+    totals.github.totalReleaseDownloads = totalReleaseDownloads;
+
     res.status(200).json({
       lastUpdated: new Date().toISOString(),
       totals,

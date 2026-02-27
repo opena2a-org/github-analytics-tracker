@@ -90,12 +90,54 @@ export default function handler(req, res) {
       forksGrowth: (latestStats?.latest_forks || 0) - (latestStats?.start_forks || 0),
     };
 
+    // Get contributors (latest snapshot)
+    let contributors = [];
+    const contribTableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_contributors'"
+    ).get();
+    if (contribTableCheck) {
+      const latestContribDate = db.prepare(
+        'SELECT MAX(date) as date FROM github_contributors WHERE repo_id = ?'
+      ).get(repoId);
+
+      if (latestContribDate?.date) {
+        contributors = db.prepare(`
+          SELECT login, contributions
+          FROM github_contributors
+          WHERE repo_id = ? AND date = ?
+          ORDER BY contributions DESC
+        `).all(repoId, latestContribDate.date);
+      }
+    }
+
+    // Get release download counts (latest snapshot)
+    let releases = [];
+    const relTableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_releases'"
+    ).get();
+    if (relTableCheck) {
+      const latestRelDate = db.prepare(
+        'SELECT MAX(date) as date FROM github_releases WHERE repo_id = ?'
+      ).get(repoId);
+
+      if (latestRelDate?.date) {
+        releases = db.prepare(`
+          SELECT tag_name, release_name, published_at, total_downloads
+          FROM github_releases
+          WHERE repo_id = ? AND date = ?
+          ORDER BY published_at DESC
+        `).all(repoId, latestRelDate.date);
+      }
+    }
+
     res.status(200).json({
       summary,
       views,
       clones,
       referrers,
       paths,
+      contributors,
+      releases,
     });
   } catch (error) {
     console.error('Error fetching stats:', error);

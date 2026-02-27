@@ -96,6 +96,42 @@ function getRepositoryStats() {
       ORDER BY count DESC
     `).all(repo.id, latestReferrerDate.date) : [];
 
+    // Get contributors (latest snapshot)
+    let contributors = [];
+    const contribTableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_contributors'"
+    ).get();
+    if (contribTableCheck) {
+      const latestContribDate = db.prepare(
+        'SELECT MAX(date) as date FROM github_contributors WHERE repo_id = ?'
+      ).get(repo.id);
+      if (latestContribDate?.date) {
+        contributors = db.prepare(`
+          SELECT login, contributions
+          FROM github_contributors WHERE repo_id = ? AND date = ?
+          ORDER BY contributions DESC LIMIT 10
+        `).all(repo.id, latestContribDate.date);
+      }
+    }
+
+    // Get release downloads (latest snapshot)
+    let releases = [];
+    const relTableCheck = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='github_releases'"
+    ).get();
+    if (relTableCheck) {
+      const latestRelDate = db.prepare(
+        'SELECT MAX(date) as date FROM github_releases WHERE repo_id = ?'
+      ).get(repo.id);
+      if (latestRelDate?.date) {
+        releases = db.prepare(`
+          SELECT tag_name, release_name, total_downloads
+          FROM github_releases WHERE repo_id = ? AND date = ?
+          ORDER BY total_downloads DESC
+        `).all(repo.id, latestRelDate.date);
+      }
+    }
+
     return {
       ...repo,
       total_views: views.total_views,
@@ -112,6 +148,8 @@ function getRepositoryStats() {
       forks: forks?.forks || 0,
       dailyStats,
       referrers,
+      contributors,
+      releases,
     };
   });
 }
@@ -264,6 +302,31 @@ function generateDetailedMD(repoStats) {
       }
     }
 
+    // Contributors
+    if (repo.contributors.length > 0) {
+      md += `\n**Top Contributors**\n\n`;
+      md += `| Contributor | Commits |\n`;
+      md += `|-------------|--------|\n`;
+      repo.contributors.forEach(c => {
+        md += `| ${c.login} | ${formatNumber(c.contributions)} |\n`;
+      });
+      md += '\n';
+    }
+
+    // Release downloads
+    if (repo.releases.length > 0) {
+      const totalRelDownloads = repo.releases.reduce((s, r) => s + r.total_downloads, 0);
+      if (totalRelDownloads > 0) {
+        md += `**Release Downloads** (${formatNumber(totalRelDownloads)} total)\n\n`;
+        md += `| Release | Downloads |\n`;
+        md += `|---------|----------|\n`;
+        repo.releases.filter(r => r.total_downloads > 0).forEach(r => {
+          md += `| ${r.tag_name} | ${formatNumber(r.total_downloads)} |\n`;
+        });
+        md += '\n';
+      }
+    }
+
     // Per-repo insights
     if (recentDays.length > 1) {
       const avgViews = Math.round(recentDays.reduce((sum, d) => sum + d.views, 0) / recentDays.length);
@@ -351,6 +414,10 @@ function getNpmStats() {
   ).get();
   if (!tableCheck) return [];
 
+  const verTableCheck = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='npm_version_downloads'"
+  ).get();
+
   const packages = db.prepare('SELECT * FROM npm_packages ORDER BY name').all();
 
   return packages.map(pkg => {
@@ -390,6 +457,21 @@ function getNpmStats() {
       ORDER BY date DESC
     `).all(pkg.id);
 
+    // Version downloads (latest snapshot)
+    let versionDownloads = [];
+    if (verTableCheck) {
+      const latestVerDate = db.prepare(
+        'SELECT MAX(date) as date FROM npm_version_downloads WHERE package_id = ?'
+      ).get(pkg.id);
+      if (latestVerDate?.date) {
+        versionDownloads = db.prepare(`
+          SELECT version, downloads
+          FROM npm_version_downloads WHERE package_id = ? AND date = ?
+          ORDER BY downloads DESC LIMIT 10
+        `).all(pkg.id, latestVerDate.date);
+      }
+    }
+
     return {
       ...pkg,
       total_downloads: allTime.total_downloads,
@@ -400,6 +482,7 @@ function getNpmStats() {
       last30_downloads: last30.downloads,
       last90_downloads: last90.downloads,
       dailyDownloads,
+      versionDownloads,
     };
   });
 }
@@ -471,6 +554,17 @@ function generateNpmDetailedSection(npmStats) {
       md += '\n';
     }
 
+    // Version downloads
+    if (pkg.versionDownloads && pkg.versionDownloads.length > 0) {
+      md += `**Downloads by Version** (last week)\n\n`;
+      md += `| Version | Downloads |\n`;
+      md += `|---------|-----------|\n`;
+      pkg.versionDownloads.forEach(v => {
+        md += `| ${v.version} | ${formatNumber(v.downloads)} |\n`;
+      });
+      md += '\n';
+    }
+
     md += `---\n\n`;
   });
 
@@ -482,6 +576,14 @@ function getPypiStats() {
     "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_packages'"
   ).get();
   if (!tableCheck) return [];
+
+  const pyVerTableCheck = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_python_versions'"
+  ).get();
+
+  const sysTableCheck = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_system_stats'"
+  ).get();
 
   const packages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
 
@@ -521,6 +623,36 @@ function getPypiStats() {
       ORDER BY date DESC
     `).all(pkg.id);
 
+    // Python version breakdown (latest snapshot)
+    let pythonVersions = [];
+    if (pyVerTableCheck) {
+      const latestPyVerDate = db.prepare(
+        'SELECT MAX(date) as date FROM pypi_python_versions WHERE package_id = ?'
+      ).get(pkg.id);
+      if (latestPyVerDate?.date) {
+        pythonVersions = db.prepare(`
+          SELECT python_version, downloads
+          FROM pypi_python_versions WHERE package_id = ? AND date = ?
+          ORDER BY downloads DESC LIMIT 10
+        `).all(pkg.id, latestPyVerDate.date);
+      }
+    }
+
+    // OS breakdown (latest snapshot)
+    let systemStats = [];
+    if (sysTableCheck) {
+      const latestSysDate = db.prepare(
+        'SELECT MAX(date) as date FROM pypi_system_stats WHERE package_id = ?'
+      ).get(pkg.id);
+      if (latestSysDate?.date) {
+        systemStats = db.prepare(`
+          SELECT os_name, downloads
+          FROM pypi_system_stats WHERE package_id = ? AND date = ?
+          ORDER BY downloads DESC
+        `).all(pkg.id, latestSysDate.date);
+      }
+    }
+
     return {
       ...pkg,
       total_downloads: allTime.total_downloads,
@@ -531,6 +663,8 @@ function getPypiStats() {
       last30_downloads: last30.downloads,
       last90_downloads: last90.downloads,
       dailyDownloads,
+      pythonVersions,
+      systemStats,
     };
   });
 }
@@ -599,6 +733,28 @@ function generatePypiDetailedSection(pypiStats) {
       if (peak.downloads > avg * 2 && peak.downloads > 10) {
         md += `- Peak: ${formatDate(peak.date)} with ${formatNumber(peak.downloads)} downloads\n`;
       }
+      md += '\n';
+    }
+
+    // Python version breakdown
+    if (pkg.pythonVersions && pkg.pythonVersions.length > 0) {
+      md += `**Downloads by Python Version**\n\n`;
+      md += `| Python Version | Downloads |\n`;
+      md += `|---------------|-----------|\n`;
+      pkg.pythonVersions.forEach(v => {
+        md += `| ${v.python_version} | ${formatNumber(v.downloads)} |\n`;
+      });
+      md += '\n';
+    }
+
+    // OS breakdown
+    if (pkg.systemStats && pkg.systemStats.length > 0) {
+      md += `**Downloads by Operating System**\n\n`;
+      md += `| OS | Downloads |\n`;
+      md += `|----|----------|\n`;
+      pkg.systemStats.forEach(s => {
+        md += `| ${s.os_name} | ${formatNumber(s.downloads)} |\n`;
+      });
       md += '\n';
     }
 
