@@ -359,6 +359,22 @@ export default function handler(req, res) {
     totals.github.totalContributors = totalContributors;
     totals.github.totalReleaseDownloads = totalReleaseDownloads;
 
+    // --- Top Countries (from BigQuery PyPI country data) ---
+    let topCountries = [];
+    const countryTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_downloads'"
+    ).get();
+    if (countryTableExists) {
+      topCountries = db.prepare(`
+        SELECT country_code AS countryCode, SUM(downloads) AS downloads
+        FROM pypi_country_downloads
+        WHERE date = (SELECT MAX(date) FROM pypi_country_downloads)
+        GROUP BY country_code
+        ORDER BY downloads DESC
+        LIMIT 5
+      `).all();
+    }
+
     res.status(200).json({
       lastUpdated: new Date().toISOString(),
       totals,
@@ -368,6 +384,7 @@ export default function handler(req, res) {
       npmPackages: npmStats,
       pypiPackages: pypiStats,
       dockerImages: dockerStats,
+      topCountries,
     });
   } catch (error) {
     console.error('Error fetching overview:', error);

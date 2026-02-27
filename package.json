@@ -11,32 +11,39 @@
     "collect-npm": "node scripts/collect-npm-stats.js",
     "collect-docker": "node scripts/collect-docker-stats.js",
     "collect-pypi": "node scripts/collect-pypi-stats.js",
-    "collect-all": "node scripts/collect-stats.js && node scripts/collect-npm-stats.js && node scripts/collect-pypi-stats.js && node scripts/collect-docker-stats.js",
+    "collect:pypi-countries": "node scripts/collect-pypi-country-stats.js",
+    "collect-all": "node scripts/collect-stats.js && node scripts/collect-npm-stats.js && node scripts/collect-pypi-stats.js && node scripts/collect-pypi-country-stats.js && node scripts/collect-docker-stats.js",
     "setup-db": "node scripts/setup-database.js",
     "generate-md": "node scripts/generate-markdown.js"
   },
-  "keywords": ["github", "analytics", "tracking", "statistics"],
+  "keywords": [
+    "github",
+    "analytics",
+    "tracking",
+    "statistics"
+  ],
   "author": "OpenA2A",
   "license": "MIT",
   "engines": {
     "node": ">=18 <21"
   },
   "dependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "@octokit/rest": "^20.0.2",
+    "better-sqlite3": "^9.2.2",
+    "date-fns": "^3.0.6",
+    "dotenv": "^16.3.1",
+    "lucide-react": "^0.469.0",
     "next": "^15.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "better-sqlite3": "^9.2.2",
-    "recharts": "^2.10.3",
-    "lucide-react": "^0.469.0",
-    "date-fns": "^3.0.6",
-    "dotenv": "^16.3.1"
+    "recharts": "^2.10.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "typescript": "^5",
-    "@types/better-sqlite3": "^7.6.8"
+    "typescript": "^5"
   }
 }

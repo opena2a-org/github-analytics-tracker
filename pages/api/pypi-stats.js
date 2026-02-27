@@ -90,6 +90,26 @@ export default function handler(req, res) {
         }
       }
 
+      // Get country download breakdown (latest snapshot from BigQuery)
+      let countryDownloads = [];
+      const countryTableCheck = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_downloads'"
+      ).get();
+      if (countryTableCheck) {
+        const latestCountryDate = db.prepare(
+          'SELECT MAX(date) as date FROM pypi_country_downloads WHERE package_id = ?'
+        ).get(pkgId);
+
+        if (latestCountryDate?.date) {
+          countryDownloads = db.prepare(`
+            SELECT country_code AS countryCode, downloads
+            FROM pypi_country_downloads
+            WHERE package_id = ? AND date = ?
+            ORDER BY downloads DESC
+          `).all(pkgId, latestCountryDate.date);
+        }
+      }
+
       return res.status(200).json({
         package: pkg,
         summary: {
@@ -99,6 +119,7 @@ export default function handler(req, res) {
         downloads,
         pythonVersions,
         systemStats,
+        countryDownloads,
       });
     }
 

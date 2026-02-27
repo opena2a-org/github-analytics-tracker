@@ -416,7 +416,8 @@ export default function Dashboard() {
                 pkgData={pypiData} loading={pypiLoading}
                 getWeeklyData={() => getWeeklyDownloadData(pypiData?.downloads)}
                 pythonVersions={pypiData?.pythonVersions}
-                systemStats={pypiData?.systemStats} />
+                systemStats={pypiData?.systemStats}
+                countryDownloads={pypiData?.countryDownloads} />
             )}
             {activeTab === 'docker' && (
               <DockerTab images={dockerImages} selectedImage={selectedImage}
@@ -734,7 +735,19 @@ function GitHubTab({ repos, selectedRepo, setSelectedRepo, data, loading, getCom
 /* ============================================
    Unified Package Tab (npm + PyPI)
    ============================================ */
-function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData, versionDownloads, pythonVersions, systemStats }) {
+const COUNTRY_NAMES = {
+  US: 'United States', DE: 'Germany', CN: 'China', GB: 'United Kingdom',
+  FR: 'France', IN: 'India', JP: 'Japan', KR: 'South Korea',
+  BR: 'Brazil', CA: 'Canada', AU: 'Australia', NL: 'Netherlands',
+  RU: 'Russia', SE: 'Sweden', SG: 'Singapore', PL: 'Poland',
+  ES: 'Spain', IT: 'Italy', CH: 'Switzerland', HK: 'Hong Kong',
+};
+
+function formatCountryName(code) {
+  return COUNTRY_NAMES[code] || code;
+}
+
+function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData, versionDownloads, pythonVersions, systemStats, countryDownloads }) {
   const sorted = [...packages].sort((a, b) => b.allTimeDownloads - a.allTimeDownloads);
   const totals7 = packages.reduce((s, p) => s + (p.last7Downloads || 0), 0);
   const totals30 = packages.reduce((s, p) => s + (p.last30Downloads || 0), 0);
@@ -865,6 +878,22 @@ function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedP
               />
             )}
           </div>
+
+          {/* Country downloads from BigQuery */}
+          {countryDownloads?.length > 0 && (
+            <BreakdownChart
+              title="Downloads by Country"
+              sub="Last 30 days (source: BigQuery public dataset)"
+              data={countryDownloads.map(d => ({
+                country: formatCountryName(d.countryCode),
+                downloads: d.downloads,
+              }))}
+              nameKey="country"
+              valueKey="downloads"
+              maxItems={20}
+              color={C.amber}
+            />
+          )}
         </>
       ) : packages.length === 0 ? (
         <Empty message={`No ${ecosystem} data available yet.`} command={`npm run collect-${ecosystem.toLowerCase()}`} />
