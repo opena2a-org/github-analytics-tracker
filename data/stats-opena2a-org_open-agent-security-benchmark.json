@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-02-27T02:06:20.078Z",
+  "lastUpdated": "2026-02-28T12:02:55.670Z",
   "repository": "opena2a-org/open-agent-security-benchmark",
   "stats": {
     "allTime": {
-      "views": 44,
-      "clones": 47
+      "views": 56,
+      "clones": 111
     },
     "recent14Days": {
-      "views": 39,
-      "viewsUnique": 13,
-      "clones": 38,
-      "clonesUnique": 20
+      "views": 41,
+      "viewsUnique": 11,
+      "clones": 102,
+      "clonesUnique": 54
     },
     "stars": 1,
     "forks": 0
