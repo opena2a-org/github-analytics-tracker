@@ -8,7 +8,7 @@ import {
 import {
   GitFork, Star, Eye, GitPullRequest, Calendar, Users, Download,
   Package, TrendingUp, TrendingDown, BarChart3, Container,
-  Github, Box, Layers, Tag, Monitor, Code, FileDown,
+  Github, Box, Layers, Tag, Monitor, Code, FileDown, Search,
 } from 'lucide-react';
 
 /* ============================================
@@ -153,13 +153,23 @@ function ChartWrap({ title, sub, children }) {
 }
 
 function Selector({ label, value, onChange, items, nameKey = 'name', idKey = 'id' }) {
+  const [filter, setFilter] = useState('');
+  const filtered = filter
+    ? items.filter(it => {
+        const text = (it.full_name || it[nameKey] || '').toLowerCase();
+        return text.includes(filter.toLowerCase());
+      })
+    : items;
   return (
     <div className="section-card">
       <div className="section-body">
         <div className="field-group">
           <label className="field-label">{label}</label>
+          {items.length > 3 && (
+            <SearchInput value={filter} onChange={setFilter} placeholder={`Filter ${label.toLowerCase()}...`} />
+          )}
           <select className="select-field" value={value || ''} onChange={e => onChange(Number(e.target.value))}>
-            {items.map(it => <option key={it[idKey]} value={it[idKey]}>{it.full_name || it[nameKey]}</option>)}
+            {filtered.map(it => <option key={it[idKey]} value={it[idKey]}>{it.full_name || it[nameKey]}</option>)}
           </select>
         </div>
       </div>
@@ -236,6 +246,41 @@ function Empty({ message, command }) {
   );
 }
 
+function SearchInput({ value, onChange, placeholder = 'Search...' }) {
+  return (
+    <div className="search-wrap">
+      <Search size={14} className="search-icon" />
+      <input
+        type="text"
+        className="search-input"
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+const GRANULARITIES = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+];
+
+function GranularitySelector({ value, onChange }) {
+  return (
+    <div className="granularity-bar">
+      {GRANULARITIES.map(g => (
+        <button key={g.value}
+          className={`granularity-btn ${value === g.value ? 'active' : ''}`}
+          onClick={() => onChange(g.value)}>
+          {g.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ============================================
    Weekly aggregation helpers
    ============================================ */
@@ -290,6 +335,9 @@ export default function Dashboard() {
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [trends, setTrends] = useState(null);
+  const [trendsGranularity, setTrendsGranularity] = useState('weekly');
+
   /* --- Fetch on mount --- */
   useEffect(() => {
     fetch('/api/repos').then(r => r.ok ? r.json() : []).then(d => {
@@ -311,6 +359,14 @@ export default function Dashboard() {
       if (d?.totals) setOverview(d);
     }).catch(() => {}).finally(() => setOverviewLoading(false));
   }, []);
+
+  /* --- Fetch trends when granularity changes --- */
+  useEffect(() => {
+    fetch(`/api/trends?granularity=${trendsGranularity}&days=180`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setTrends(d); })
+      .catch(() => {});
+  }, [trendsGranularity]);
 
   /* --- Fetch detail data when selection/range changes --- */
   useEffect(() => { if (selectedRepo) fetchDetail(`/api/stats?repo_id=${selectedRepo}&days=${timeRange}`, setGithubData, setGithubLoading); }, [selectedRepo, timeRange]);
@@ -395,7 +451,8 @@ export default function Dashboard() {
 
           {/* Content */}
           <div className="content">
-            {activeTab === 'overview' && <OverviewTab overview={overview} loading={overviewLoading} />}
+            {activeTab === 'overview' && <OverviewTab overview={overview} loading={overviewLoading}
+              trends={trends} trendsGranularity={trendsGranularity} setTrendsGranularity={setTrendsGranularity} />}
             {activeTab === 'github' && (
               <GitHubTab repos={repos} selectedRepo={selectedRepo} setSelectedRepo={setSelectedRepo}
                 data={githubData} loading={githubLoading}
@@ -433,25 +490,53 @@ export default function Dashboard() {
 /* ============================================
    Overview Tab
    ============================================ */
-function OverviewTab({ overview, loading }) {
+function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGranularity }) {
+  const [productFilter, setProductFilter] = useState('');
+
   if (loading) return <Loading />;
   if (!overview) return <Empty message="No data available yet." command="npm run collect-all" />;
   const { totals, products = [], weeklyTrend = [] } = overview;
 
+  const wow = trends?.growth?.wow;
+  const mom = trends?.growth?.mom;
+
+  const filteredProducts = productFilter
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(productFilter.toLowerCase()) ||
+        (p.description || '').toLowerCase().includes(productFilter.toLowerCase()))
+    : products;
+
   return (
     <>
-      {/* Hero */}
+      {/* Hero + growth row */}
       <div className="hero-card">
         <div className="hero-label">Total Adoption</div>
-        <div className="hero-value">{formatFullNumber(totals.combined.totalAdoption)}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', flexWrap: 'wrap' }}>
+          <div className="hero-value">{formatFullNumber(totals.combined.totalAdoption)}</div>
+          {wow && (
+            <div className="growth-row">
+              <div className="growth-item">
+                <span className="growth-item-label">WoW</span>
+                <GrowthBadge value={wow.downloads} />
+              </div>
+              {mom && (
+                <div className="growth-item">
+                  <span className="growth-item-label">MoM</span>
+                  <GrowthBadge value={mom.downloads} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div className="hero-sub">Clones + npm + PyPI + Docker pulls -- across all products</div>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-5">
-        <MetricCard icon={<Eye size={18} color={C.blue} />} iconBg={C.blueFill ? 'rgba(76,154,255,0.10)' : undefined}
+        <MetricCard icon={<Eye size={18} color={C.blue} />} iconBg="rgba(76,154,255,0.10)"
           label="Page Views" value={formatFullNumber(totals.combined.totalPageViews)}
-          sub={`${totals.github.repos} repositories`} />
+          sub={`${totals.github.repos} repositories`}
+          growth={wow?.views} />
         <MetricCard icon={<Star size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
           label="GitHub Stars" value={formatFullNumber(totals.github.totalStars)} sub="Community endorsements" />
         <MetricCard icon={<Download size={18} color={C.red} />} iconBg="rgba(255,107,107,0.10)"
@@ -465,9 +550,70 @@ function OverviewTab({ overview, loading }) {
           sub={`${totals.docker?.images || 0} images`} />
       </div>
 
-      {/* Product table */}
+      {/* Granularity selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Trend Granularity</span>
+        <GranularitySelector value={trendsGranularity} onChange={setTrendsGranularity} />
+      </div>
+
+      {/* Trend charts */}
+      {trends?.series?.length > 1 && (
+        <div className="grid grid-2-lg">
+          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all products">
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={trends.series}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="periodStart" {...xDateProps} />
+                <YAxis {...axProps} />
+                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Area type="monotone" dataKey="npmDownloads" stroke={C.red} fill={C.redFill} name="npm" stackId="dl" />
+                <Area type="monotone" dataKey="pypiDownloads" stroke={C.amber} fill={C.amberFill} name="PyPI" stackId="dl" />
+                <Area type="monotone" dataKey="dockerPulls" stroke={C.sky} fill={C.skyFill} name="Docker" stackId="dl" />
+                <Line type="monotone" dataKey="totalDownloads" stroke={C.teal} strokeWidth={2} dot={false} name="Total" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartWrap>
+
+          <ChartWrap title="GitHub Traffic Trend" sub="Views + clones across all repos">
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={trends.series}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="periodStart" {...xDateProps} />
+                <YAxis {...axProps} />
+                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Area type="monotone" dataKey="views" stroke={C.blue} fill={C.blueFill} name="Views" />
+                <Line type="monotone" dataKey="clones" stroke={C.purple} strokeWidth={2} dot={false} name="Clones" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartWrap>
+        </div>
+      )}
+
+      {/* Star growth chart */}
+      {trends?.starTimeline?.length > 1 && (
+        <ChartWrap title="Star Growth" sub="Total stars across all repositories over time">
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={trends.starTimeline}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+              <XAxis dataKey="date" {...xDateProps} />
+              <YAxis {...axProps} />
+              <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+              <Area type="monotone" dataKey="totalStars" stroke={C.amber} fill={C.amberFill} name="Total Stars" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartWrap>
+      )}
+
+      {/* Product table with search */}
       <div className="section-card">
-        <div className="section-header"><div className="section-title">Product Adoption</div></div>
+        <div className="section-header">
+          <div className="section-title">Product Adoption</div>
+        </div>
+        <div style={{ padding: '12px 16px 0' }}>
+          <SearchInput value={productFilter} onChange={setProductFilter} placeholder="Filter products..." />
+        </div>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -483,7 +629,7 @@ function OverviewTab({ overview, loading }) {
               </tr>
             </thead>
             <tbody>
-              {products.map(p => (
+              {filteredProducts.map(p => (
                 <tr key={p.name}>
                   <td><div className="product-name">{p.name}</div><div className="product-desc">{p.description}</div></td>
                   <td className="num">{formatFullNumber(p.github.views)}</td>
@@ -748,7 +894,11 @@ function formatCountryName(code) {
 }
 
 function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData, versionDownloads, pythonVersions, systemStats, countryDownloads }) {
+  const [pkgFilter, setPkgFilter] = useState('');
   const sorted = [...packages].sort((a, b) => b.allTimeDownloads - a.allTimeDownloads);
+  const filteredPkgs = pkgFilter
+    ? sorted.filter(p => p.name.toLowerCase().includes(pkgFilter.toLowerCase()))
+    : sorted;
   const totals7 = packages.reduce((s, p) => s + (p.last7Downloads || 0), 0);
   const totals30 = packages.reduce((s, p) => s + (p.last30Downloads || 0), 0);
   const totalsAll = packages.reduce((s, p) => s + (p.allTimeDownloads || 0), 0);
@@ -759,6 +909,9 @@ function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedP
       {packages.length > 0 && (
         <div className="section-card">
           <div className="section-header"><div className="section-title">All Packages</div></div>
+          <div style={{ padding: '12px 16px 0' }}>
+            <SearchInput value={pkgFilter} onChange={setPkgFilter} placeholder={`Filter ${ecosystem} packages...`} />
+          </div>
           <div className="table-scroll">
             <table className="data-table">
               <thead>
@@ -771,7 +924,7 @@ function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedP
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(pkg => (
+                {filteredPkgs.map(pkg => (
                   <tr key={pkg.id} className={`clickable ${selectedPackage === pkg.id ? 'selected' : ''}`}
                     onClick={() => setSelectedPackage(pkg.id)}>
                     <td><span className="product-name">{pkg.name}</span></td>
@@ -906,12 +1059,22 @@ function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedP
    Docker Tab
    ============================================ */
 function DockerTab({ images, selectedImage, setSelectedImage, dockerData, loading }) {
+  const [imgFilter, setImgFilter] = useState('');
+  const filteredImages = imgFilter
+    ? images.filter(img => (img.full_name || '').toLowerCase().includes(imgFilter.toLowerCase()))
+    : images;
+
   return (
     <>
       {/* Image table */}
       {images.length > 0 && (
         <div className="section-card">
           <div className="section-header"><div className="section-title">Docker Images</div></div>
+          {images.length > 3 && (
+            <div style={{ padding: '12px 16px 0' }}>
+              <SearchInput value={imgFilter} onChange={setImgFilter} placeholder="Filter Docker images..." />
+            </div>
+          )}
           <div className="table-scroll">
             <table className="data-table">
               <thead>
@@ -922,7 +1085,7 @@ function DockerTab({ images, selectedImage, setSelectedImage, dockerData, loadin
                 </tr>
               </thead>
               <tbody>
-                {images.map(img => (
+                {filteredImages.map(img => (
                   <tr key={img.id} className={`clickable ${selectedImage === img.id ? 'selected' : ''}`}
                     onClick={() => setSelectedImage(img.id)}>
                     <td><span className="product-name">{img.full_name}</span></td>
