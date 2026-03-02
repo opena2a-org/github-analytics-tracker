@@ -37,6 +37,7 @@ jobs:
       - name: Collect npm stats
         env:
           NPM_AUTHOR: ecolibria
+          NPM_PACKAGES: opena2a
         run: npm run collect-npm
 
       - name: Collect PyPI stats

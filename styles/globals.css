@@ -403,6 +403,76 @@ body {
   box-shadow: 0 0 0 2px var(--teal-dim);
 }
 
+/* ---------- Search input ---------- */
+.search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 14px 9px 36px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px var(--teal-dim);
+}
+.search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* ---------- Granularity toggle ---------- */
+.granularity-bar {
+  display: flex; gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 3px;
+  width: fit-content;
+}
+.granularity-btn {
+  padding: 5px 14px;
+  border-radius: 6px; border: none;
+  font-family: var(--font-body);
+  font-size: 0.6875rem; font-weight: 600;
+  color: var(--text-tertiary);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.granularity-btn:hover { color: var(--text-secondary); }
+.granularity-btn.active {
+  color: var(--text-primary);
+  background: var(--surface-4);
+}
+
+/* ---------- Growth rate row ---------- */
+.growth-row {
+  display: flex; gap: 16px; align-items: center;
+  flex-wrap: wrap;
+}
+.growth-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; color: var(--text-secondary);
+}
+.growth-item-label {
+  font-weight: 500; color: var(--text-tertiary);
+  text-transform: uppercase; font-size: 0.625rem;
+  letter-spacing: 0.04em;
+}
+
 /* ---------- Growth badge ---------- */
 .growth { display: inline-flex; align-items: center; gap: 3px; font-size: 0.6875rem; font-weight: 600; }
 .growth.up   { color: var(--teal); }
