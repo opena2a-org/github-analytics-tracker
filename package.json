@@ -25,12 +25,12 @@
   "author": "OpenA2A",
   "license": "MIT",
   "engines": {
-    "node": ">=18 <21"
+    "node": ">=18"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
     "@octokit/rest": "^20.0.2",
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "^12.6.2",
     "date-fns": "^3.0.6",
     "dotenv": "^16.3.1",
     "lucide-react": "^0.469.0",
