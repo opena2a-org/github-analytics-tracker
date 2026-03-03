@@ -1,9 +1,9 @@
 {
   "lastUpdated": "2026-03-03T03:59:12.014Z",
-  "package": "@opena2a/oa2a",
+  "package": "@opena2a/shared",
   "version": "0.1.0",
   "stats": {
-    "allTimeDownloads": 24,
-    "last30Days": 24
+    "allTimeDownloads": 0,
+    "last30Days": 0
   }
 }

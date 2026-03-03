@@ -1,9 +1,9 @@
 {
   "lastUpdated": "2026-03-03T03:59:12.014Z",
-  "package": "@opena2a/arp",
+  "package": "opena2a-cli",
   "version": "0.2.0",
   "stats": {
-    "allTimeDownloads": 303,
-    "last30Days": 303
+    "allTimeDownloads": 0,
+    "last30Days": 0
   }
 }
