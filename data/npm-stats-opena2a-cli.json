@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-03-03T04:01:15.106Z",
+  "lastUpdated": "2026-03-03T12:05:47.832Z",
   "package": "opena2a-cli",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "stats": {
-    "allTimeDownloads": 0,
-    "last30Days": 0
+    "allTimeDownloads": 259,
+    "last30Days": 259
   }
 }
