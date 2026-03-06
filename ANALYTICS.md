@@ -1,30 +1,30 @@
 # GitHub Analytics Dashboard
 
-> **Last Updated:** Mar 5, 2026
+> **Last Updated:** Mar 6, 2026
 > [View Detailed Daily Report](./ANALYTICS_DETAILED.md)
 
 ## Repository Overview
 
 | Repository | All-Time Views | All-Time Clones | Last 14d Unique Visitors | Stars | Forks | Days Tracked |
 |------------|---------------|-----------------|-------------------------|-------|-------|-------------|
-| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | 4,110 | 3,484 | 255 | 36 | 10 | 112 |
-| [opena2a-org/secretless-ai](https://github.com/opena2a-org/secretless-ai) | 969 | 575 | 385 | 16 | 1 | 26 |
-| [opena2a-org/hackmyagent](https://github.com/opena2a-org/hackmyagent) | 664 | 1,084 | 96 | 17 | 0 | 25 |
-| [ecolibria/cryptoserve](https://github.com/ecolibria/cryptoserve) | 374 | 1,426 | 17 | 2 | 2 | 25 |
-| [opena2a-org/damn-vulnerable-ai-agent](https://github.com/opena2a-org/damn-vulnerable-ai-agent) | 285 | 427 | 38 | 2 | 3 | 25 |
-| [opena2a-org/opena2a](https://github.com/opena2a-org/opena2a) | 255 | 1,535 | 93 | 4 | 2 | 20 |
-| [opena2a-org/agent-runtime-protection](https://github.com/opena2a-org/agent-runtime-protection) | 112 | 235 | 17 | 2 | 0 | 23 |
-| [opena2a-org/AI-BrowserGuard](https://github.com/opena2a-org/AI-BrowserGuard) | 95 | 380 | 15 | 2 | 0 | 17 |
-| [opena2a-org/open-agent-security-benchmark](https://github.com/opena2a-org/open-agent-security-benchmark) | 74 | 174 | 19 | 2 | 0 | 22 |
+| [opena2a-org/agent-identity-management](https://github.com/opena2a-org/agent-identity-management) | 4,133 | 3,495 | 252 | 37 | 11 | 113 |
+| [opena2a-org/secretless-ai](https://github.com/opena2a-org/secretless-ai) | 1,018 | 632 | 395 | 16 | 1 | 27 |
+| [opena2a-org/hackmyagent](https://github.com/opena2a-org/hackmyagent) | 691 | 1,238 | 102 | 17 | 0 | 26 |
+| [ecolibria/cryptoserve](https://github.com/ecolibria/cryptoserve) | 375 | 1,426 | 17 | 3 | 2 | 26 |
+| [opena2a-org/opena2a](https://github.com/opena2a-org/opena2a) | 340 | 1,761 | 119 | 6 | 2 | 21 |
+| [opena2a-org/damn-vulnerable-ai-agent](https://github.com/opena2a-org/damn-vulnerable-ai-agent) | 302 | 430 | 43 | 2 | 3 | 26 |
+| [opena2a-org/agent-runtime-protection](https://github.com/opena2a-org/agent-runtime-protection) | 123 | 235 | 18 | 2 | 0 | 24 |
+| [opena2a-org/AI-BrowserGuard](https://github.com/opena2a-org/AI-BrowserGuard) | 102 | 382 | 16 | 2 | 0 | 18 |
+| [opena2a-org/open-agent-security-benchmark](https://github.com/opena2a-org/open-agent-security-benchmark) | 85 | 174 | 21 | 2 | 0 | 23 |
 | [opena2a-org/arp](https://github.com/opena2a-org/arp) | 55 | 142 | 14 | 1 | 0 | 16 |
 | [opena2a-org/opena2a-website](https://github.com/opena2a-org/opena2a-website) | 54 | 56 | 0 | 0 | 0 | 3 |
 | [opena2a-org/oasb](https://github.com/opena2a-org/oasb) | 33 | 150 | 10 | 1 | 0 | 17 |
-| [opena2a-org/.github](https://github.com/opena2a-org/.github) | 28 | 103 | 4 | 0 | 0 | 25 |
-| [opena2a-org/agent-governance-spec](https://github.com/opena2a-org/agent-governance-spec) | 8 | 25 | 4 | 1 | 0 | 14 |
-| [opena2a-org/ai-trust](https://github.com/opena2a-org/ai-trust) | 7 | 31 | 4 | 1 | 0 | 17 |
-| [opena2a-org/trust-gate](https://github.com/opena2a-org/trust-gate) | 5 | 10 | 4 | 1 | 0 | 17 |
+| [opena2a-org/.github](https://github.com/opena2a-org/.github) | 29 | 106 | 4 | 0 | 0 | 26 |
+| [opena2a-org/agent-governance-spec](https://github.com/opena2a-org/agent-governance-spec) | 13 | 39 | 6 | 1 | 0 | 15 |
+| [opena2a-org/ai-trust](https://github.com/opena2a-org/ai-trust) | 7 | 31 | 4 | 1 | 0 | 18 |
+| [opena2a-org/homebrew-tap](https://github.com/opena2a-org/homebrew-tap) | 6 | 34 | 2 | 1 | 0 | 17 |
+| [opena2a-org/trust-gate](https://github.com/opena2a-org/trust-gate) | 5 | 10 | 4 | 1 | 0 | 18 |
 | [opena2a-org/github-analytics-tracker](https://github.com/opena2a-org/github-analytics-tracker) | 4 | 44 | 0 | 0 | 0 | 3 |
-| [opena2a-org/homebrew-tap](https://github.com/opena2a-org/homebrew-tap) | 2 | 34 | 1 | 1 | 0 | 16 |
 
 ---
 
@@ -33,16 +33,16 @@
 | Metric | Value |
 |--------|-------|
 | Repositories tracked | 18 |
-| All-time page views | 7,134 |
-| All-time clones | 9,915 |
-| Total stars | 89 |
+| All-time page views | 7,375 |
+| All-time clones | 10,385 |
+| Total stars | 93 |
 
 ## Top Repository: opena2a-org/agent-identity-management
 
-- **4,110 all-time views** across 112 days of tracking
-- **3,484 all-time clones**
-- **255 unique visitors** in the last 14 days (GitHub API deduplicated)
-- 36 stars
+- **4,133 all-time views** across 113 days of tracking
+- **3,495 all-time clones**
+- **252 unique visitors** in the last 14 days (GitHub API deduplicated)
+- 37 stars
 
 ---
 
@@ -80,22 +80,22 @@
 
 | Package | Version | Last 7d | Last 30d | Last 90d | All-Time | Days Tracked |
 |---------|---------|---------|----------|----------|----------|-------------|
-| [hackmyagent](https://www.npmjs.com/package/hackmyagent) | 0.9.5 | 911 | 3,762 | 4,103 | 4,103 | 401 |
-| [hackmyagent-core](https://www.npmjs.com/package/hackmyagent-core) | 0.6.2 | 123 | 2,608 | 2,972 | 2,972 | 398 |
-| [secretless-ai](https://www.npmjs.com/package/secretless-ai) | 0.11.0 | 980 | 1,999 | 1,999 | 1,999 | 401 |
-| [opena2a-cli](https://www.npmjs.com/package/opena2a-cli) | 0.4.0 | 1,332 | 1,332 | 1,332 | 1,332 | 401 |
-| [cryptoserve](https://www.npmjs.com/package/cryptoserve) | 0.3.3 | 26 | 911 | 911 | 911 | 401 |
-| [@opena2a/aim-core](https://www.npmjs.com/package/@opena2a/aim-core) | 0.1.2 | 170 | 558 | 558 | 558 | 401 |
-| [@opena2a/plugin-core](https://www.npmjs.com/package/@opena2a/plugin-core) | 0.1.2 | 29 | 492 | 492 | 492 | 398 |
-| [@opena2a/skillguard-openclaw](https://www.npmjs.com/package/@opena2a/skillguard-openclaw) | 0.1.2 | 26 | 431 | 431 | 431 | 398 |
-| [@opena2a/signcrypt-openclaw](https://www.npmjs.com/package/@opena2a/signcrypt-openclaw) | 0.1.2 | 29 | 426 | 426 | 426 | 398 |
-| [@opena2a/semantic-engine](https://www.npmjs.com/package/@opena2a/semantic-engine) | 0.1.1 | 31 | 312 | 312 | 312 | 398 |
-| [@opena2a/arp](https://www.npmjs.com/package/@opena2a/arp) | 0.2.0 | 5 | 308 | 308 | 308 | 398 |
-| [@opena2a/oasb](https://www.npmjs.com/package/@opena2a/oasb) | 0.2.0 | 2 | 297 | 297 | 297 | 398 |
-| [@opena2a/credvault-openclaw](https://www.npmjs.com/package/@opena2a/credvault-openclaw) | 0.1.2 | 25 | 293 | 293 | 293 | 398 |
-| [ai-trust](https://www.npmjs.com/package/ai-trust) | 0.1.0 | 170 | 170 | 170 | 170 | 401 |
-| [@opena2a/shared](https://www.npmjs.com/package/@opena2a/shared) | 0.1.0 | 133 | 133 | 133 | 133 | 401 |
-| [@opena2a/oa2a](https://www.npmjs.com/package/@opena2a/oa2a) | 0.1.0 | 37 | 37 | 37 | 37 | 401 |
+| [hackmyagent](https://www.npmjs.com/package/hackmyagent) | 0.9.8 | 1,123 | 3,538 | 4,417 | 4,417 | 402 |
+| [hackmyagent-core](https://www.npmjs.com/package/hackmyagent-core) | 0.6.2 | 41 | 2,040 | 2,972 | 2,972 | 398 |
+| [secretless-ai](https://www.npmjs.com/package/secretless-ai) | 0.11.4 | 1,197 | 2,300 | 2,300 | 2,300 | 402 |
+| [opena2a-cli](https://www.npmjs.com/package/opena2a-cli) | 0.5.4 | 1,820 | 1,820 | 1,820 | 1,820 | 402 |
+| [cryptoserve](https://www.npmjs.com/package/cryptoserve) | 0.3.3 | 24 | 911 | 911 | 911 | 402 |
+| [@opena2a/aim-core](https://www.npmjs.com/package/@opena2a/aim-core) | 0.1.2 | 195 | 596 | 596 | 596 | 402 |
+| [@opena2a/plugin-core](https://www.npmjs.com/package/@opena2a/plugin-core) | 0.1.2 | 16 | 492 | 492 | 492 | 398 |
+| [@opena2a/skillguard-openclaw](https://www.npmjs.com/package/@opena2a/skillguard-openclaw) | 0.1.2 | 12 | 431 | 431 | 431 | 398 |
+| [@opena2a/signcrypt-openclaw](https://www.npmjs.com/package/@opena2a/signcrypt-openclaw) | 0.1.2 | 16 | 426 | 426 | 426 | 398 |
+| [@opena2a/semantic-engine](https://www.npmjs.com/package/@opena2a/semantic-engine) | 0.1.1 | 12 | 312 | 312 | 312 | 398 |
+| [@opena2a/arp](https://www.npmjs.com/package/@opena2a/arp) | 0.2.0 | 4 | 308 | 308 | 308 | 398 |
+| [@opena2a/oasb](https://www.npmjs.com/package/@opena2a/oasb) | 0.2.0 | 1 | 297 | 297 | 297 | 398 |
+| [@opena2a/credvault-openclaw](https://www.npmjs.com/package/@opena2a/credvault-openclaw) | 0.1.2 | 11 | 293 | 293 | 293 | 398 |
+| [ai-trust](https://www.npmjs.com/package/ai-trust) | 0.1.0 | 189 | 189 | 189 | 189 | 402 |
+| [@opena2a/shared](https://www.npmjs.com/package/@opena2a/shared) | 0.1.0 | 146 | 146 | 146 | 146 | 402 |
+| [@opena2a/oa2a](https://www.npmjs.com/package/@opena2a/oa2a) | 0.1.0 | 38 | 38 | 38 | 38 | 402 |
 | [opena2a](https://www.npmjs.com/package/opena2a) |  | 0 | 0 | 0 | 0 | 0 |
 
 ### npm Totals
@@ -103,8 +103,8 @@
 | Metric | Value |
 |--------|-------|
 | Packages tracked | 17 |
-| All-time downloads | 14,774 |
-| Last 30 days | 14,069 |
+| All-time downloads | 15,948 |
+| Last 30 days | 14,137 |
 
 
 ---
@@ -113,17 +113,17 @@
 
 | Package | Version | Last 7d | Last 30d | Last 90d | All-Time | Days Tracked |
 |---------|---------|---------|----------|----------|----------|-------------|
-| [aim-sdk](https://pypi.org/project/aim-sdk) | 1.21.0 | 266 | 2,331 | 3,340 | 3,340 | 31 |
-| [cryptoserve](https://pypi.org/project/cryptoserve) | 1.4.1 | 212 | 2,251 | 2,251 | 2,251 | 26 |
-| [cryptoserve-core](https://pypi.org/project/cryptoserve-core) | 0.4.1 | 206 | 2,059 | 2,059 | 2,059 | 27 |
-| [cryptoserve-client](https://pypi.org/project/cryptoserve-client) | 0.3.0 | 142 | 1,315 | 1,315 | 1,315 | 27 |
-| [cryptoserve-auto](https://pypi.org/project/cryptoserve-auto) | 0.3.0 | 98 | 1,118 | 1,118 | 1,118 | 26 |
+| [aim-sdk](https://pypi.org/project/aim-sdk) | 1.21.0 | 267 | 1,435 | 3,369 | 3,369 | 32 |
+| [cryptoserve](https://pypi.org/project/cryptoserve) | 1.4.1 | 192 | 2,285 | 2,285 | 2,285 | 28 |
+| [cryptoserve-core](https://pypi.org/project/cryptoserve-core) | 0.4.1 | 167 | 2,066 | 2,066 | 2,066 | 28 |
+| [cryptoserve-client](https://pypi.org/project/cryptoserve-client) | 0.3.0 | 118 | 1,321 | 1,321 | 1,321 | 28 |
+| [cryptoserve-auto](https://pypi.org/project/cryptoserve-auto) | 0.3.0 | 79 | 1,123 | 1,123 | 1,123 | 27 |
 
 ### PyPI Totals
 
 | Metric | Value |
 |--------|-------|
 | Packages tracked | 5 |
-| All-time downloads | 10,083 |
-| Last 30 days | 9,074 |
+| All-time downloads | 10,164 |
+| Last 30 days | 8,230 |
 
