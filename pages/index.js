@@ -355,18 +355,19 @@ export default function Dashboard() {
       setDockerImages(d.images || []);
       if (d.images?.length) setSelectedImage(d.images[0].id);
     }).catch(() => {});
-    fetch('/api/overview').then(r => r.ok ? r.json() : null).then(d => {
+    fetch('/api/overview?days=all').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.totals) setOverview(d);
     }).catch(() => {}).finally(() => setOverviewLoading(false));
   }, []);
 
-  /* --- Fetch trends when granularity changes --- */
+  /* --- Fetch trends when granularity or time range changes --- */
   useEffect(() => {
-    fetch(`/api/trends?granularity=${trendsGranularity}&days=180`)
+    const trendsDays = timeRange === 'all' ? 'all' : timeRange;
+    fetch(`/api/trends?granularity=${trendsGranularity}&days=${trendsDays}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setTrends(d); })
       .catch(() => {});
-  }, [trendsGranularity]);
+  }, [trendsGranularity, timeRange]);
 
   /* --- Fetch detail data when selection/range changes --- */
   useEffect(() => { if (selectedRepo) fetchDetail(`/api/stats?repo_id=${selectedRepo}&days=${timeRange}`, setGithubData, setGithubLoading); }, [selectedRepo, timeRange]);
