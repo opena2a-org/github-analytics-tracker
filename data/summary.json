@@ -1,0 +1,21 @@
+{
+  "lastUpdated": "2026-03-11T18:50:36.190Z",
+  "total": {
+    "adoption": 37907,
+    "adoptionExCrypto": 28564,
+    "npm": 16276,
+    "pypi": 10422,
+    "clones": 10857,
+    "docker": 352,
+    "views": 8284,
+    "stars": 94,
+    "repos": 18,
+    "npmPackages": 17
+  },
+  "excludingCrypto": {
+    "npm": 15356,
+    "pypi": 3428,
+    "clones": 9428,
+    "docker": 352
+  }
+}

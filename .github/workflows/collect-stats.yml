@@ -53,10 +53,13 @@ jobs:
       - name: Generate markdown files
         run: npm run generate-md
 
+      - name: Generate summary JSON
+        run: npm run generate-summary
+
       - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json ANALYTICS.md ANALYTICS_DETAILED.md
+          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"

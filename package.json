@@ -14,7 +14,8 @@
     "collect:pypi-countries": "node scripts/collect-pypi-country-stats.js",
     "collect-all": "node scripts/collect-stats.js && node scripts/collect-npm-stats.js && node scripts/collect-pypi-stats.js && node scripts/collect-pypi-country-stats.js && node scripts/collect-docker-stats.js",
     "setup-db": "node scripts/setup-database.js",
-    "generate-md": "node scripts/generate-markdown.js"
+    "generate-md": "node scripts/generate-markdown.js",
+    "generate-summary": "node scripts/generate-summary.js"
   },
   "keywords": [
     "github",
