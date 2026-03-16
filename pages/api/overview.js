@@ -37,6 +37,30 @@ async function fetchNpmLiveDownloads(packageName, timeoutMs = 5000) {
 }
 
 /**
+ * Fetch live PyPI download counts from the pypistats.org API.
+ * Returns { lastDay, lastWeek, lastMonth } for the given package.
+ */
+async function fetchPypiLiveDownloads(packageName, timeoutMs = 5000) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(
+      `https://pypistats.org/api/packages/${encodeURIComponent(packageName)}/recent`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+    const data = await res.json();
+    return {
+      lastDay: data.data?.last_day ?? 0,
+      lastWeek: data.data?.last_week ?? 0,
+      lastMonth: data.data?.last_month ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Overview API: Returns combined GitHub + npm metrics suitable for
  * investor presentations, dashboards, and growth tracking.
  *
@@ -208,41 +232,28 @@ export default async function handler(req, res) {
     let pypiStats = [];
     if (pypiTableExists) {
       const pypiPackages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
-      pypiStats = pypiPackages.map(pkg => {
+
+      // Fetch live PyPI downloads in parallel
+      const pypiLive = await Promise.all(
+        pypiPackages.map(pkg => fetchPypiLiveDownloads(pkg.name))
+      );
+
+      pypiStats = pypiPackages.map((pkg, i) => {
         const allTime = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM pypi_downloads WHERE package_id = ?
         `).get(pkg.id);
 
-        const last24h = db.prepare(`
-          SELECT COALESCE(SUM(downloads), 0) as total
-          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-1 day')
-        `).get(pkg.id);
-
-        const last30 = db.prepare(`
-          SELECT COALESCE(SUM(downloads), 0) as total
-          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-30 days')
-        `).get(pkg.id);
-
-        const last7 = db.prepare(`
-          SELECT COALESCE(SUM(downloads), 0) as total
-          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
-        `).get(pkg.id);
-
-        // Previous 7d for WoW comparison
-        const prev7 = db.prepare(`
-          SELECT COALESCE(SUM(downloads), 0) as total
-          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-14 days') AND date < date('now', '-7 days')
-        `).get(pkg.id);
+        const live = pypiLive[i];
 
         return {
           name: pkg.name,
           version: pkg.version,
           allTimeDownloads: allTime.total,
-          last24hDownloads: last24h.total,
-          last30Downloads: last30.total,
-          last7Downloads: last7.total,
-          prev7Downloads: prev7.total,
+          last24hDownloads: live ? live.lastDay : 0,
+          last30Downloads: live ? live.lastMonth : 0,
+          last7Downloads: live ? live.lastWeek : 0,
+          prev7Downloads: live ? Math.round((live.lastMonth - live.lastWeek) / 3) : 0,
         };
       });
     }
