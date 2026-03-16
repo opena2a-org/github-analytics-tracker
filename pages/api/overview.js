@@ -2,12 +2,49 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 /**
+ * Fetch live npm download counts from the npm registry API.
+ * Returns { lastDay, lastWeek, lastMonth } for the given package.
+ * Falls back to null on timeout or error.
+ */
+async function fetchNpmLiveDownloads(packageName, timeoutMs = 5000) {
+  const encodedName = encodeURIComponent(packageName);
+  const periods = {
+    lastDay: `https://api.npmjs.org/downloads/point/last-day/${encodedName}`,
+    lastWeek: `https://api.npmjs.org/downloads/point/last-week/${encodedName}`,
+    lastMonth: `https://api.npmjs.org/downloads/point/last-month/${encodedName}`,
+  };
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const [dayRes, weekRes, monthRes] = await Promise.all(
+      Object.values(periods).map(url =>
+        fetch(url, { signal: controller.signal }).then(r => r.json())
+      )
+    );
+
+    clearTimeout(timer);
+
+    return {
+      lastDay: dayRes.downloads ?? 0,
+      lastWeek: weekRes.downloads ?? 0,
+      lastMonth: monthRes.downloads ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Overview API: Returns combined GitHub + npm metrics suitable for
  * investor presentations, dashboards, and growth tracking.
  *
  * Groups related packages and repos into "products" for unified metrics.
  */
-export default function handler(req, res) {
+export default async function handler(req, res) {
+  // Cache response on Vercel edge for 5 minutes
+  res.setHeader('Cache-Control', 's-maxage=300');
   const dbPath = path.join(process.cwd(), 'data', 'analytics.db');
   const db = new Database(dbPath, { readonly: true });
 
@@ -100,12 +137,37 @@ export default function handler(req, res) {
     let npmStats = [];
     if (npmTableExists) {
       const packages = db.prepare('SELECT * FROM npm_packages ORDER BY name').all();
-      npmStats = packages.map(pkg => {
+
+      // Fetch live npm download data for all packages in parallel
+      const liveResults = await Promise.all(
+        packages.map(pkg => fetchNpmLiveDownloads(pkg.name))
+      );
+
+      npmStats = packages.map((pkg, i) => {
+        // All-time downloads from SQLite (cumulative, still accurate)
         const allTime = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM npm_downloads WHERE package_id = ?
         `).get(pkg.id);
 
+        const live = liveResults[i];
+
+        if (live) {
+          // Use live npm API data for time-windowed metrics
+          // Approximate prev7 as lastMonth minus lastWeek divided by ~3 remaining weeks
+          const prev7Approx = Math.max(0, Math.round((live.lastMonth - live.lastWeek) / 3));
+          return {
+            name: pkg.name,
+            version: pkg.version,
+            allTimeDownloads: allTime.total,
+            last24hDownloads: live.lastDay,
+            last30Downloads: live.lastMonth,
+            last7Downloads: live.lastWeek,
+            prev7Downloads: prev7Approx,
+          };
+        }
+
+        // Fallback to SQLite if npm API call failed
         const last24h = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-1 day')
@@ -121,7 +183,6 @@ export default function handler(req, res) {
           FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
         `).get(pkg.id);
 
-        // Previous 7d for WoW comparison
         const prev7 = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-14 days') AND date < date('now', '-7 days')
