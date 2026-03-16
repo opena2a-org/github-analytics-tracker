@@ -496,14 +496,16 @@ const ADOPTION_PERIODS = [
   { label: '30 Days', value: '30d' },
   { label: '7 Days', value: '7d' },
   { label: '24 Hours', value: '24h' },
+  { label: 'Custom', value: 'custom' },
 ];
 
 /** Helper: pick the correct metric value based on selected adoption period */
-function pickPeriodValue(obj, allKey, d30Key, d7Key, d24hKey, period) {
+function pickPeriodValue(obj, allKey, d30Key, d7Key, d24hKey, period, customKey) {
   switch (period) {
     case '24h': return obj?.[d24hKey] || 0;
     case '7d': return obj?.[d7Key] || 0;
     case '30d': return obj?.[d30Key] || 0;
+    case 'custom': return obj?.[customKey] || 0;
     default: return obj?.[allKey] || 0;
   }
 }
@@ -527,9 +529,39 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
   const [productFilter, setProductFilter] = useState('');
   const [adoptionPeriod, setAdoptionPeriod] = useState('30d');
 
+  // Custom date range state — default to last 14 days
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const [customStart, setCustomStart] = useState(fourteenDaysAgo);
+  const [customEnd, setCustomEnd] = useState(todayStr);
+  const [customOverview, setCustomOverview] = useState(null);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customAppliedKey, setCustomAppliedKey] = useState('');
+
+  // Fetch custom range data when user clicks Apply
+  const fetchCustomRange = () => {
+    if (!customStart || !customEnd) return;
+    const key = `${customStart}_${customEnd}`;
+    if (key === customAppliedKey && customOverview) return; // already fetched
+    setCustomLoading(true);
+    fetch(`/api/overview?start=${customStart}&end=${customEnd}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.products) {
+          setCustomOverview(d);
+          setCustomAppliedKey(key);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCustomLoading(false));
+  };
+
   if (loading) return <Loading />;
   if (!overview) return <Empty message="No data available yet." command="npm run collect-all" />;
-  const { totals, products = [], weeklyTrend = [] } = overview;
+
+  // Use custom overview products when in custom mode, otherwise use the default overview
+  const activeOverview = (adoptionPeriod === 'custom' && customOverview) ? customOverview : overview;
+  const { totals, products = [], weeklyTrend = [] } = activeOverview;
 
   // Compute WoW from live npm data instead of stale SQLite trends
   const npmCurr7 = totals.npm?.last7Downloads || 0;
@@ -648,16 +680,41 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
       <div className="section-card">
         <div className="section-header">
           <div className="section-title">Tool Adoption</div>
-          <div className="adoption-period-tabs">
-            {ADOPTION_PERIODS.map(p => (
-              <button
-                key={p.value}
-                className={`adoption-period-tab${adoptionPeriod === p.value ? ' active' : ''}`}
-                onClick={() => setAdoptionPeriod(p.value)}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="adoption-period-tabs">
+              {ADOPTION_PERIODS.map(p => (
+                <button
+                  key={p.value}
+                  className={`adoption-period-tab${adoptionPeriod === p.value ? ' active' : ''}`}
+                  onClick={() => setAdoptionPeriod(p.value)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {adoptionPeriod === 'custom' && (
+              <div className="custom-date-range">
+                <input
+                  type="date"
+                  className="date-input"
+                  value={customStart}
+                  max={customEnd || todayStr}
+                  onChange={e => setCustomStart(e.target.value)}
+                />
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>to</span>
+                <input
+                  type="date"
+                  className="date-input"
+                  value={customEnd}
+                  min={customStart}
+                  max={todayStr}
+                  onChange={e => setCustomEnd(e.target.value)}
+                />
+                <button className="custom-date-apply" onClick={fetchCustomRange} disabled={customLoading}>
+                  {customLoading ? 'Loading...' : 'Apply'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ padding: '12px 16px 0' }}>
@@ -678,11 +735,17 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map(p => {
-                const views = pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod);
-                const clones = pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod);
-                const npm = pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
-                const pypi = pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+              {adoptionPeriod === 'custom' && !customOverview && !customLoading && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>Select a date range and click Apply to load data.</td></tr>
+              )}
+              {adoptionPeriod === 'custom' && customLoading && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>Loading custom range data...</td></tr>
+              )}
+              {(adoptionPeriod !== 'custom' || customOverview) && filteredProducts.map(p => {
+                const views = pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod, 'customViews');
+                const clones = pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod, 'customClones');
+                const npm = pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
+                const pypi = pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
                 const docker = adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
                 const total = clones + npm + pypi + docker;
                 return (
@@ -710,10 +773,10 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
                 // Compute totals from visible rows so they match
                 let tViews = 0, tClones = 0, tNpm = 0, tPypi = 0, tDocker = 0, tStars = 0;
                 filteredProducts.forEach(p => {
-                  tViews += pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod);
-                  tClones += pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod);
-                  tNpm += pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
-                  tPypi += pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+                  tViews += pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod, 'customViews');
+                  tClones += pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod, 'customClones');
+                  tNpm += pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
+                  tPypi += pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
                   tDocker += adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
                   tStars += p.github.stars || 0;
                 });

@@ -304,6 +304,53 @@ body {
   color: var(--text-primary);
   background: var(--surface-4);
 }
+
+/* ---------- Custom date range ---------- */
+.custom-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.date-input {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.date-input:focus {
+  border-color: var(--teal);
+}
+/* Style the calendar icon in webkit browsers */
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+.custom-date-apply {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--teal);
+  background: var(--teal-dim);
+  color: var(--teal);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.custom-date-apply:hover {
+  background: var(--teal);
+  color: var(--surface-0);
+}
+.custom-date-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .section-body { padding: 18px 22px; }
 .table-scroll { overflow-x: auto; }
 
