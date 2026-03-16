@@ -1,16 +1,15 @@
 {
-  "lastUpdated": "2026-03-16T12:11:26.900Z",
+  "lastUpdated": "2026-03-16T16:57:05.873Z",
   "repository": "opena2a-org/.github",
   "stats": {
-    "allTime": {
-      "views": 71,
-      "clones": 237
-    },
     "recent14Days": {
       "views": 44,
       "viewsUnique": 4,
       "clones": 145,
       "clonesUnique": 97
+    },
+    "allTime": {
+      "clones": 237
     },
     "stars": 0,
     "forks": 0
