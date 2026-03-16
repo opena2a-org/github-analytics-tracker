@@ -531,7 +531,11 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
   if (!overview) return <Empty message="No data available yet." command="npm run collect-all" />;
   const { totals, products = [], weeklyTrend = [] } = overview;
 
-  const wow = trends?.growth?.wow;
+  // Compute WoW from live npm data instead of stale SQLite trends
+  const npmCurr7 = totals.npm?.last7Downloads || 0;
+  const npmPrev7 = totals.npm?.prev7Downloads || 0;
+  const npmWowPct = npmPrev7 > 0 ? parseFloat(((npmCurr7 - npmPrev7) / npmPrev7 * 100).toFixed(1)) : 0;
+  const wow = { downloads: npmWowPct, views: trends?.growth?.wow?.views ?? null };
   const mom = trends?.growth?.mom;
 
   const filteredProducts = productFilter
