@@ -400,6 +400,59 @@ export default async function handler(req, res) {
       };
     });
 
+    // --- Catch ungrouped repos/packages so nothing is invisible ---
+    const allGroupedRepos = new Set(Object.values(productMap).flatMap(c => c.repos || []));
+    const allGroupedNpm = new Set(Object.values(productMap).flatMap(c => c.packages || []));
+    const allGroupedPypi = new Set(Object.values(productMap).flatMap(c => c.pypiPackages || []));
+    const allGroupedDocker = new Set(Object.values(productMap).flatMap(c => c.dockerImages || []));
+
+    const ungroupedRepos = repoStats.filter(r => !allGroupedRepos.has(r.repo));
+    const ungroupedNpm = npmStats.filter(p => !allGroupedNpm.has(p.name));
+    const ungroupedPypi = pypiStats.filter(p => !allGroupedPypi.has(p.name));
+    const ungroupedDocker = dockerStats.filter(d => !allGroupedDocker.has(d.fullName));
+
+    if (ungroupedRepos.length > 0 || ungroupedNpm.length > 0 || ungroupedPypi.length > 0 || ungroupedDocker.length > 0) {
+      const ugClones = ungroupedRepos.reduce((s, r) => s + r.totalClones, 0);
+      const ugNpm = ungroupedNpm.reduce((s, p) => s + p.allTimeDownloads, 0);
+      const ugPypi = ungroupedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
+      const ugDocker = ungroupedDocker.reduce((s, d) => s + d.totalPulls, 0);
+      products.push({
+        name: 'Other',
+        description: `${ungroupedRepos.length} repos, ${ungroupedNpm.length} npm, ${ungroupedPypi.length} PyPI packages not assigned to a tool`,
+        github: {
+          views: ungroupedRepos.reduce((s, r) => s + r.totalViews, 0),
+          views24h: ungroupedRepos.reduce((s, r) => s + r.views24h, 0),
+          views7d: ungroupedRepos.reduce((s, r) => s + r.views7d, 0),
+          views30d: ungroupedRepos.reduce((s, r) => s + r.views30d, 0),
+          clones: ugClones,
+          clones24h: ungroupedRepos.reduce((s, r) => s + r.clones24h, 0),
+          clones7d: ungroupedRepos.reduce((s, r) => s + r.clones7d, 0),
+          clones30d: ungroupedRepos.reduce((s, r) => s + r.clones30d, 0),
+          stars: ungroupedRepos.reduce((s, r) => s + r.stars, 0),
+          forks: ungroupedRepos.reduce((s, r) => s + r.forks, 0),
+          recentUniqueVisitors: ungroupedRepos.reduce((s, r) => s + r.recentUniqueVisitors, 0),
+        },
+        npm: {
+          allTimeDownloads: ugNpm,
+          last24hDownloads: ungroupedNpm.reduce((s, p) => s + p.last24hDownloads, 0),
+          last30Downloads: ungroupedNpm.reduce((s, p) => s + p.last30Downloads, 0),
+          last7Downloads: ungroupedNpm.reduce((s, p) => s + p.last7Downloads, 0),
+          prev7Downloads: ungroupedNpm.reduce((s, p) => s + p.prev7Downloads, 0),
+          packageCount: ungroupedNpm.length,
+        },
+        pypi: {
+          allTimeDownloads: ugPypi,
+          last24hDownloads: ungroupedPypi.reduce((s, p) => s + p.last24hDownloads, 0),
+          last30Downloads: ungroupedPypi.reduce((s, p) => s + p.last30Downloads, 0),
+          last7Downloads: ungroupedPypi.reduce((s, p) => s + p.last7Downloads, 0),
+          prev7Downloads: ungroupedPypi.reduce((s, p) => s + p.prev7Downloads, 0),
+          packageCount: ungroupedPypi.length,
+        },
+        docker: { totalPulls: ugDocker, imageCount: ungroupedDocker.length },
+        totalAdoption: ugClones + ugNpm + ugPypi + ugDocker,
+      });
+    }
+
     // --- Aggregate Totals ---
     const totalDockerPulls = dockerStats.reduce((s, d) => s + d.totalPulls, 0);
     const totalPypiDownloads = pypiStats.reduce((s, p) => s + p.allTimeDownloads, 0);
