@@ -688,11 +688,11 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
                     <td className="num">{formatFullNumber(clones)}</td>
                     <td className="num">
                       {formatFullNumber(npm)}
-                      {adoptionPeriod === '30d' && <WowIndicator current={p.npm?.last7Downloads || 0} previous={p.npm?.prev7Downloads || 0} />}
+                      {adoptionPeriod !== 'all' && <WowIndicator current={p.npm?.last7Downloads || 0} previous={p.npm?.prev7Downloads || 0} />}
                     </td>
                     <td className="num">
                       {formatFullNumber(pypi)}
-                      {adoptionPeriod === '30d' && <WowIndicator current={p.pypi?.last7Downloads || 0} previous={p.pypi?.prev7Downloads || 0} />}
+                      {adoptionPeriod !== 'all' && <WowIndicator current={p.pypi?.last7Downloads || 0} previous={p.pypi?.prev7Downloads || 0} />}
                     </td>
                     <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(docker) : '--'}</td>
                     <td className="num">{p.github.stars || 0}</td>
