@@ -702,27 +702,41 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
               })}
             </tbody>
             <tfoot>
-              <tr>
-                <td>Total</td>
-                <td className="num">{formatFullNumber(pickPeriodValue(totals.github, 'totalViews', 'views30d', 'views7d', 'views24h', adoptionPeriod))}</td>
-                <td className="num">{formatFullNumber(pickPeriodValue(totals.github, 'totalClones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod))}</td>
-                <td className="num">
-                  {formatFullNumber(pickPeriodValue(totals.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
-                  {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={totals.npm?.last7Downloads || 0} previous={totals.npm?.prev7Downloads || 0} />}
-                </td>
-                <td className="num">
-                  {formatFullNumber(pickPeriodValue(totals.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
-                  {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={totals.pypi?.last7Downloads || 0} previous={totals.pypi?.prev7Downloads || 0} />}
-                </td>
-                <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(totals.docker?.totalPulls || 0) : '--'}</td>
-                <td className="num">{totals.github.totalStars || 0}</td>
-                <td className="num strong">{formatFullNumber(
-                  pickPeriodValue(totals.github, 'totalClones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod) +
-                  pickPeriodValue(totals.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod) +
-                  pickPeriodValue(totals.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod) +
-                  (adoptionPeriod === 'all' ? (totals.docker?.totalPulls || 0) : 0)
-                )}</td>
-              </tr>
+              {(() => {
+                // Compute totals from visible rows so they match
+                let tViews = 0, tClones = 0, tNpm = 0, tPypi = 0, tDocker = 0, tStars = 0;
+                filteredProducts.forEach(p => {
+                  tViews += pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod);
+                  tClones += pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod);
+                  tNpm += pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+                  tPypi += pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+                  tDocker += adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
+                  tStars += p.github.stars || 0;
+                });
+                const tTotal = tClones + tNpm + tPypi + tDocker;
+                const tNpm7 = filteredProducts.reduce((s, p) => s + (p.npm?.last7Downloads || 0), 0);
+                const tNpmPrev7 = filteredProducts.reduce((s, p) => s + (p.npm?.prev7Downloads || 0), 0);
+                const tPypi7 = filteredProducts.reduce((s, p) => s + (p.pypi?.last7Downloads || 0), 0);
+                const tPypiPrev7 = filteredProducts.reduce((s, p) => s + (p.pypi?.prev7Downloads || 0), 0);
+                return (
+                  <tr>
+                    <td>Total</td>
+                    <td className="num">{formatFullNumber(tViews)}</td>
+                    <td className="num">{formatFullNumber(tClones)}</td>
+                    <td className="num">
+                      {formatFullNumber(tNpm)}
+                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={tNpm7} previous={tNpmPrev7} />}
+                    </td>
+                    <td className="num">
+                      {formatFullNumber(tPypi)}
+                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={tPypi7} previous={tPypiPrev7} />}
+                    </td>
+                    <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(tDocker) : '--'}</td>
+                    <td className="num">{tStars}</td>
+                    <td className="num strong">{formatFullNumber(tTotal)}</td>
+                  </tr>
+                );
+              })()}
             </tfoot>
           </table>
         </div>
