@@ -491,8 +491,41 @@ export default function Dashboard() {
 /* ============================================
    Overview Tab
    ============================================ */
+const ADOPTION_PERIODS = [
+  { label: 'All Time', value: 'all' },
+  { label: '30 Days', value: '30d' },
+  { label: '7 Days', value: '7d' },
+  { label: '24 Hours', value: '24h' },
+];
+
+/** Helper: pick the correct metric value based on selected adoption period */
+function pickPeriodValue(obj, allKey, d30Key, d7Key, d24hKey, period) {
+  switch (period) {
+    case '24h': return obj?.[d24hKey] || 0;
+    case '7d': return obj?.[d7Key] || 0;
+    case '30d': return obj?.[d30Key] || 0;
+    default: return obj?.[allKey] || 0;
+  }
+}
+
+/** WoW change indicator: compares current 7d vs previous 7d */
+function WowIndicator({ current, previous }) {
+  if (!previous || previous === 0) return null;
+  const pct = ((current - previous) / previous * 100).toFixed(0);
+  const num = Number(pct);
+  if (num === 0) return null;
+  const color = num > 0 ? '#22c55e' : '#ff6b6b';
+  const arrow = num > 0 ? '+' : '';
+  return (
+    <span style={{ fontSize: '10px', color, marginLeft: '4px', fontWeight: 600 }}>
+      {arrow}{pct}%
+    </span>
+  );
+}
+
 function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGranularity }) {
   const [productFilter, setProductFilter] = useState('');
+  const [adoptionPeriod, setAdoptionPeriod] = useState('30d');
 
   if (loading) return <Loading />;
   if (!overview) return <Empty message="No data available yet." command="npm run collect-all" />;
@@ -607,10 +640,21 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
         </ChartWrap>
       )}
 
-      {/* Product table with search */}
+      {/* Product table with search and time period selector */}
       <div className="section-card">
         <div className="section-header">
           <div className="section-title">Product Adoption</div>
+          <div className="adoption-period-tabs">
+            {ADOPTION_PERIODS.map(p => (
+              <button
+                key={p.value}
+                className={`adoption-period-tab${adoptionPeriod === p.value ? ' active' : ''}`}
+                onClick={() => setAdoptionPeriod(p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div style={{ padding: '12px 16px 0' }}>
           <SearchInput value={productFilter} onChange={setProductFilter} placeholder="Filter products..." />
@@ -630,29 +674,54 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map(p => (
-                <tr key={p.name}>
-                  <td><div className="product-name">{p.name}</div><div className="product-desc">{p.description}</div></td>
-                  <td className="num">{formatFullNumber(p.github.views)}</td>
-                  <td className="num">{formatFullNumber(p.github.clones)}</td>
-                  <td className="num">{formatFullNumber(p.npm.allTimeDownloads)}</td>
-                  <td className="num">{formatFullNumber(p.pypi?.allTimeDownloads || 0)}</td>
-                  <td className="num">{formatFullNumber(p.docker?.totalPulls || 0)}</td>
-                  <td className="num">{p.github.stars || 0}</td>
-                  <td className="num strong">{formatFullNumber(p.totalAdoption)}</td>
-                </tr>
-              ))}
+              {filteredProducts.map(p => {
+                const views = pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod);
+                const clones = pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod);
+                const npm = pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+                const pypi = pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod);
+                const docker = adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
+                const total = clones + npm + pypi + docker;
+                return (
+                  <tr key={p.name}>
+                    <td><div className="product-name">{p.name}</div><div className="product-desc">{p.description}</div></td>
+                    <td className="num">{formatFullNumber(views)}</td>
+                    <td className="num">{formatFullNumber(clones)}</td>
+                    <td className="num">
+                      {formatFullNumber(npm)}
+                      {adoptionPeriod === '30d' && <WowIndicator current={p.npm?.last7Downloads || 0} previous={p.npm?.prev7Downloads || 0} />}
+                    </td>
+                    <td className="num">
+                      {formatFullNumber(pypi)}
+                      {adoptionPeriod === '30d' && <WowIndicator current={p.pypi?.last7Downloads || 0} previous={p.pypi?.prev7Downloads || 0} />}
+                    </td>
+                    <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(docker) : '--'}</td>
+                    <td className="num">{p.github.stars || 0}</td>
+                    <td className="num strong">{formatFullNumber(total)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr>
                 <td>Total</td>
-                <td className="num">{formatFullNumber(totals.github.totalViews)}</td>
-                <td className="num">{formatFullNumber(totals.github.totalClones)}</td>
-                <td className="num">{formatFullNumber(totals.npm.allTimeDownloads)}</td>
-                <td className="num">{formatFullNumber(totals.pypi?.allTimeDownloads || 0)}</td>
-                <td className="num">{formatFullNumber(totals.docker?.totalPulls || 0)}</td>
+                <td className="num">{formatFullNumber(pickPeriodValue(totals.github, 'totalViews', 'views30d', 'views7d', 'views24h', adoptionPeriod))}</td>
+                <td className="num">{formatFullNumber(pickPeriodValue(totals.github, 'totalClones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod))}</td>
+                <td className="num">
+                  {formatFullNumber(pickPeriodValue(totals.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
+                  {adoptionPeriod === '30d' && <WowIndicator current={totals.npm?.last7Downloads || 0} previous={totals.npm?.prev7Downloads || 0} />}
+                </td>
+                <td className="num">
+                  {formatFullNumber(pickPeriodValue(totals.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
+                  {adoptionPeriod === '30d' && <WowIndicator current={totals.pypi?.last7Downloads || 0} previous={totals.pypi?.prev7Downloads || 0} />}
+                </td>
+                <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(totals.docker?.totalPulls || 0) : '--'}</td>
                 <td className="num">{totals.github.totalStars || 0}</td>
-                <td className="num strong">{formatFullNumber(totals.combined.totalAdoption)}</td>
+                <td className="num strong">{formatFullNumber(
+                  pickPeriodValue(totals.github, 'totalClones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod) +
+                  pickPeriodValue(totals.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod) +
+                  pickPeriodValue(totals.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod) +
+                  (adoptionPeriod === 'all' ? (totals.docker?.totalPulls || 0) : 0)
+                )}</td>
               </tr>
             </tfoot>
           </table>

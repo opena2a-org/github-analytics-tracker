@@ -274,9 +274,35 @@ body {
 .section-header {
   padding: 18px 22px;
   border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .section-title {
   font-size: 0.9375rem; font-weight: 600; color: var(--text-primary);
+}
+.adoption-period-tabs {
+  display: flex; gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px; padding: 3px;
+}
+.adoption-period-tab {
+  padding: 5px 12px;
+  border-radius: 6px; border: none;
+  font-family: var(--font-body);
+  font-size: 0.6875rem; font-weight: 600;
+  color: var(--text-tertiary);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.adoption-period-tab:hover { color: var(--text-secondary); }
+.adoption-period-tab.active {
+  color: var(--text-primary);
+  background: var(--surface-4);
 }
 .section-body { padding: 18px 22px; }
 .table-scroll { overflow-x: auto; }

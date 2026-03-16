@@ -21,9 +21,39 @@ export default function handler(req, res) {
         FROM traffic_views WHERE repo_id = ?
       `).get(repo.id);
 
+      const views24h = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-1 day')
+      `).get(repo.id);
+
+      const views7d = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-7 days')
+      `).get(repo.id);
+
+      const views30d = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-30 days')
+      `).get(repo.id);
+
       const clones = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
         FROM traffic_clones WHERE repo_id = ?
+      `).get(repo.id);
+
+      const clones24h = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-1 day')
+      `).get(repo.id);
+
+      const clones7d = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-7 days')
+      `).get(repo.id);
+
+      const clones30d = db.prepare(`
+        SELECT COALESCE(SUM(count), 0) as total
+        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-30 days')
       `).get(repo.id);
 
       const summary = db.prepare(`
@@ -48,7 +78,13 @@ export default function handler(req, res) {
         name: repo.full_name,
         repo: repo.repo,
         totalViews: views.total,
+        views24h: views24h.total,
+        views7d: views7d.total,
+        views30d: views30d.total,
         totalClones: clones.total,
+        clones24h: clones24h.total,
+        clones7d: clones7d.total,
+        clones30d: clones30d.total,
         recentUniqueVisitors: summary?.views_uniques || 0,
         recentUniqueCloners: summary?.clones_uniques || 0,
         stars: stars?.stars || 0,
@@ -70,6 +106,11 @@ export default function handler(req, res) {
           FROM npm_downloads WHERE package_id = ?
         `).get(pkg.id);
 
+        const last24h = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-1 day')
+        `).get(pkg.id);
+
         const last30 = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-30 days')
@@ -80,12 +121,20 @@ export default function handler(req, res) {
           FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
         `).get(pkg.id);
 
+        // Previous 7d for WoW comparison
+        const prev7 = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-14 days') AND date < date('now', '-7 days')
+        `).get(pkg.id);
+
         return {
           name: pkg.name,
           version: pkg.version,
           allTimeDownloads: allTime.total,
+          last24hDownloads: last24h.total,
           last30Downloads: last30.total,
           last7Downloads: last7.total,
+          prev7Downloads: prev7.total,
         };
       });
     }
@@ -104,6 +153,11 @@ export default function handler(req, res) {
           FROM pypi_downloads WHERE package_id = ?
         `).get(pkg.id);
 
+        const last24h = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-1 day')
+        `).get(pkg.id);
+
         const last30 = db.prepare(`
           SELECT COALESCE(SUM(downloads), 0) as total
           FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-30 days')
@@ -114,12 +168,20 @@ export default function handler(req, res) {
           FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
         `).get(pkg.id);
 
+        // Previous 7d for WoW comparison
+        const prev7 = db.prepare(`
+          SELECT COALESCE(SUM(downloads), 0) as total
+          FROM pypi_downloads WHERE package_id = ? AND date >= date('now', '-14 days') AND date < date('now', '-7 days')
+        `).get(pkg.id);
+
         return {
           name: pkg.name,
           version: pkg.version,
           allTimeDownloads: allTime.total,
+          last24hDownloads: last24h.total,
           last30Downloads: last30.total,
           last7Downloads: last7.total,
+          prev7Downloads: prev7.total,
         };
       });
     }
@@ -218,21 +280,31 @@ export default function handler(req, res) {
         description: config.description,
         github: {
           views: matchedRepos.reduce((s, r) => s + r.totalViews, 0),
+          views24h: matchedRepos.reduce((s, r) => s + r.views24h, 0),
+          views7d: matchedRepos.reduce((s, r) => s + r.views7d, 0),
+          views30d: matchedRepos.reduce((s, r) => s + r.views30d, 0),
           clones: githubClones,
+          clones24h: matchedRepos.reduce((s, r) => s + r.clones24h, 0),
+          clones7d: matchedRepos.reduce((s, r) => s + r.clones7d, 0),
+          clones30d: matchedRepos.reduce((s, r) => s + r.clones30d, 0),
           stars: matchedRepos.reduce((s, r) => s + r.stars, 0),
           forks: matchedRepos.reduce((s, r) => s + r.forks, 0),
           recentUniqueVisitors: matchedRepos.reduce((s, r) => s + r.recentUniqueVisitors, 0),
         },
         npm: {
           allTimeDownloads: npmDownloads,
+          last24hDownloads: matchedPackages.reduce((s, p) => s + p.last24hDownloads, 0),
           last30Downloads: matchedPackages.reduce((s, p) => s + p.last30Downloads, 0),
           last7Downloads: matchedPackages.reduce((s, p) => s + p.last7Downloads, 0),
+          prev7Downloads: matchedPackages.reduce((s, p) => s + p.prev7Downloads, 0),
           packageCount: matchedPackages.length,
         },
         pypi: {
           allTimeDownloads: pypiDownloads,
+          last24hDownloads: matchedPypi.reduce((s, p) => s + p.last24hDownloads, 0),
           last30Downloads: matchedPypi.reduce((s, p) => s + p.last30Downloads, 0),
           last7Downloads: matchedPypi.reduce((s, p) => s + p.last7Downloads, 0),
+          prev7Downloads: matchedPypi.reduce((s, p) => s + p.prev7Downloads, 0),
           packageCount: matchedPypi.length,
         },
         docker: {
@@ -251,21 +323,31 @@ export default function handler(req, res) {
       github: {
         repos: repos.length,
         totalViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
+        views24h: repoStats.reduce((s, r) => s + r.views24h, 0),
+        views7d: repoStats.reduce((s, r) => s + r.views7d, 0),
+        views30d: repoStats.reduce((s, r) => s + r.views30d, 0),
         totalClones: repoStats.reduce((s, r) => s + r.totalClones, 0),
+        clones24h: repoStats.reduce((s, r) => s + r.clones24h, 0),
+        clones7d: repoStats.reduce((s, r) => s + r.clones7d, 0),
+        clones30d: repoStats.reduce((s, r) => s + r.clones30d, 0),
         totalStars: repoStats.reduce((s, r) => s + r.stars, 0),
         totalForks: repoStats.reduce((s, r) => s + r.forks, 0),
       },
       npm: {
         packages: npmStats.length,
         allTimeDownloads: npmStats.reduce((s, p) => s + p.allTimeDownloads, 0),
+        last24hDownloads: npmStats.reduce((s, p) => s + p.last24hDownloads, 0),
         last30Downloads: npmStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: npmStats.reduce((s, p) => s + p.last7Downloads, 0),
+        prev7Downloads: npmStats.reduce((s, p) => s + p.prev7Downloads, 0),
       },
       pypi: {
         packages: pypiStats.length,
         allTimeDownloads: totalPypiDownloads,
+        last24hDownloads: pypiStats.reduce((s, p) => s + p.last24hDownloads, 0),
         last30Downloads: pypiStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: pypiStats.reduce((s, p) => s + p.last7Downloads, 0),
+        prev7Downloads: pypiStats.reduce((s, p) => s + p.prev7Downloads, 0),
       },
       docker: {
         images: dockerStats.length,
