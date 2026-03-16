@@ -1,12 +1,12 @@
 {
-  "lastUpdated": "2026-03-16T12:11:27.081Z",
+  "lastUpdated": "2026-03-16T16:44:12.968Z",
   "total": {
-    "adoption": 45725,
-    "adoptionExCrypto": 35881,
+    "adoption": 45728,
+    "adoptionExCrypto": 35884,
     "npm": 20266,
     "pypi": 11080,
     "clones": 14012,
-    "docker": 367,
+    "docker": 370,
     "views": 9385,
     "stars": 98,
     "repos": 20,
@@ -16,6 +16,6 @@
     "npm": 19334,
     "pypi": 3603,
     "clones": 12577,
-    "docker": 367
+    "docker": 370
   }
 }
