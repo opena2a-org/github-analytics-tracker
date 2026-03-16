@@ -291,11 +291,23 @@ export default async function handler(req, res) {
         dockerImages: ['opena2a/dvaa'],
         description: 'Vulnerable AI agent platform for security testing',
       },
+      'OpenA2A CLI': {
+        repos: ['opena2a'],
+        packages: ['opena2a-cli', 'opena2a', '@opena2a/shared'],
+        pypiPackages: [],
+        description: 'Unified security CLI',
+      },
       'HackMyAgent': {
         repos: ['hackmyagent'],
         packages: ['hackmyagent', 'hackmyagent-core'],
         pypiPackages: [],
         description: 'Security scanner for AI agents',
+      },
+      'Secretless AI': {
+        repos: ['secretless-ai'],
+        packages: ['secretless-ai'],
+        pypiPackages: [],
+        description: 'Keep secrets out of AI tools',
       },
       'AIM': {
         repos: ['agent-identity-management'],
@@ -304,17 +316,17 @@ export default async function handler(req, res) {
         dockerImages: ['opena2a/aim-server', 'opena2a/aim-dashboard'],
         description: 'Agent Identity Management',
       },
+      'ai-trust': {
+        repos: ['ai-trust'],
+        packages: ['ai-trust', '@opena2a/oa2a'],
+        pypiPackages: [],
+        description: 'Trust verification for AI packages',
+      },
       'OASB': {
         repos: ['oasb'],
         packages: ['@opena2a/oasb'],
         pypiPackages: [],
         description: 'Open Agent Security Benchmark',
-      },
-      'Secretless AI': {
-        repos: ['secretless-ai'],
-        packages: ['secretless-ai'],
-        pypiPackages: [],
-        description: 'Keep secrets out of AI tools',
       },
       'CryptoServe': {
         repos: ['cryptoserve'],
