@@ -562,7 +562,7 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
             </div>
           )}
         </div>
-        <div className="hero-sub">Clones + npm + PyPI + Docker pulls -- across all products</div>
+        <div className="hero-sub">Clones + npm + PyPI + Docker pulls -- across all tools</div>
       </div>
 
       {/* KPI row */}
@@ -593,7 +593,7 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
       {/* Trend charts */}
       {trends?.series?.length > 1 && (
         <div className="grid grid-2-lg">
-          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all products">
+          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all tools">
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={trends.series}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
@@ -640,10 +640,10 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
         </ChartWrap>
       )}
 
-      {/* Product table with search and time period selector */}
+      {/* Tool table with search and time period selector */}
       <div className="section-card">
         <div className="section-header">
-          <div className="section-title">Product Adoption</div>
+          <div className="section-title">Tool Adoption</div>
           <div className="adoption-period-tabs">
             {ADOPTION_PERIODS.map(p => (
               <button
@@ -657,13 +657,13 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
           </div>
         </div>
         <div style={{ padding: '12px 16px 0' }}>
-          <SearchInput value={productFilter} onChange={setProductFilter} placeholder="Filter products..." />
+          <SearchInput value={productFilter} onChange={setProductFilter} placeholder="Filter tools..." />
         </div>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>Tool</th>
                 <th className="r">Views</th>
                 <th className="r">Clones</th>
                 <th className="r">npm</th>
@@ -708,11 +708,11 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
                 <td className="num">{formatFullNumber(pickPeriodValue(totals.github, 'totalClones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod))}</td>
                 <td className="num">
                   {formatFullNumber(pickPeriodValue(totals.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
-                  {adoptionPeriod === '30d' && <WowIndicator current={totals.npm?.last7Downloads || 0} previous={totals.npm?.prev7Downloads || 0} />}
+                  {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={totals.npm?.last7Downloads || 0} previous={totals.npm?.prev7Downloads || 0} />}
                 </td>
                 <td className="num">
                   {formatFullNumber(pickPeriodValue(totals.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod))}
-                  {adoptionPeriod === '30d' && <WowIndicator current={totals.pypi?.last7Downloads || 0} previous={totals.pypi?.prev7Downloads || 0} />}
+                  {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={totals.pypi?.last7Downloads || 0} previous={totals.pypi?.prev7Downloads || 0} />}
                 </td>
                 <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(totals.docker?.totalPulls || 0) : '--'}</td>
                 <td className="num">{totals.github.totalStars || 0}</td>
@@ -731,7 +731,7 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
       {/* Charts row */}
       <div className="grid grid-2-lg">
         {products.length > 0 && (
-          <ChartWrap title="Adoption by Product">
+          <ChartWrap title="Adoption by Tool">
             <ResponsiveContainer width="100%" height={Math.max(250, products.length * 50)}>
               <BarChart data={products} layout="vertical" margin={{ left: 100 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
