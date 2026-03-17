@@ -1,15 +1,16 @@
 {
-  "lastUpdated": "2026-03-16T16:57:05.873Z",
+  "lastUpdated": "2026-03-17T12:10:32.967Z",
   "repository": "opena2a-org/arp",
   "stats": {
+    "allTime": {
+      "views": 55,
+      "clones": 142
+    },
     "recent14Days": {
       "views": 55,
       "viewsUnique": 14,
       "clones": 142,
       "clonesUnique": 79
-    },
-    "allTime": {
-      "clones": 142
     },
     "stars": 1,
     "forks": 0
