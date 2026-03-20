@@ -620,63 +620,7 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
           sub={`${totals.docker?.images || 0} images`} />
       </div>
 
-      {/* Granularity selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Trend Granularity</span>
-        <GranularitySelector value={trendsGranularity} onChange={setTrendsGranularity} />
-      </div>
-
-      {/* Trend charts */}
-      {trends?.series?.length > 1 && (
-        <div className="grid grid-2-lg">
-          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all tools">
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={trends.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="periodStart" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="npmDownloads" stroke={C.red} fill={C.redFill} name="npm" stackId="dl" />
-                <Area type="monotone" dataKey="pypiDownloads" stroke={C.amber} fill={C.amberFill} name="PyPI" stackId="dl" />
-                <Area type="monotone" dataKey="dockerPulls" stroke={C.sky} fill={C.skyFill} name="Docker" stackId="dl" />
-                <Line type="monotone" dataKey="totalDownloads" stroke={C.teal} strokeWidth={2} dot={false} name="Total" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
-
-          <ChartWrap title="GitHub Traffic Trend" sub="Views + clones across all repos">
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={trends.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="periodStart" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="views" stroke={C.blue} fill={C.blueFill} name="Views" />
-                <Line type="monotone" dataKey="clones" stroke={C.purple} strokeWidth={2} dot={false} name="Clones" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
-        </div>
-      )}
-
-      {/* Star growth chart */}
-      {trends?.starTimeline?.length > 1 && (
-        <ChartWrap title="Star Growth" sub="Total stars across all repositories over time">
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={trends.starTimeline}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis dataKey="date" {...xDateProps} />
-              <YAxis {...axProps} />
-              <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-              <Area type="monotone" dataKey="totalStars" stroke={C.amber} fill={C.amberFill} name="Total Stars" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartWrap>
-      )}
-
-      {/* Tool table with search and time period selector */}
+      {/* Tool Adoption table */}
       <div className="section-card">
         <div className="section-header">
           <div className="section-title">Tool Adoption</div>
@@ -770,7 +714,6 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
             </tbody>
             <tfoot>
               {(() => {
-                // Compute totals from visible rows so they match
                 let tViews = 0, tClones = 0, tNpm = 0, tPypi = 0, tDocker = 0, tStars = 0;
                 filteredProducts.forEach(p => {
                   tViews += pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod, 'customViews');
@@ -808,6 +751,120 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
           </table>
         </div>
       </div>
+
+      {/* Distribution charts - executive view */}
+      <div className="grid grid-2-lg">
+        {/* Channel Mix donut */}
+        {(() => {
+          const channelData = [
+            { name: 'npm', value: totals.npm?.allTimeDownloads || 0, color: C.red },
+            { name: 'Git Clones', value: totals.github?.totalClones || 0, color: C.blue },
+            { name: 'PyPI', value: totals.pypi?.allTimeDownloads || 0, color: C.amber },
+            { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.sky },
+          ].filter(d => d.value > 0);
+          const total = channelData.reduce((s, d) => s + d.value, 0);
+          return channelData.length > 0 && (
+            <ChartWrap title="Distribution Channel Mix" sub="All-time adoption by install channel">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={channelData} cx="50%" cy="50%" innerRadius={70} outerRadius={110}
+                    dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
+                    {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [formatFullNumber(value) + ` (${(value / total * 100).toFixed(1)}%)`, '']}
+                    {...ttProps} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartWrap>
+          );
+        })()}
+
+        {/* Growth momentum - cumulative trend */}
+        {trends?.series?.length > 1 && (() => {
+          let cumulative = 0;
+          const cumulativeData = trends.series.map(s => {
+            cumulative += s.totalDownloads || 0;
+            return { date: s.periodStart, cumulative };
+          });
+          return (
+            <ChartWrap title="Cumulative Adoption" sub="Running total of installs over time">
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={cumulativeData}>
+                  <defs>
+                    <linearGradient id="cumulativeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.teal} stopOpacity={0.25} />
+                      <stop offset="100%" stopColor={C.teal} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                  <XAxis dataKey="date" {...xDateProps} />
+                  <YAxis {...axProps} tickFormatter={formatNumber} />
+                  <Tooltip labelFormatter={formatDateLabel} formatter={(v) => [formatFullNumber(v), 'Total Installs']} {...ttProps} />
+                  <Area type="monotone" dataKey="cumulative" stroke={C.teal} fill="url(#cumulativeGrad)" strokeWidth={2.5} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartWrap>
+          );
+        })()}
+      </div>
+
+      {/* Granularity selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Trend Granularity</span>
+        <GranularitySelector value={trendsGranularity} onChange={setTrendsGranularity} />
+      </div>
+
+      {/* Trend charts */}
+      {trends?.series?.length > 1 && (
+        <div className="grid grid-2-lg">
+          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all tools">
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={trends.series}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="periodStart" {...xDateProps} />
+                <YAxis {...axProps} />
+                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Area type="monotone" dataKey="npmDownloads" stroke={C.red} fill={C.redFill} name="npm" stackId="dl" />
+                <Area type="monotone" dataKey="pypiDownloads" stroke={C.amber} fill={C.amberFill} name="PyPI" stackId="dl" />
+                <Area type="monotone" dataKey="dockerPulls" stroke={C.sky} fill={C.skyFill} name="Docker" stackId="dl" />
+                <Line type="monotone" dataKey="totalDownloads" stroke={C.teal} strokeWidth={2} dot={false} name="Total" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartWrap>
+
+          <ChartWrap title="GitHub Traffic Trend" sub="Views + clones across all repos">
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={trends.series}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="periodStart" {...xDateProps} />
+                <YAxis {...axProps} />
+                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Area type="monotone" dataKey="views" stroke={C.blue} fill={C.blueFill} name="Views" />
+                <Line type="monotone" dataKey="clones" stroke={C.purple} strokeWidth={2} dot={false} name="Clones" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartWrap>
+        </div>
+      )}
+
+      {/* Star growth chart */}
+      {trends?.starTimeline?.length > 1 && (
+        <ChartWrap title="Star Growth" sub="Total stars across all repositories over time">
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={trends.starTimeline}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+              <XAxis dataKey="date" {...xDateProps} />
+              <YAxis {...axProps} />
+              <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
+              <Area type="monotone" dataKey="totalStars" stroke={C.amber} fill={C.amberFill} name="Total Stars" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartWrap>
+      )}
 
       {/* Charts row */}
       <div className="grid grid-2-lg">
