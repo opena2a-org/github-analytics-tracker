@@ -831,7 +831,7 @@ function main() {
     // Generate badge and stats JSON files for each repo
     const dataDir = path.join(__dirname, '..', 'data');
     repoStats.forEach(repo => {
-      const safeName = repo.full_name.replace('/', '_');
+      const safeName = repo.full_name.replace('/', '_').toLowerCase();
 
       const badgePath = path.join(dataDir, `badge-${safeName}.json`);
       fs.writeFileSync(badgePath, JSON.stringify(generateBadgeJSON(repo), null, 2));

@@ -449,7 +449,7 @@ async function generateBadgeJson() {
       }
     };
 
-    const safeRepoName = repo.full_name.replace('/', '_');
+    const safeRepoName = repo.full_name.replace('/', '_').toLowerCase();
     const badgePath = path.join(__dirname, '..', 'data', `badge-${safeRepoName}.json`);
     const statsPath = path.join(__dirname, '..', 'data', `stats-${safeRepoName}.json`);
 
