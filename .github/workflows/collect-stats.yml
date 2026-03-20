@@ -2,9 +2,8 @@ name: Collect Analytics
 
 on:
   schedule:
-    # Run daily at 12:00 PM UTC (7am EST / 4am PST)
-    # Chosen to run mid-day so yesterday's data is fully settled
-    - cron: '0 12 * * *'
+    # Run daily at 6:00 AM UTC (12:00 AM Denver / MDT)
+    - cron: '0 6 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
