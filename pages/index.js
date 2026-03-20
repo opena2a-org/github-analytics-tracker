@@ -409,8 +409,8 @@ export default function Dashboard() {
         {/* --- Sidebar --- */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-brand">
-            <h1>Analytics</h1>
-            <p>OpenA2A</p>
+            <h1>Open<span>A2A</span></h1>
+            <p>Ecosystem Analytics</p>
           </div>
           <nav className="sidebar-nav">
             {TABS.map(tab => (
@@ -580,8 +580,8 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
     <>
       {/* Hero + growth row */}
       <div className="hero-card">
-        <div className="hero-label">Total Adoption</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', flexWrap: 'wrap' }}>
+        <div className="hero-label">Total Ecosystem Adoption</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px', flexWrap: 'wrap' }}>
           <div className="hero-value">{formatFullNumber(totals.combined.totalAdoption)}</div>
           {wow && (
             <div className="growth-row">
@@ -598,7 +598,7 @@ function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGr
             </div>
           )}
         </div>
-        <div className="hero-sub">Clones + npm + PyPI + Docker pulls -- across all tools</div>
+        <div className="hero-sub">Aggregated installs, clones, and pulls across {totals.github.repos} repositories and {(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages</div>
       </div>
 
       {/* KPI row */}
