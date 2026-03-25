@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-03-24T06:19:55.374Z",
+  "lastUpdated": "2026-03-25T06:19:53.203Z",
   "repository": "opena2a-org/ai-trust",
   "stats": {
     "allTime": {
-      "views": 83,
-      "clones": 383
+      "views": 92,
+      "clones": 384
     },
     "recent14Days": {
-      "views": 76,
+      "views": 85,
       "viewsUnique": 7,
-      "clones": 349,
-      "clonesUnique": 134
+      "clones": 345,
+      "clonesUnique": 130
     },
     "stars": 1,
     "forks": 0
