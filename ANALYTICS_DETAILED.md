@@ -1,7 +1,7 @@
 # GitHub Analytics - Detailed Daily Report
 
-> **Last Updated:** Mar 29, 2026
-> **Tracking Period:** Feb 16, 2026 - Mar 27, 2026
+> **Last Updated:** Mar 30, 2026
+> **Tracking Period:** Feb 16, 2026 - Mar 29, 2026
 
 ---
 
@@ -160,25 +160,25 @@
 
 ## opena2a-org/hackmyagent
 
-**Summary** (49 days tracked)
+**Summary** (50 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 1,724 | 686 |
-| Unique Visitors | -- | 202 |
-| Clones | 3,126 | 1,368 |
-| Unique Cloners | -- | 324 |
-| Stars | 23 | -- |
+| Views | 1,751 | 700 |
+| Unique Visitors | -- | 203 |
+| Clones | 3,130 | 1,309 |
+| Unique Cloners | -- | 315 |
+| Stars | 24 | -- |
 | Forks | 2 | -- |
 
 **Top Referrers** (last 14 days)
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 154 | 26 |
+| github.com | 148 | 25 |
 | linkedin.com | 79 | 59 |
 | com.linkedin.android | 45 | 20 |
-| Google | 10 | 9 |
+| Google | 11 | 10 |
 | com.slack | 3 | 2 |
 | huggingface.co | 2 | 2 |
 | statics.teams.cdn.office.net | 2 | 2 |
@@ -190,6 +190,7 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 27 | 6 | 4 | 4 |
 | Mar 28, 2026 | 48 | 20 | 6 | 5 |
 | Mar 27, 2026 | 16 | 7 | 329 | 65 |
 | Mar 26, 2026 | 12 | 8 | 267 | 73 |
@@ -219,26 +220,25 @@
 | Mar 2, 2026 | 20 | 6 | 39 | 23 |
 | Mar 1, 2026 | 11 | 7 | 1 | 1 |
 | Feb 28, 2026 | 41 | 6 | 7 | 4 |
-| Feb 27, 2026 | 28 | 8 | 32 | 18 |
 
-*Showing last 30 days. Full history available in the database (49 days total).*
+*Showing last 30 days. Full history available in the database (50 days total).*
 
 **Insights**
-- Average: ~40 views/day, ~79 clones/day (last 30 days)
+- Average: ~39 views/day, ~78 clones/day (last 30 days)
 - Peak traffic: Mar 16, 2026 with 200 views
 
 ---
 
 ## opena2a-org/opena2a
 
-**Summary** (43 days tracked)
+**Summary** (44 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 1,495 | 748 |
-| Unique Visitors | -- | 131 |
-| Clones | 4,360 | 1,683 |
-| Unique Cloners | -- | 292 |
+| Views | 1,532 | 769 |
+| Unique Visitors | -- | 132 |
+| Clones | 4,363 | 1,584 |
+| Unique Cloners | -- | 284 |
 | Stars | 12 | -- |
 | Forks | 5 | -- |
 
@@ -246,8 +246,8 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 169 | 24 |
-| com.linkedin.android | 23 | 6 |
+| github.com | 163 | 24 |
+| com.linkedin.android | 24 | 6 |
 | linkedin.com | 8 | 7 |
 | Google | 7 | 4 |
 | Bing | 1 | 1 |
@@ -259,6 +259,7 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 28, 2026 | 37 | 4 | 3 | 3 |
 | Mar 27, 2026 | 8 | 7 | 45 | 17 |
 | Mar 26, 2026 | 8 | 4 | 2 | 2 |
 | Mar 25, 2026 | 26 | 16 | 34 | 12 |
@@ -288,12 +289,11 @@
 | Mar 1, 2026 | 10 | 7 | 4 | 3 |
 | Feb 28, 2026 | 17 | 6 | 2 | 2 |
 | Feb 27, 2026 | 36 | 8 | 13 | 11 |
-| Feb 26, 2026 | 10 | 5 | 26 | 22 |
 
-*Showing last 30 days. Full history available in the database (43 days total).*
+*Showing last 30 days. Full history available in the database (44 days total).*
 
 **Insights**
-- Average: ~50 views/day, ~145 clones/day (last 30 days)
+- Average: ~51 views/day, ~145 clones/day (last 30 days)
 - Peak traffic: Mar 16, 2026 with 282 views
 
 ---
@@ -308,8 +308,8 @@
 | Unique Visitors | -- | 39 |
 | Clones | 1,049 | 536 |
 | Unique Cloners | -- | 160 |
-| Stars | 2 | -- |
-| Forks | 4 | -- |
+| Stars | 7 | -- |
+| Forks | 6 | -- |
 
 **Top Referrers** (last 14 days)
 
@@ -364,14 +364,14 @@
 
 ## ecolibria/cryptoserve
 
-**Summary** (48 days tracked)
+**Summary** (50 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 523 | 135 |
-| Unique Visitors | -- | 16 |
-| Clones | 2,135 | 702 |
-| Unique Cloners | -- | 108 |
+| Views | 547 | 156 |
+| Unique Visitors | -- | 18 |
+| Clones | 2,139 | 704 |
+| Unique Cloners | -- | 110 |
 | Stars | 3 | -- |
 | Forks | 2 | -- |
 
@@ -379,14 +379,16 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 35 | 4 |
-| qramm.org | 4 | 2 |
+| github.com | 32 | 4 |
+| qramm.org | 5 | 3 |
 | Google | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 12 | 3 | 3 | 3 |
+| Mar 28, 2026 | 12 | 1 | 1 | 1 |
 | Mar 27, 2026 | 2 | 1 | 4 | 2 |
 | Mar 26, 2026 | 5 | 3 | 1 | 1 |
 | Mar 25, 2026 | 24 | 4 | 93 | 29 |
@@ -415,10 +417,8 @@
 | Mar 2, 2026 | 5 | 2 | 1 | 1 |
 | Mar 1, 2026 | 1 | 1 | 0 | 0 |
 | Feb 28, 2026 | 0 | 0 | 1 | 1 |
-| Feb 27, 2026 | 13 | 2 | 2 | 2 |
-| Feb 26, 2026 | 20 | 7 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (48 days total).*
+*Showing last 30 days. Full history available in the database (50 days total).*
 **Release Downloads** (19 total)
 
 | Release | Downloads |
@@ -436,14 +436,14 @@
 
 ## opena2a-org/ai-browserguard
 
-**Summary** (30 days tracked)
+**Summary** (32 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 355 | 185 |
-| Unique Visitors | -- | 22 |
-| Clones | 637 | 209 |
-| Unique Cloners | -- | 72 |
+| Views | 376 | 189 |
+| Unique Visitors | -- | 21 |
+| Clones | 642 | 176 |
+| Unique Cloners | -- | 61 |
 | Stars | 2 | -- |
 | Forks | 1 | -- |
 
@@ -451,13 +451,15 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 103 | 10 |
+| github.com | 91 | 8 |
 | oasb.ai | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 10 | 4 | 1 | 1 |
+| Mar 28, 2026 | 11 | 2 | 4 | 4 |
 | Mar 27, 2026 | 2 | 1 | 9 | 6 |
 | Mar 26, 2026 | 21 | 4 | 0 | 0 |
 | Mar 25, 2026 | 3 | 1 | 7 | 4 |
@@ -486,11 +488,11 @@
 | Mar 2, 2026 | 23 | 7 | 88 | 24 |
 | Mar 1, 2026 | 15 | 3 | 3 | 3 |
 | Feb 28, 2026 | 26 | 3 | 20 | 10 |
-| Feb 27, 2026 | 19 | 4 | 110 | 45 |
-| Feb 26, 2026 | 0 | 0 | 0 | 0 |
+
+*Showing last 30 days. Full history available in the database (32 days total).*
 
 **Insights**
-- Average: ~12 views/day, ~21 clones/day (last 30 days)
+- Average: ~12 views/day, ~18 clones/day (last 30 days)
 - Peak traffic: Mar 16, 2026 with 26 views
 
 ---
@@ -566,6 +568,68 @@
 
 ---
 
+## opena2a-org/.github
+
+**Summary** (50 days tracked)
+
+| Metric | All-Time Total | Last 14 Days (API) |
+|--------|---------------|-------------------|
+| Views | 174 | 103 |
+| Unique Visitors | -- | 5 |
+| Clones | 307 | 70 |
+| Unique Cloners | -- | 48 |
+| Stars | 0 | -- |
+| Forks | 0 | -- |
+
+**Top Referrers** (last 14 days)
+
+| Source | Views | Unique Visitors |
+|--------|-------|----------------|
+| github.com | 10 | 1 |
+
+**Daily Breakdown** (last 30 days)
+
+| Date | Views | Unique Visitors | Clones | Unique Cloners |
+|------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 8 | 1 | 1 | 1 |
+| Mar 28, 2026 | 12 | 1 | 2 | 2 |
+| Mar 27, 2026 | 0 | 0 | 0 | 0 |
+| Mar 26, 2026 | 0 | 0 | 2 | 2 |
+| Mar 25, 2026 | 2 | 2 | 1 | 1 |
+| Mar 24, 2026 | 8 | 2 | 5 | 5 |
+| Mar 23, 2026 | 10 | 2 | 1 | 1 |
+| Mar 22, 2026 | 5 | 2 | 1 | 1 |
+| Mar 21, 2026 | 10 | 2 | 1 | 1 |
+| Mar 20, 2026 | 3 | 1 | 1 | 1 |
+| Mar 19, 2026 | 12 | 1 | 13 | 10 |
+| Mar 18, 2026 | 10 | 1 | 9 | 7 |
+| Mar 17, 2026 | 3 | 1 | 7 | 7 |
+| Mar 16, 2026 | 20 | 2 | 26 | 17 |
+| Mar 15, 2026 | 0 | 0 | 2 | 2 |
+| Mar 14, 2026 | 0 | 0 | 17 | 12 |
+| Mar 13, 2026 | 9 | 1 | 3 | 3 |
+| Mar 12, 2026 | 9 | 2 | 40 | 24 |
+| Mar 11, 2026 | 1 | 1 | 22 | 19 |
+| Mar 10, 2026 | 6 | 2 | 15 | 12 |
+| Mar 9, 2026 | 6 | 1 | 30 | 21 |
+| Mar 8, 2026 | 6 | 1 | 1 | 1 |
+| Mar 7, 2026 | 4 | 1 | 0 | 0 |
+| Mar 6, 2026 | 1 | 1 | 1 | 1 |
+| Mar 5, 2026 | 1 | 1 | 3 | 3 |
+| Mar 4, 2026 | 1 | 1 | 8 | 6 |
+| Mar 3, 2026 | 0 | 0 | 2 | 2 |
+| Mar 2, 2026 | 0 | 0 | 1 | 1 |
+| Mar 1, 2026 | 0 | 0 | 0 | 0 |
+| Feb 28, 2026 | 0 | 0 | 0 | 0 |
+
+*Showing last 30 days. Full history available in the database (50 days total).*
+
+**Insights**
+- Average: ~5 views/day, ~7 clones/day (last 30 days)
+- Peak traffic: Mar 16, 2026 with 20 views
+
+---
+
 ## opena2a-org/open-agent-security-benchmark
 
 **Summary** (39 days tracked)
@@ -628,65 +692,65 @@
 
 ---
 
-## opena2a-org/.github
+## opena2a-org/ai-trust
 
-**Summary** (49 days tracked)
+**Summary** (42 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 166 | 95 |
-| Unique Visitors | -- | 5 |
-| Clones | 306 | 71 |
-| Unique Cloners | -- | 49 |
-| Stars | 0 | -- |
+| Views | 131 | 115 |
+| Unique Visitors | -- | 7 |
+| Clones | 520 | 262 |
+| Unique Cloners | -- | 113 |
+| Stars | 1 | -- |
 | Forks | 0 | -- |
 
 **Top Referrers** (last 14 days)
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 10 | 1 |
+| github.com | 3 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
-| Mar 28, 2026 | 12 | 1 | 2 | 2 |
-| Mar 27, 2026 | 0 | 0 | 0 | 0 |
+| Mar 29, 2026 | 10 | 1 | 6 | 6 |
+| Mar 28, 2026 | 17 | 2 | 4 | 4 |
+| Mar 27, 2026 | 1 | 1 | 91 | 35 |
 | Mar 26, 2026 | 0 | 0 | 2 | 2 |
-| Mar 25, 2026 | 2 | 2 | 1 | 1 |
-| Mar 24, 2026 | 8 | 2 | 5 | 5 |
-| Mar 23, 2026 | 10 | 2 | 1 | 1 |
-| Mar 22, 2026 | 5 | 2 | 1 | 1 |
-| Mar 21, 2026 | 10 | 2 | 1 | 1 |
-| Mar 20, 2026 | 3 | 1 | 1 | 1 |
-| Mar 19, 2026 | 12 | 1 | 13 | 10 |
-| Mar 18, 2026 | 10 | 1 | 9 | 7 |
-| Mar 17, 2026 | 3 | 1 | 7 | 7 |
-| Mar 16, 2026 | 20 | 2 | 26 | 17 |
-| Mar 15, 2026 | 0 | 0 | 2 | 2 |
-| Mar 14, 2026 | 0 | 0 | 17 | 12 |
-| Mar 13, 2026 | 9 | 1 | 3 | 3 |
-| Mar 12, 2026 | 9 | 2 | 40 | 24 |
-| Mar 11, 2026 | 1 | 1 | 22 | 19 |
-| Mar 10, 2026 | 6 | 2 | 15 | 12 |
-| Mar 9, 2026 | 6 | 1 | 30 | 21 |
-| Mar 8, 2026 | 6 | 1 | 1 | 1 |
-| Mar 7, 2026 | 4 | 1 | 0 | 0 |
-| Mar 6, 2026 | 1 | 1 | 1 | 1 |
-| Mar 5, 2026 | 1 | 1 | 3 | 3 |
-| Mar 4, 2026 | 1 | 1 | 8 | 6 |
-| Mar 3, 2026 | 0 | 0 | 2 | 2 |
-| Mar 2, 2026 | 0 | 0 | 1 | 1 |
+| Mar 25, 2026 | 3 | 2 | 23 | 13 |
+| Mar 24, 2026 | 8 | 2 | 10 | 6 |
+| Mar 23, 2026 | 9 | 2 | 1 | 1 |
+| Mar 22, 2026 | 3 | 1 | 0 | 0 |
+| Mar 21, 2026 | 13 | 2 | 11 | 5 |
+| Mar 20, 2026 | 6 | 1 | 0 | 0 |
+| Mar 19, 2026 | 14 | 2 | 28 | 14 |
+| Mar 18, 2026 | 13 | 1 | 10 | 4 |
+| Mar 17, 2026 | 5 | 3 | 29 | 14 |
+| Mar 16, 2026 | 13 | 2 | 47 | 25 |
+| Mar 15, 2026 | 8 | 2 | 93 | 34 |
+| Mar 14, 2026 | 1 | 1 | 126 | 54 |
+| Mar 13, 2026 | 0 | 0 | 0 | 0 |
+| Mar 12, 2026 | 0 | 0 | 0 | 0 |
+| Mar 11, 2026 | 0 | 0 | 0 | 0 |
+| Mar 10, 2026 | 0 | 0 | 0 | 0 |
+| Mar 9, 2026 | 0 | 0 | 5 | 5 |
+| Mar 8, 2026 | 0 | 0 | 2 | 2 |
+| Mar 7, 2026 | 0 | 0 | 0 | 0 |
+| Mar 6, 2026 | 0 | 0 | 1 | 1 |
+| Mar 5, 2026 | 0 | 0 | 0 | 0 |
+| Mar 4, 2026 | 0 | 0 | 0 | 0 |
+| Mar 3, 2026 | 0 | 0 | 0 | 0 |
+| Mar 2, 2026 | 0 | 0 | 0 | 0 |
 | Mar 1, 2026 | 0 | 0 | 0 | 0 |
-| Feb 28, 2026 | 0 | 0 | 0 | 0 |
-| Feb 27, 2026 | 0 | 0 | 1 | 1 |
+| Feb 28, 2026 | 0 | 0 | 2 | 2 |
 
-*Showing last 30 days. Full history available in the database (49 days total).*
+*Showing last 30 days. Full history available in the database (42 days total).*
 
 **Insights**
-- Average: ~5 views/day, ~7 clones/day (last 30 days)
-- Peak traffic: Mar 16, 2026 with 20 views
+- Average: ~4 views/day, ~16 clones/day (last 30 days)
+- Peak traffic: Mar 28, 2026 with 17 views
 
 ---
 
@@ -801,71 +865,16 @@
 
 *Showing last 30 days. Full history available in the database (37 days total).*
 
+**Top Contributors**
+
+| Contributor | Commits |
+|-------------|--------|
+| thebenignhacker | 57 |
+
+
 **Insights**
 - Average: ~3 views/day, ~14 clones/day (last 30 days)
 - Peak traffic: Mar 28, 2026 with 11 views
-
----
-
-## opena2a-org/ai-trust
-
-**Summary** (40 days tracked)
-
-| Metric | All-Time Total | Last 14 Days (API) |
-|--------|---------------|-------------------|
-| Views | 104 | 97 |
-| Unique Visitors | -- | 7 |
-| Clones | 510 | 471 |
-| Unique Cloners | -- | 173 |
-| Stars | 1 | -- |
-| Forks | 0 | -- |
-
-**Top Referrers** (last 14 days)
-
-| Source | Views | Unique Visitors |
-|--------|-------|----------------|
-| github.com | 6 | 2 |
-
-**Daily Breakdown** (last 30 days)
-
-| Date | Views | Unique Visitors | Clones | Unique Cloners |
-|------|-------|-----------------|--------|----------------|
-| Mar 27, 2026 | 1 | 1 | 91 | 35 |
-| Mar 26, 2026 | 0 | 0 | 2 | 2 |
-| Mar 25, 2026 | 3 | 2 | 23 | 13 |
-| Mar 24, 2026 | 8 | 2 | 10 | 6 |
-| Mar 23, 2026 | 9 | 2 | 1 | 1 |
-| Mar 22, 2026 | 3 | 1 | 0 | 0 |
-| Mar 21, 2026 | 13 | 2 | 11 | 5 |
-| Mar 20, 2026 | 6 | 1 | 0 | 0 |
-| Mar 19, 2026 | 14 | 2 | 28 | 14 |
-| Mar 18, 2026 | 13 | 1 | 10 | 4 |
-| Mar 17, 2026 | 5 | 3 | 29 | 14 |
-| Mar 16, 2026 | 13 | 2 | 47 | 25 |
-| Mar 15, 2026 | 8 | 2 | 93 | 34 |
-| Mar 14, 2026 | 1 | 1 | 126 | 54 |
-| Mar 13, 2026 | 0 | 0 | 0 | 0 |
-| Mar 12, 2026 | 0 | 0 | 0 | 0 |
-| Mar 11, 2026 | 0 | 0 | 0 | 0 |
-| Mar 10, 2026 | 0 | 0 | 0 | 0 |
-| Mar 9, 2026 | 0 | 0 | 5 | 5 |
-| Mar 8, 2026 | 0 | 0 | 2 | 2 |
-| Mar 7, 2026 | 0 | 0 | 0 | 0 |
-| Mar 6, 2026 | 0 | 0 | 1 | 1 |
-| Mar 5, 2026 | 0 | 0 | 0 | 0 |
-| Mar 4, 2026 | 0 | 0 | 0 | 0 |
-| Mar 3, 2026 | 0 | 0 | 0 | 0 |
-| Mar 2, 2026 | 0 | 0 | 0 | 0 |
-| Mar 1, 2026 | 0 | 0 | 0 | 0 |
-| Feb 28, 2026 | 0 | 0 | 2 | 2 |
-| Feb 27, 2026 | 7 | 4 | 29 | 21 |
-| Feb 26, 2026 | 0 | 0 | 0 | 0 |
-
-*Showing last 30 days. Full history available in the database (40 days total).*
-
-**Insights**
-- Average: ~3 views/day, ~17 clones/day (last 30 days)
-- Peak traffic: Mar 19, 2026 with 14 views
 
 ---
 
@@ -932,14 +941,14 @@
 
 ## opena2a-org/homebrew-tap
 
-**Summary** (39 days tracked)
+**Summary** (40 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 62 | 39 |
+| Views | 65 | 22 |
 | Unique Visitors | -- | 5 |
-| Clones | 253 | 209 |
-| Unique Cloners | -- | 128 |
+| Clones | 260 | 158 |
+| Unique Cloners | -- | 107 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -947,12 +956,13 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 19 | 1 |
+| github.com | 2 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 28, 2026 | 3 | 1 | 7 | 7 |
 | Mar 27, 2026 | 0 | 0 | 33 | 27 |
 | Mar 26, 2026 | 0 | 0 | 18 | 13 |
 | Mar 25, 2026 | 1 | 1 | 14 | 10 |
@@ -982,12 +992,11 @@
 | Mar 1, 2026 | 0 | 0 | 0 | 0 |
 | Feb 28, 2026 | 0 | 0 | 0 | 0 |
 | Feb 27, 2026 | 0 | 0 | 0 | 0 |
-| Feb 26, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (39 days total).*
+*Showing last 30 days. Full history available in the database (40 days total).*
 
 **Insights**
-- Average: ~2 views/day, ~8 clones/day (last 30 days)
+- Average: ~2 views/day, ~9 clones/day (last 30 days)
 - Peak traffic: Mar 14, 2026 with 20 views
 
 ---
@@ -1077,14 +1086,14 @@
 
 ## opena2a-org/trust-gate
 
-**Summary** (40 days tracked)
+**Summary** (41 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 39 | 26 |
+| Views | 43 | 30 |
 | Unique Visitors | -- | 4 |
-| Clones | 67 | 38 |
-| Unique Cloners | -- | 31 |
+| Clones | 69 | 32 |
+| Unique Cloners | -- | 26 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -1098,6 +1107,7 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 28, 2026 | 4 | 1 | 2 | 2 |
 | Mar 27, 2026 | 0 | 0 | 1 | 1 |
 | Mar 26, 2026 | 0 | 0 | 0 | 0 |
 | Mar 25, 2026 | 0 | 0 | 0 | 0 |
@@ -1127,9 +1137,8 @@
 | Mar 1, 2026 | 2 | 1 | 0 | 0 |
 | Feb 28, 2026 | 0 | 0 | 1 | 1 |
 | Feb 27, 2026 | 3 | 3 | 9 | 8 |
-| Feb 26, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (40 days total).*
+*Showing last 30 days. Full history available in the database (41 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~2 clones/day (last 30 days)
@@ -1138,14 +1147,14 @@
 
 ## opena2a-org/nanomind
 
-**Summary** (16 days tracked)
+**Summary** (18 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 33 | 33 |
-| Unique Visitors | -- | 1 |
-| Clones | 88 | 88 |
-| Unique Cloners | -- | 37 |
+| Views | 39 | 39 |
+| Unique Visitors | -- | 4 |
+| Clones | 91 | 91 |
+| Unique Cloners | -- | 40 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -1156,10 +1165,12 @@
 | github.com | 10 | 1 |
 | huggingface.co | 3 | 1 |
 
-**Daily Breakdown** (last 16 days)
+**Daily Breakdown** (last 18 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 2 | 1 | 1 | 1 |
+| Mar 28, 2026 | 4 | 2 | 2 | 2 |
 | Mar 27, 2026 | 3 | 1 | 27 | 11 |
 | Mar 26, 2026 | 9 | 1 | 47 | 19 |
 | Mar 25, 2026 | 21 | 1 | 14 | 8 |
@@ -1178,21 +1189,21 @@
 | Mar 12, 2026 | 0 | 0 | 0 | 0 |
 
 **Insights**
-- Average: ~2 views/day, ~6 clones/day (last 16 days)
+- Average: ~2 views/day, ~5 clones/day (last 18 days)
 - Peak traffic: Mar 25, 2026 with 21 views
 
 ---
 
 ## opena2a-org/trust-badge-action
 
-**Summary** (29 days tracked)
+**Summary** (30 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 29 | 25 |
+| Views | 32 | 28 |
 | Unique Visitors | -- | 4 |
-| Clones | 78 | 55 |
-| Unique Cloners | -- | 36 |
+| Clones | 79 | 44 |
+| Unique Cloners | -- | 30 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -1202,10 +1213,11 @@
 |--------|-------|----------------|
 | github.com | 1 | 1 |
 
-**Daily Breakdown** (last 29 days)
+**Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 28, 2026 | 3 | 1 | 1 | 1 |
 | Mar 27, 2026 | 0 | 0 | 0 | 0 |
 | Mar 26, 2026 | 0 | 0 | 0 | 0 |
 | Mar 25, 2026 | 0 | 0 | 0 | 0 |
@@ -1237,20 +1249,20 @@
 | Feb 27, 2026 | 0 | 0 | 0 | 0 |
 
 **Insights**
-- Average: ~1 views/day, ~3 clones/day (last 29 days)
+- Average: ~1 views/day, ~3 clones/day (last 30 days)
 
 ---
 
 ## opena2a-org/agent-threat-matrix
 
-**Summary** (16 days tracked)
+**Summary** (18 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 24 | 24 |
-| Unique Visitors | -- | 10 |
-| Clones | 29 | 29 |
-| Unique Cloners | -- | 25 |
+| Views | 28 | 28 |
+| Unique Visitors | -- | 13 |
+| Clones | 32 | 32 |
+| Unique Cloners | -- | 28 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -1262,10 +1274,12 @@
 | spb99-prk-ap1.gazprom-neft.local | 1 | 1 |
 | threats.opena2a.org | 1 | 1 |
 
-**Daily Breakdown** (last 16 days)
+**Daily Breakdown** (last 18 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Mar 29, 2026 | 1 | 1 | 2 | 2 |
+| Mar 28, 2026 | 3 | 2 | 1 | 1 |
 | Mar 27, 2026 | 9 | 9 | 2 | 2 |
 | Mar 26, 2026 | 5 | 2 | 1 | 1 |
 | Mar 25, 2026 | 8 | 1 | 17 | 14 |
@@ -1284,7 +1298,55 @@
 | Mar 12, 2026 | 0 | 0 | 0 | 0 |
 
 **Insights**
-- Average: ~2 views/day, ~2 clones/day (last 16 days)
+- Average: ~2 views/day, ~2 clones/day (last 18 days)
+
+---
+
+## opena2a-org/agent-identity-protocol
+
+**Summary** (19 days tracked)
+
+| Metric | All-Time Total | Last 14 Days (API) |
+|--------|---------------|-------------------|
+| Views | 11 | 11 |
+| Unique Visitors | -- | 9 |
+| Clones | 20 | 20 |
+| Unique Cloners | -- | 19 |
+| Stars | 0 | -- |
+| Forks | 0 | -- |
+
+**Top Referrers** (last 14 days)
+
+| Source | Views | Unique Visitors |
+|--------|-------|----------------|
+| github.com | 1 | 1 |
+
+**Daily Breakdown** (last 19 days)
+
+| Date | Views | Unique Visitors | Clones | Unique Cloners |
+|------|-------|-----------------|--------|----------------|
+| Mar 28, 2026 | 4 | 3 | 2 | 2 |
+| Mar 27, 2026 | 2 | 2 | 0 | 0 |
+| Mar 26, 2026 | 0 | 0 | 1 | 1 |
+| Mar 25, 2026 | 0 | 0 | 8 | 7 |
+| Mar 24, 2026 | 3 | 2 | 1 | 1 |
+| Mar 23, 2026 | 2 | 2 | 8 | 8 |
+| Mar 22, 2026 | 0 | 0 | 0 | 0 |
+| Mar 21, 2026 | 0 | 0 | 0 | 0 |
+| Mar 20, 2026 | 0 | 0 | 0 | 0 |
+| Mar 19, 2026 | 0 | 0 | 0 | 0 |
+| Mar 18, 2026 | 0 | 0 | 0 | 0 |
+| Mar 17, 2026 | 0 | 0 | 0 | 0 |
+| Mar 16, 2026 | 0 | 0 | 0 | 0 |
+| Mar 15, 2026 | 0 | 0 | 0 | 0 |
+| Mar 14, 2026 | 0 | 0 | 0 | 0 |
+| Mar 13, 2026 | 0 | 0 | 0 | 0 |
+| Mar 12, 2026 | 0 | 0 | 0 | 0 |
+| Mar 11, 2026 | 0 | 0 | 0 | 0 |
+| Mar 10, 2026 | 0 | 0 | 0 | 0 |
+
+**Insights**
+- Average: ~1 views/day, ~1 clones/day (last 19 days)
 
 ---
 
@@ -1385,53 +1447,6 @@
 
 ---
 
-## opena2a-org/agent-identity-protocol
-
-**Summary** (18 days tracked)
-
-| Metric | All-Time Total | Last 14 Days (API) |
-|--------|---------------|-------------------|
-| Views | 7 | 7 |
-| Unique Visitors | -- | 6 |
-| Clones | 18 | 18 |
-| Unique Cloners | -- | 17 |
-| Stars | 0 | -- |
-| Forks | 0 | -- |
-
-**Top Referrers** (last 14 days)
-
-| Source | Views | Unique Visitors |
-|--------|-------|----------------|
-| github.com | 1 | 1 |
-
-**Daily Breakdown** (last 18 days)
-
-| Date | Views | Unique Visitors | Clones | Unique Cloners |
-|------|-------|-----------------|--------|----------------|
-| Mar 27, 2026 | 2 | 2 | 0 | 0 |
-| Mar 26, 2026 | 0 | 0 | 1 | 1 |
-| Mar 25, 2026 | 0 | 0 | 8 | 7 |
-| Mar 24, 2026 | 3 | 2 | 1 | 1 |
-| Mar 23, 2026 | 2 | 2 | 8 | 8 |
-| Mar 22, 2026 | 0 | 0 | 0 | 0 |
-| Mar 21, 2026 | 0 | 0 | 0 | 0 |
-| Mar 20, 2026 | 0 | 0 | 0 | 0 |
-| Mar 19, 2026 | 0 | 0 | 0 | 0 |
-| Mar 18, 2026 | 0 | 0 | 0 | 0 |
-| Mar 17, 2026 | 0 | 0 | 0 | 0 |
-| Mar 16, 2026 | 0 | 0 | 0 | 0 |
-| Mar 15, 2026 | 0 | 0 | 0 | 0 |
-| Mar 14, 2026 | 0 | 0 | 0 | 0 |
-| Mar 13, 2026 | 0 | 0 | 0 | 0 |
-| Mar 12, 2026 | 0 | 0 | 0 | 0 |
-| Mar 11, 2026 | 0 | 0 | 0 | 0 |
-| Mar 10, 2026 | 0 | 0 | 0 | 0 |
-
-**Insights**
-- Average: ~0 views/day, ~1 clones/day (last 18 days)
-
----
-
 ## opena2a-org/github-analytics-tracker
 
 **Summary** (3 days tracked)
@@ -1489,28 +1504,28 @@
 |------------|---------------|-----------------|--------------------|----|
 | agent-identity-management | 4,946 | 4,312 | 74 | 38 |
 | secretless-ai | 1,790 | 1,231 | 55 | 20 |
-| hackmyagent | 1,724 | 3,126 | 202 | 23 |
-| opena2a | 1,495 | 4,360 | 131 | 12 |
-| damn-vulnerable-ai-agent | 623 | 1,049 | 39 | 2 |
-| cryptoserve | 523 | 2,135 | 16 | 3 |
-| ai-browserguard | 355 | 637 | 22 | 2 |
+| hackmyagent | 1,751 | 3,130 | 203 | 24 |
+| opena2a | 1,532 | 4,363 | 132 | 12 |
+| damn-vulnerable-ai-agent | 623 | 1,049 | 39 | 7 |
+| cryptoserve | 547 | 2,139 | 18 | 3 |
+| ai-browserguard | 376 | 642 | 21 | 2 |
 | agent-runtime-protection | 209 | 288 | 17 | 2 |
+| .github | 174 | 307 | 5 | 0 |
 | open-agent-security-benchmark | 167 | 227 | 13 | 2 |
-| .github | 166 | 306 | 5 | 0 |
+| ai-trust | 131 | 520 | 7 | 1 |
 | AI-BrowserGuard | 125 | 391 | 17 | 2 |
 | oasb | 116 | 542 | 15 | 2 |
-| ai-trust | 104 | 510 | 7 | 1 |
 | agent-governance-spec | 100 | 77 | 14 | 1 |
-| homebrew-tap | 62 | 253 | 5 | 1 |
+| homebrew-tap | 65 | 260 | 5 | 1 |
 | arp | 55 | 142 | 14 | 1 |
 | opena2a-website | 54 | 56 | 0 | 0 |
-| trust-gate | 39 | 67 | 4 | 1 |
-| nanomind | 33 | 88 | 1 | 1 |
-| trust-badge-action | 29 | 78 | 4 | 1 |
-| agent-threat-matrix | 24 | 29 | 10 | 1 |
+| trust-gate | 43 | 69 | 4 | 1 |
+| nanomind | 39 | 91 | 4 | 1 |
+| trust-badge-action | 32 | 79 | 4 | 1 |
+| agent-threat-matrix | 28 | 32 | 13 | 1 |
+| agent-identity-protocol | 11 | 20 | 9 | 0 |
 | agent-trust-protocol | 10 | 35 | 3 | 1 |
 | ai-agent-kill-chain | 10 | 20 | 6 | 1 |
-| agent-identity-protocol | 7 | 18 | 6 | 0 |
 | github-analytics-tracker | 4 | 44 | 0 | 0 |
 
 ---
@@ -1536,13 +1551,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1,355 |
-| Last 30 days | 4,477 |
-| Last 90 days | 7,771 |
-| All time | 7,771 |
+| Last 7 days | 1,377 |
+| Last 30 days | 4,522 |
+| Last 90 days | 7,830 |
+| All time | 7,830 |
 
 **Insights**
-- Average: ~149 downloads/day (last 30 days)
+- Average: ~151 downloads/day (last 30 days)
 - Peak: Mar 4, 2026 with 641 downloads
 
 **Downloads by Version** (last week)
@@ -1550,15 +1565,15 @@
 | Version | Downloads |
 |---------|-----------|
 | 0.11.12 | 185 |
-| 0.12.1 | 158 |
-| 0.11.15 | 138 |
-| 0.12.4 | 131 |
+| 0.12.1 | 159 |
+| 0.12.4 | 155 |
+| 0.11.15 | 142 |
 | 0.11.13 | 113 |
-| 0.12.0 | 108 |
-| 0.11.14 | 107 |
+| 0.12.0 | 109 |
+| 0.11.14 | 108 |
 | 0.12.2 | 107 |
-| 0.12.3 | 100 |
-| 0.11.11 | 36 |
+| 0.12.3 | 101 |
+| 0.9.9 | 41 |
 
 ---
 
@@ -1568,29 +1583,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 344 |
-| Last 30 days | 5,084 |
-| Last 90 days | 5,084 |
-| All time | 5,084 |
+| Last 7 days | 381 |
+| Last 30 days | 5,135 |
+| Last 90 days | 5,135 |
+| All time | 5,135 |
 
 **Insights**
-- Average: ~169 downloads/day (last 30 days)
+- Average: ~171 downloads/day (last 30 days)
 - Peak: Mar 18, 2026 with 756 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.8.11 | 119 |
-| 0.8.12 | 91 |
-| 0.8.10 | 22 |
-| 0.8.0 | 9 |
-| 0.8.9 | 9 |
+| 0.8.11 | 121 |
+| 0.8.12 | 94 |
+| 0.8.10 | 14 |
+| 0.8.0 | 10 |
 | 0.8.8 | 8 |
-| 0.8.7 | 7 |
-| 0.8.1 | 6 |
-| 0.8.3 | 6 |
-| 0.8.6 | 6 |
+| 0.8.9 | 8 |
+| 0.8.1 | 7 |
+| 0.8.3 | 7 |
+| 0.8.6 | 7 |
+| 0.8.2 | 6 |
 
 ---
 
@@ -1600,27 +1615,27 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 168 |
-| Last 30 days | 2,745 |
-| Last 90 days | 3,848 |
-| All time | 3,848 |
+| Last 7 days | 183 |
+| Last 30 days | 2,665 |
+| Last 90 days | 3,868 |
+| All time | 3,868 |
 
 **Insights**
-- Average: ~92 downloads/day (last 30 days)
+- Average: ~89 downloads/day (last 30 days)
 - Peak: Mar 12, 2026 with 720 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.12.6 | 98 |
-| 0.12.5 | 27 |
-| 0.11.7 | 26 |
-| 0.12.4 | 4 |
+| 0.12.6 | 100 |
+| 0.11.7 | 40 |
+| 0.12.5 | 25 |
+| 0.12.4 | 3 |
+| 0.10.2 | 2 |
 | 0.11.6 | 2 |
 | 0.10.0 | 1 |
 | 0.10.1 | 1 |
-| 0.10.2 | 1 |
 | 0.11.2 | 1 |
 | 0.11.5 | 1 |
 
@@ -1633,12 +1648,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 41 |
+| Last 30 days | 18 |
 | Last 90 days | 2,972 |
 | All time | 2,972 |
 
 **Insights**
-- Average: ~14 downloads/day (last 3 days)
+- Average: ~9 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1663,29 +1678,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 992 |
-| Last 30 days | 2,168 |
-| Last 90 days | 2,168 |
-| All time | 2,168 |
+| Last 7 days | 1,025 |
+| Last 30 days | 2,074 |
+| Last 90 days | 2,210 |
+| All time | 2,210 |
 
 **Insights**
-- Average: ~72 downloads/day (last 30 days)
+- Average: ~69 downloads/day (last 30 days)
 - Peak: Mar 27, 2026 with 586 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.3 | 197 |
-| 0.2.10 | 155 |
+| 0.1.3 | 216 |
+| 0.2.10 | 176 |
 | 0.2.6 | 117 |
 | 0.2.8 | 114 |
 | 0.2.5 | 105 |
 | 0.2.7 | 103 |
 | 0.2.9 | 93 |
-| 0.2.4 | 67 |
-| 0.2.3 | 12 |
+| 0.2.4 | 64 |
 | 0.1.2 | 11 |
+| 0.2.3 | 10 |
 
 ---
 
@@ -1695,20 +1710,20 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 271 |
-| Last 30 days | 894 |
-| Last 90 days | 1,295 |
-| All time | 1,295 |
+| Last 7 days | 309 |
+| Last 30 days | 928 |
+| Last 90 days | 1,335 |
+| All time | 1,335 |
 
 **Insights**
-- Average: ~30 downloads/day (last 30 days)
+- Average: ~31 downloads/day (last 30 days)
 - Peak: Mar 4, 2026 with 98 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 258 |
+| 0.1.2 | 296 |
 | 0.1.1 | 12 |
 | 0.1.0 | 1 |
 
@@ -1721,9 +1736,9 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 6 |
-| Last 30 days | 159 |
-| Last 90 days | 1,046 |
-| All time | 1,046 |
+| Last 30 days | 160 |
+| Last 90 days | 1,049 |
+| All time | 1,049 |
 
 **Insights**
 - Average: ~5 downloads/day (last 30 days)
@@ -1733,7 +1748,8 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.4 | 6 |
+| 0.3.4 | 5 |
+| 0.3.0 | 1 |
 
 ---
 
@@ -1743,21 +1759,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 503 |
-| Last 30 days | 977 |
-| Last 90 days | 977 |
-| All time | 977 |
+| Last 7 days | 543 |
+| Last 30 days | 1,019 |
+| Last 90 days | 1,019 |
+| All time | 1,019 |
 
 **Insights**
-- Average: ~33 downloads/day (last 30 days)
+- Average: ~34 downloads/day (last 30 days)
 - Peak: Mar 27, 2026 with 135 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 295 |
-| 0.1.0 | 208 |
+| 0.1.1 | 322 |
+| 0.1.0 | 221 |
 
 ---
 
@@ -1767,24 +1783,24 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 581 |
-| Last 30 days | 581 |
-| Last 90 days | 581 |
-| All time | 581 |
+| Last 7 days | 596 |
+| Last 30 days | 596 |
+| Last 90 days | 596 |
+| All time | 596 |
 
 **Insights**
-- Average: ~19 downloads/day (last 30 days)
+- Average: ~20 downloads/day (last 30 days)
 - Peak: Mar 23, 2026 with 434 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
+| 0.6.2 | 117 |
 | 0.6.0 | 116 |
-| 0.6.2 | 103 |
 | 0.6.1 | 101 |
 | 0.7.0 | 94 |
-| 0.7.2 | 87 |
+| 0.7.2 | 88 |
 | 0.7.1 | 80 |
 
 ---
@@ -1795,21 +1811,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 210 |
-| Last 30 days | 252 |
-| Last 90 days | 548 |
-| All time | 548 |
+| Last 7 days | 216 |
+| Last 30 days | 258 |
+| Last 90 days | 554 |
+| All time | 554 |
 
 **Insights**
-- Average: ~8 downloads/day (last 30 days)
+- Average: ~9 downloads/day (last 30 days)
 - Peak: Mar 23, 2026 with 96 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 120 |
-| 0.3.1 | 80 |
+| 0.3.0 | 123 |
+| 0.3.1 | 83 |
 | 0.2.0 | 10 |
 
 ---
@@ -1820,21 +1836,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 456 |
-| Last 30 days | 509 |
-| Last 90 days | 509 |
-| All time | 509 |
+| Last 7 days | 470 |
+| Last 30 days | 532 |
+| Last 90 days | 532 |
+| All time | 532 |
 
 **Insights**
-- Average: ~17 downloads/day (last 30 days)
+- Average: ~18 downloads/day (last 30 days)
 - Peak: Mar 27, 2026 with 133 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 284 |
-| 0.1.0 | 172 |
+| 0.1.1 | 307 |
+| 0.1.0 | 163 |
 
 ---
 
@@ -1845,12 +1861,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 16 |
+| Last 30 days | 10 |
 | Last 90 days | 492 |
 | All time | 492 |
 
 **Insights**
-- Average: ~5 downloads/day (last 3 days)
+- Average: ~5 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1869,12 +1885,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 12 |
+| Last 30 days | 6 |
 | Last 90 days | 431 |
 | All time | 431 |
 
 **Insights**
-- Average: ~4 downloads/day (last 3 days)
+- Average: ~3 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1892,12 +1908,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 16 |
+| Last 30 days | 10 |
 | Last 90 days | 426 |
 | All time | 426 |
 
 **Insights**
-- Average: ~5 downloads/day (last 3 days)
+- Average: ~5 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1916,12 +1932,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 12 |
+| Last 30 days | 5 |
 | Last 90 days | 312 |
 | All time | 312 |
 
 **Insights**
-- Average: ~4 downloads/day (last 3 days)
+- Average: ~3 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1944,7 +1960,7 @@
 | All time | 308 |
 
 **Insights**
-- Average: ~1 downloads/day (last 3 days)
+- Average: ~2 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1961,12 +1977,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 11 |
+| Last 30 days | 5 |
 | Last 90 days | 293 |
 | All time | 293 |
 
 **Insights**
-- Average: ~4 downloads/day (last 3 days)
+- Average: ~3 downloads/day (last 2 days)
 
 **Downloads by Version** (last week)
 
@@ -1983,10 +1999,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 261 |
-| Last 30 days | 261 |
-| Last 90 days | 261 |
-| All time | 261 |
+| Last 7 days | 263 |
+| Last 30 days | 263 |
+| Last 90 days | 263 |
+| All time | 263 |
 
 **Insights**
 - Average: ~9 downloads/day (last 30 days)
@@ -1997,7 +2013,7 @@
 | Version | Downloads |
 |---------|-----------|
 | 0.1.1 | 95 |
-| 0.1.2 | 86 |
+| 0.1.2 | 88 |
 | 0.1.0 | 80 |
 
 ---
@@ -2008,10 +2024,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 189 |
-| Last 30 days | 189 |
-| Last 90 days | 189 |
-| All time | 189 |
+| Last 7 days | 190 |
+| Last 30 days | 190 |
+| Last 90 days | 190 |
+| All time | 190 |
 
 **Insights**
 - Average: ~6 downloads/day (last 30 days)
@@ -2022,7 +2038,7 @@
 | Version | Downloads |
 |---------|-----------|
 | 0.1.0 | 97 |
-| 0.1.1 | 92 |
+| 0.1.1 | 93 |
 
 ---
 
@@ -2032,10 +2048,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 168 |
-| Last 30 days | 168 |
-| Last 90 days | 168 |
-| All time | 168 |
+| Last 7 days | 169 |
+| Last 30 days | 169 |
+| Last 90 days | 169 |
+| All time | 169 |
 
 **Insights**
 - Average: ~6 downloads/day (last 30 days)
@@ -2045,7 +2061,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 88 |
+| 0.1.1 | 89 |
 | 0.1.0 | 80 |
 
 ---
@@ -2056,10 +2072,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 166 |
-| Last 30 days | 166 |
-| Last 90 days | 166 |
-| All time | 166 |
+| Last 7 days | 167 |
+| Last 30 days | 167 |
+| Last 90 days | 167 |
+| All time | 167 |
 
 **Insights**
 - Average: ~6 downloads/day (last 30 days)
@@ -2069,7 +2085,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 87 |
+| 0.1.1 | 88 |
 | 0.1.0 | 79 |
 
 ---
@@ -2080,10 +2096,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 153 |
-| Last 30 days | 153 |
-| Last 90 days | 153 |
-| All time | 153 |
+| Last 7 days | 154 |
+| Last 30 days | 154 |
+| Last 90 days | 154 |
+| All time | 154 |
 
 **Insights**
 - Average: ~5 downloads/day (last 30 days)
@@ -2093,7 +2109,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 88 |
+| 0.1.1 | 89 |
 | 0.1.0 | 65 |
 
 ---
@@ -2104,10 +2120,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 150 |
-| Last 30 days | 150 |
-| Last 90 days | 150 |
-| All time | 150 |
+| Last 7 days | 151 |
+| Last 30 days | 151 |
+| Last 90 days | 151 |
+| All time | 151 |
 
 **Insights**
 - Average: ~5 downloads/day (last 30 days)
@@ -2117,7 +2133,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 83 |
+| 0.1.1 | 84 |
 | 0.1.0 | 67 |
 
 ---
@@ -2152,13 +2168,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 3 |
-| Last 30 days | 84 |
-| Last 90 days | 84 |
-| All time | 84 |
+| Last 30 days | 67 |
+| Last 90 days | 85 |
+| All time | 85 |
 
 **Insights**
-- Average: ~3 downloads/day (last 30 days)
-- Peak: Feb 27, 2026 with 18 downloads
+- Average: ~2 downloads/day (last 30 days)
 
 **Downloads by Version** (last week)
 
@@ -2174,10 +2189,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 42 |
-| Last 30 days | 42 |
-| Last 90 days | 42 |
-| All time | 42 |
+| Last 7 days | 43 |
+| Last 30 days | 43 |
+| Last 90 days | 43 |
+| All time | 43 |
 
 **Insights**
 - Average: ~1 downloads/day (last 30 days)
@@ -2187,7 +2202,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 42 |
+| 0.1.0 | 43 |
 
 ---
 
@@ -2210,13 +2225,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 584 |
-| Last 30 days | 1,283 |
-| Last 90 days | 4,385 |
-| All time | 4,385 |
+| Last 7 days | 606 |
+| Last 30 days | 1,261 |
+| Last 90 days | 4,407 |
+| All time | 4,407 |
 
 **Insights**
-- Average: ~44 downloads/day (last 29 days)
+- Average: ~43 downloads/day (last 29 days)
 - Peak: Mar 23, 2026 with 301 downloads
 
 **Downloads by Python Version**
@@ -2234,7 +2249,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 1,209 |
+| null | 1,229 |
 | Linux | 95 |
 | Darwin | 24 |
 
@@ -2246,13 +2261,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 159 |
-| Last 30 days | 1,240 |
+| Last 7 days | 143 |
+| Last 30 days | 1,214 |
 | Last 90 days | 3,333 |
 | All time | 3,333 |
 
 **Insights**
-- Average: ~41 downloads/day (last 30 days)
+- Average: ~42 downloads/day (last 29 days)
 - Peak: Mar 18, 2026 with 238 downloads
 
 **Downloads by Python Version**
@@ -2268,7 +2283,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 766 |
+| null | 770 |
 | Linux | 287 |
 | Darwin | 23 |
 | Windows | 2 |
@@ -2281,13 +2296,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 124 |
-| Last 30 days | 933 |
-| Last 90 days | 2,832 |
-| All time | 2,832 |
+| Last 7 days | 116 |
+| Last 30 days | 913 |
+| Last 90 days | 2,836 |
+| All time | 2,836 |
 
 **Insights**
-- Average: ~31 downloads/day (last 30 days)
+- Average: ~30 downloads/day (last 30 days)
 - Peak: Mar 17, 2026 with 205 downloads
 
 **Downloads by Python Version**
@@ -2303,7 +2318,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 572 |
+| null | 574 |
 | Linux | 417 |
 | Windows | 28 |
 | Darwin | 18 |
@@ -2316,13 +2331,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 70 |
-| Last 30 days | 480 |
+| Last 7 days | 62 |
+| Last 30 days | 464 |
 | Last 90 days | 1,683 |
 | All time | 1,683 |
 
 **Insights**
-- Average: ~17 downloads/day (last 29 days)
+- Average: ~17 downloads/day (last 28 days)
 - Peak: Mar 20, 2026 with 58 downloads
 
 **Downloads by Python Version**
@@ -2351,13 +2366,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 28 |
-| Last 30 days | 251 |
-| Last 90 days | 1,295 |
-| All time | 1,295 |
+| Last 7 days | 54 |
+| Last 30 days | 277 |
+| Last 90 days | 1,329 |
+| All time | 1,329 |
 
 **Insights**
-- Average: ~10 downloads/day (last 24 days)
+- Average: ~11 downloads/day (last 25 days)
 - Peak: Mar 2, 2026 with 49 downloads
 
 **Downloads by Python Version**
