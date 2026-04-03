@@ -123,17 +123,41 @@ async function collectDownloads(pkg) {
       VALUES (?, ?, ?)
     `);
 
+    // Look up existing non-zero download count for a given date.
+    // Used to avoid overwriting real data with API-outage zeros.
+    const getExisting = db.prepare(`
+      SELECT downloads FROM npm_downloads
+      WHERE package_id = ? AND date = ? AND downloads > 0
+    `);
+
     let storedDays = 0;
+    let skippedZeros = 0;
     let totalDownloads = 0;
     for (const day of data.downloads) {
       // Skip today - count may not be fully settled
       if (day.day === today) continue;
+
+      // Guard against npm API outages that return 0 for days that had real downloads.
+      // If we already have a non-zero value stored, don't overwrite it with 0.
+      if (day.downloads === 0) {
+        const existing = getExisting.get(pkg.id, day.day);
+        if (existing) {
+          skippedZeros++;
+          continue;
+        }
+      }
+
       insert.run(pkg.id, day.day, day.downloads);
       totalDownloads += day.downloads;
       storedDays++;
     }
 
-    console.log('  Downloads: %d days stored, %d total in range', storedDays, totalDownloads);
+    if (skippedZeros > 0) {
+      console.log('  Downloads: %d days stored, %d total in range (%d suspicious zeros skipped)',
+        storedDays, totalDownloads, skippedZeros);
+    } else {
+      console.log('  Downloads: %d days stored, %d total in range', storedDays, totalDownloads);
+    }
   } catch (error) {
     console.error('  Downloads: failed - %s', error.message);
   }
