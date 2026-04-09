@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "docker pulls",
-  "message": "1,576",
+  "message": "1,580",
   "color": "blue",
   "namedLogo": "docker",
   "style": "social"
