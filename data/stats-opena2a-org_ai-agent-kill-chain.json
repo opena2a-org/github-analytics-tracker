@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-13T06:39:20.636Z",
+  "lastUpdated": "2026-04-14T06:32:55.233Z",
   "repository": "opena2a-org/ai-agent-kill-chain",
   "stats": {
     "allTime": {
@@ -7,8 +7,8 @@
       "clones": 30
     },
     "recent14Days": {
-      "views": 6,
-      "viewsUnique": 4,
+      "views": 3,
+      "viewsUnique": 2,
       "clones": 10,
       "clonesUnique": 10
     },
