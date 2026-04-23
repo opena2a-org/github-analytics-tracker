@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-04-22T06:34:16.607Z",
+  "lastUpdated": "2026-04-23T06:34:35.666Z",
   "package": "@opena2a/cli-ui",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "stats": {
-    "allTimeDownloads": 0,
-    "last30Days": 0
+    "allTimeDownloads": 44,
+    "last30Days": 44
   }
 }
