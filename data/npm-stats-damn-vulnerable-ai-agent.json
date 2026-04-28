@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-04-27T06:48:36.032Z",
+  "lastUpdated": "2026-04-28T06:50:25.676Z",
   "package": "damn-vulnerable-ai-agent",
-  "version": "0.7.4",
+  "version": "0.8.2",
   "stats": {
     "allTimeDownloads": 893,
-    "last30Days": 315
+    "last30Days": 312
   }
 }
