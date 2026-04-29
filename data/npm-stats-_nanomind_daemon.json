@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-04-28T06:50:25.677Z",
+  "lastUpdated": "2026-04-29T06:45:57.752Z",
   "package": "@nanomind/daemon",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "stats": {
     "allTimeDownloads": 74,
-    "last30Days": 32
+    "last30Days": 31
   }
 }
