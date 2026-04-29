@@ -1,7 +1,7 @@
 {
   "name": "github-analytics-tracker",
   "version": "1.0.0",
-  "description": "Track and preserve GitHub repository analytics beyond the 14-day retention limit",
+  "description": "Multi-source analytics tracker for open-source projects. Preserves GitHub traffic beyond the 14-day retention limit and aggregates npm, PyPI, and Docker download stats with a Next.js dashboard.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -21,10 +21,27 @@
     "github",
     "analytics",
     "tracking",
-    "statistics"
+    "statistics",
+    "npm-stats",
+    "pypi-stats",
+    "docker-stats",
+    "github-traffic",
+    "open-source",
+    "metrics",
+    "dashboard",
+    "sqlite",
+    "nextjs"
   ],
   "author": "OpenA2A",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opena2a-org/github-analytics-tracker.git"
+  },
+  "homepage": "https://github.com/opena2a-org/github-analytics-tracker#readme",
+  "bugs": {
+    "url": "https://github.com/opena2a-org/github-analytics-tracker/issues"
+  },
   "engines": {
     "node": ">=18"
   },
@@ -35,7 +52,7 @@
     "date-fns": "^3.0.6",
     "dotenv": "^16.3.1",
     "lucide-react": "^0.469.0",
-    "next": "^15.0.0",
+    "next": "^16.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.10.3"

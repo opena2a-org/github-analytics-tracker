@@ -11,9 +11,18 @@ out/
 
 # Environment variables
 .env
-.env.local
-.env.production
-.env.development
+.env.*
+
+# Secrets / credentials (never commit)
+*.key
+*.pem
+*.p12
+*.pfx
+gcp-key.json
+service-account*.json
+
+# Database backups (created by user via `cp data/analytics.db data/analytics-backup-*.db`)
+data/analytics-backup-*.db
 
 # IDE
 .vscode/

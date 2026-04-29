@@ -1,0 +1,1 @@
+Daily-cron data tracker. New-user functional walkthrough requires a GH PAT and 24h of cron observation, neither testable in /pre-push-review's 8-phase format. Real validation is the live workflow run + the dashboard rendering current data, both observable post-push.
