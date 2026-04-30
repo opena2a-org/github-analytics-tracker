@@ -1,6 +1,6 @@
 # GitHub Analytics - Detailed Daily Report
 
-> **Last Updated:** Apr 29, 2026
+> **Last Updated:** Apr 30, 2026
 > **Tracking Period:** Feb 16, 2026 - Apr 27, 2026
 
 ---
@@ -158,22 +158,22 @@
 
 ## opena2a-org/secretless-ai
 
-**Summary** (80 days tracked)
+**Summary** (82 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 2,108 | 127 |
-| Unique Visitors | -- | 21 |
-| Clones | 2,041 | 355 |
-| Unique Cloners | -- | 149 |
-| Stars | 20 | -- |
+| Views | 2,140 | 128 |
+| Unique Visitors | -- | 18 |
+| Clones | 2,204 | 402 |
+| Unique Cloners | -- | 148 |
+| Stars | 19 | -- |
 | Forks | 4 | -- |
 
 **Top Referrers** (last 14 days)
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 32 | 6 |
+| github.com | 34 | 5 |
 | Google | 2 | 2 |
 | DuckDuckGo | 1 | 1 |
 
@@ -181,6 +181,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 14 | 5 | 94 | 37 |
+| Apr 28, 2026 | 18 | 5 | 69 | 22 |
 | Apr 27, 2026 | 8 | 4 | 10 | 6 |
 | Apr 26, 2026 | 3 | 2 | 2 | 2 |
 | Apr 25, 2026 | 8 | 3 | 20 | 17 |
@@ -209,27 +211,25 @@
 | Apr 2, 2026 | 21 | 10 | 3 | 3 |
 | Apr 1, 2026 | 19 | 6 | 114 | 32 |
 | Mar 31, 2026 | 26 | 5 | 66 | 2 |
-| Mar 30, 2026 | 16 | 5 | 92 | 3 |
-| Mar 29, 2026 | 31 | 3 | 92 | 6 |
 
-*Showing last 30 days. Full history available in the database (80 days total).*
+*Showing last 30 days. Full history available in the database (82 days total).*
 
 **Insights**
-- Average: ~11 views/day, ~27 clones/day (last 30 days)
-- Peak traffic: Mar 29, 2026 with 31 views
+- Average: ~10 views/day, ~26 clones/day (last 30 days)
+- Peak traffic: Mar 31, 2026 with 26 views
 
 ---
 
 ## opena2a-org/opena2a
 
-**Summary** (74 days tracked)
+**Summary** (76 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 2,010 | 192 |
-| Unique Visitors | -- | 41 |
-| Clones | 7,675 | 2,560 |
-| Unique Cloners | -- | 460 |
+| Views | 2,047 | 196 |
+| Unique Visitors | -- | 36 |
+| Clones | 9,173 | 3,978 |
+| Unique Cloners | -- | 556 |
 | Stars | 14 | -- |
 | Forks | 5 | -- |
 
@@ -238,15 +238,15 @@
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
 | github.com | 60 | 13 |
-| linkedin.com | 8 | 4 |
+| linkedin.com | 5 | 4 |
 | com.linkedin.android | 2 | 2 |
-| Bing | 1 | 1 |
-| Google | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 18 | 7 | 1041 | 110 |
+| Apr 28, 2026 | 19 | 5 | 457 | 57 |
 | Apr 27, 2026 | 16 | 4 | 456 | 64 |
 | Apr 26, 2026 | 6 | 4 | 103 | 10 |
 | Apr 25, 2026 | 8 | 3 | 97 | 49 |
@@ -275,10 +275,8 @@
 | Apr 2, 2026 | 20 | 13 | 34 | 17 |
 | Apr 1, 2026 | 14 | 5 | 58 | 24 |
 | Mar 31, 2026 | 46 | 11 | 1 | 1 |
-| Mar 30, 2026 | 31 | 8 | 7 | 6 |
-| Mar 29, 2026 | 29 | 3 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (74 days total).*
+*Showing last 30 days. Full history available in the database (76 days total).*
 
 **Top Contributors**
 
@@ -289,41 +287,45 @@
 
 
 **Insights**
-- Average: ~16 views/day, ~110 clones/day (last 30 days)
+- Average: ~15 views/day, ~160 clones/day (last 30 days)
 - Peak traffic: Mar 31, 2026 with 46 views
 
 ---
 
 ## opena2a-org/damn-vulnerable-ai-agent
 
-**Summary** (79 days tracked)
+**Summary** (81 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 1,830 | 382 |
-| Unique Visitors | -- | 133 |
-| Clones | 1,763 | 526 |
-| Unique Cloners | -- | 214 |
-| Stars | 16 | -- |
+| Views | 1,912 | 372 |
+| Unique Visitors | -- | 134 |
+| Clones | 1,778 | 333 |
+| Unique Cloners | -- | 161 |
+| Stars | 17 | -- |
 | Forks | 11 | -- |
 
 **Top Referrers** (last 14 days)
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| Google | 70 | 45 |
-| github.com | 55 | 7 |
-| Bing | 15 | 5 |
-| chatgpt.com | 6 | 2 |
+| Google | 67 | 43 |
+| github.com | 54 | 10 |
+| qwant.com | 18 | 1 |
+| Bing | 16 | 6 |
 | yuque.antfin.com | 3 | 1 |
 | euc-excel.officeapps.live.com | 2 | 2 |
 | opensii.ai | 2 | 1 |
+| chatgpt.com | 1 | 1 |
 | lm.facebook.com | 1 | 1 |
+| statics.teams.cdn.office.net | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 55 | 18 | 11 | 8 |
+| Apr 28, 2026 | 27 | 10 | 4 | 2 |
 | Apr 27, 2026 | 32 | 19 | 72 | 33 |
 | Apr 26, 2026 | 7 | 4 | 5 | 4 |
 | Apr 25, 2026 | 17 | 10 | 18 | 15 |
@@ -352,14 +354,12 @@
 | Apr 2, 2026 | 65 | 32 | 31 | 16 |
 | Apr 1, 2026 | 48 | 30 | 4 | 4 |
 | Mar 31, 2026 | 124 | 33 | 7 | 7 |
-| Mar 30, 2026 | 135 | 76 | 13 | 12 |
-| Mar 29, 2026 | 16 | 3 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (79 days total).*
+*Showing last 30 days. Full history available in the database (81 days total).*
 
 **Insights**
-- Average: ~40 views/day, ~24 clones/day (last 30 days)
-- Peak traffic: Mar 30, 2026 with 135 views
+- Average: ~38 views/day, ~24 clones/day (last 30 days)
+- Peak traffic: Mar 31, 2026 with 124 views
 
 ---
 
@@ -438,14 +438,14 @@
 
 ## opena2a-org/ai-browserguard
 
-**Summary** (61 days tracked)
+**Summary** (63 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 480 | 50 |
-| Unique Visitors | -- | 18 |
-| Clones | 828 | 52 |
-| Unique Cloners | -- | 29 |
+| Views | 486 | 44 |
+| Unique Visitors | -- | 12 |
+| Clones | 831 | 54 |
+| Unique Cloners | -- | 30 |
 | Stars | 3 | -- |
 | Forks | 1 | -- |
 
@@ -453,12 +453,14 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 22 | 4 |
+| github.com | 23 | 4 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 2 | 2 | 1 | 1 |
+| Apr 28, 2026 | 4 | 3 | 2 | 1 |
 | Apr 27, 2026 | 0 | 0 | 2 | 1 |
 | Apr 26, 2026 | 2 | 1 | 0 | 0 |
 | Apr 25, 2026 | 0 | 0 | 6 | 4 |
@@ -487,10 +489,8 @@
 | Apr 2, 2026 | 11 | 3 | 1 | 1 |
 | Apr 1, 2026 | 4 | 3 | 2 | 2 |
 | Mar 31, 2026 | 12 | 3 | 1 | 1 |
-| Mar 30, 2026 | 4 | 2 | 9 | 8 |
-| Mar 29, 2026 | 10 | 4 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (61 days total).*
+*Showing last 30 days. Full history available in the database (63 days total).*
 
 **Insights**
 - Average: ~4 views/day, ~6 clones/day (last 30 days)
@@ -500,14 +500,14 @@
 
 ## opena2a-org/ai-trust
 
-**Summary** (71 days tracked)
+**Summary** (73 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 284 | 73 |
-| Unique Visitors | -- | 11 |
-| Clones | 1,547 | 488 |
-| Unique Cloners | -- | 185 |
+| Views | 290 | 66 |
+| Unique Visitors | -- | 6 |
+| Clones | 1,672 | 606 |
+| Unique Cloners | -- | 226 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -521,6 +521,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 1 | 1 | 13 | 7 |
+| Apr 28, 2026 | 5 | 1 | 112 | 42 |
 | Apr 27, 2026 | 9 | 1 | 27 | 8 |
 | Apr 26, 2026 | 0 | 0 | 3 | 2 |
 | Apr 25, 2026 | 4 | 1 | 32 | 20 |
@@ -549,10 +551,8 @@
 | Apr 2, 2026 | 1 | 1 | 13 | 7 |
 | Apr 1, 2026 | 0 | 0 | 17 | 11 |
 | Mar 31, 2026 | 16 | 1 | 1 | 1 |
-| Mar 30, 2026 | 7 | 2 | 1 | 1 |
-| Mar 29, 2026 | 10 | 1 | 6 | 6 |
 
-*Showing last 30 days. Full history available in the database (71 days total).*
+*Showing last 30 days. Full history available in the database (73 days total).*
 
 **Top Contributors**
 
@@ -562,21 +562,21 @@
 
 
 **Insights**
-- Average: ~5 views/day, ~34 clones/day (last 30 days)
+- Average: ~5 views/day, ~38 clones/day (last 30 days)
 - Peak traffic: Apr 24, 2026 with 19 views
 
 ---
 
 ## opena2a-org/agent-runtime-protection
 
-**Summary** (77 days tracked)
+**Summary** (79 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 246 | 13 |
+| Views | 249 | 15 |
 | Unique Visitors | -- | 7 |
-| Clones | 385 | 81 |
-| Unique Cloners | -- | 52 |
+| Clones | 386 | 34 |
+| Unique Cloners | -- | 27 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -585,13 +585,14 @@
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
 | Google | 3 | 2 |
-| Bing | 1 | 1 |
-| github.com | 1 | 1 |
+| Bing | 2 | 2 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 1 | 1 | 1 | 1 |
+| Apr 28, 2026 | 2 | 2 | 0 | 0 |
 | Apr 27, 2026 | 1 | 1 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 5 | 2 |
 | Apr 25, 2026 | 0 | 0 | 2 | 2 |
@@ -620,10 +621,8 @@
 | Apr 2, 2026 | 2 | 2 | 1 | 1 |
 | Apr 1, 2026 | 1 | 1 | 2 | 2 |
 | Mar 31, 2026 | 7 | 3 | 0 | 0 |
-| Mar 30, 2026 | 3 | 2 | 2 | 2 |
-| Mar 29, 2026 | 3 | 1 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (77 days total).*
+*Showing last 30 days. Full history available in the database (79 days total).*
 
 **Top Contributors**
 
@@ -639,14 +638,14 @@
 
 ## opena2a-org/.github
 
-**Summary** (79 days tracked)
+**Summary** (81 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 217 | 17 |
-| Unique Visitors | -- | 4 |
-| Clones | 410 | 76 |
-| Unique Cloners | -- | 52 |
+| Views | 220 | 17 |
+| Unique Visitors | -- | 3 |
+| Clones | 411 | 77 |
+| Unique Cloners | -- | 53 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -660,6 +659,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 1 | 1 | 1 | 1 |
+| Apr 28, 2026 | 2 | 1 | 0 | 0 |
 | Apr 27, 2026 | 2 | 1 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 1 | 1 |
 | Apr 25, 2026 | 0 | 0 | 5 | 5 |
@@ -688,26 +689,24 @@
 | Apr 2, 2026 | 0 | 0 | 2 | 2 |
 | Apr 1, 2026 | 2 | 1 | 2 | 2 |
 | Mar 31, 2026 | 10 | 1 | 0 | 0 |
-| Mar 30, 2026 | 6 | 2 | 1 | 1 |
-| Mar 29, 2026 | 8 | 1 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (79 days total).*
+*Showing last 30 days. Full history available in the database (81 days total).*
 
 **Insights**
-- Average: ~2 views/day, ~3 clones/day (last 30 days)
+- Average: ~1 views/day, ~3 clones/day (last 30 days)
 
 ---
 
 ## opena2a-org/oasb
 
-**Summary** (67 days tracked)
+**Summary** (69 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 194 | 43 |
-| Unique Visitors | -- | 14 |
-| Clones | 908 | 322 |
-| Unique Cloners | -- | 121 |
+| Views | 201 | 42 |
+| Unique Visitors | -- | 11 |
+| Clones | 915 | 220 |
+| Unique Cloners | -- | 95 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -715,13 +714,16 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 2 | 1 |
+| github.com | 3 | 2 |
+| Bing | 1 | 1 |
 | Google | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 2 | 1 | 7 | 4 |
+| Apr 28, 2026 | 5 | 2 | 0 | 0 |
 | Apr 27, 2026 | 4 | 2 | 5 | 3 |
 | Apr 26, 2026 | 2 | 1 | 5 | 3 |
 | Apr 25, 2026 | 1 | 1 | 19 | 17 |
@@ -750,10 +752,8 @@
 | Apr 2, 2026 | 0 | 0 | 7 | 6 |
 | Apr 1, 2026 | 4 | 2 | 2 | 2 |
 | Mar 31, 2026 | 7 | 2 | 1 | 1 |
-| Mar 30, 2026 | 3 | 2 | 6 | 4 |
-| Mar 29, 2026 | 5 | 1 | 4 | 4 |
 
-*Showing last 30 days. Full history available in the database (67 days total).*
+*Showing last 30 days. Full history available in the database (69 days total).*
 
 **Top Contributors**
 
@@ -769,14 +769,14 @@
 
 ## opena2a-org/nanomind
 
-**Summary** (47 days tracked)
+**Summary** (49 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 169 | 60 |
-| Unique Visitors | -- | 12 |
-| Clones | 764 | 425 |
-| Unique Cloners | -- | 158 |
+| Views | 176 | 55 |
+| Unique Visitors | -- | 7 |
+| Clones | 913 | 508 |
+| Unique Cloners | -- | 173 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -786,12 +786,13 @@
 |--------|-------|----------------|
 | Bing | 1 | 1 |
 | Google | 1 | 1 |
-| github.com | 1 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 3 | 1 | 36 | 12 |
+| Apr 28, 2026 | 4 | 1 | 113 | 39 |
 | Apr 27, 2026 | 4 | 1 | 2 | 1 |
 | Apr 26, 2026 | 1 | 1 | 8 | 2 |
 | Apr 25, 2026 | 5 | 1 | 27 | 17 |
@@ -820,13 +821,11 @@
 | Apr 2, 2026 | 5 | 1 | 44 | 21 |
 | Apr 1, 2026 | 4 | 3 | 57 | 29 |
 | Mar 31, 2026 | 5 | 4 | 3 | 3 |
-| Mar 30, 2026 | 3 | 2 | 2 | 2 |
-| Mar 29, 2026 | 2 | 1 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (47 days total).*
+*Showing last 30 days. Full history available in the database (49 days total).*
 
 **Insights**
-- Average: ~4 views/day, ~22 clones/day (last 30 days)
+- Average: ~4 views/day, ~27 clones/day (last 30 days)
 
 ---
 
@@ -894,13 +893,13 @@
 
 ## opena2a-org/agent-governance-spec
 
-**Summary** (68 days tracked)
+**Summary** (70 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 140 | 6 |
-| Unique Visitors | -- | 6 |
-| Clones | 117 | 18 |
+| Views | 140 | 5 |
+| Unique Visitors | -- | 5 |
+| Clones | 118 | 18 |
 | Unique Cloners | -- | 15 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
@@ -915,6 +914,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 0 | 0 | 0 | 0 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 2 | 2 | 3 | 2 |
 | Apr 25, 2026 | 0 | 0 | 0 | 0 |
@@ -943,10 +944,8 @@
 | Apr 2, 2026 | 0 | 0 | 3 | 3 |
 | Apr 1, 2026 | 0 | 0 | 2 | 2 |
 | Mar 31, 2026 | 4 | 1 | 0 | 0 |
-| Mar 30, 2026 | 2 | 1 | 2 | 2 |
-| Mar 29, 2026 | 2 | 1 | 2 | 2 |
 
-*Showing last 30 days. Full history available in the database (68 days total).*
+*Showing last 30 days. Full history available in the database (70 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~1 clones/day (last 30 days)
@@ -1152,13 +1151,13 @@
 
 ## opena2a-org/trust-gate
 
-**Summary** (71 days tracked)
+**Summary** (73 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
 | Views | 52 | 0 |
 | Unique Visitors | -- | 0 |
-| Clones | 101 | 14 |
+| Clones | 102 | 14 |
 | Unique Cloners | -- | 14 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
@@ -1173,6 +1172,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 0 | 0 | 0 | 0 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 1 | 1 |
 | Apr 25, 2026 | 0 | 0 | 0 | 0 |
@@ -1201,10 +1202,8 @@
 | Apr 2, 2026 | 0 | 0 | 2 | 2 |
 | Apr 1, 2026 | 0 | 0 | 2 | 2 |
 | Mar 31, 2026 | 4 | 1 | 1 | 1 |
-| Mar 30, 2026 | 1 | 1 | 3 | 3 |
-| Mar 29, 2026 | 4 | 2 | 1 | 1 |
 
-*Showing last 30 days. Full history available in the database (71 days total).*
+*Showing last 30 days. Full history available in the database (73 days total).*
 
 **Insights**
 - Average: ~0 views/day, ~1 clones/day (last 30 days)
@@ -1213,14 +1212,14 @@
 
 ## opena2a-org/agent-threat-matrix
 
-**Summary** (47 days tracked)
+**Summary** (49 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
 | Views | 47 | 12 |
 | Unique Visitors | -- | 5 |
-| Clones | 70 | 16 |
-| Unique Cloners | -- | 15 |
+| Clones | 72 | 17 |
+| Unique Cloners | -- | 16 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -1234,6 +1233,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 0 | 0 | 1 | 1 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 1 | 1 |
 | Apr 25, 2026 | 0 | 0 | 2 | 2 |
@@ -1262,10 +1263,8 @@
 | Apr 2, 2026 | 1 | 1 | 4 | 3 |
 | Apr 1, 2026 | 1 | 1 | 2 | 2 |
 | Mar 31, 2026 | 1 | 1 | 1 | 1 |
-| Mar 30, 2026 | 3 | 3 | 2 | 2 |
-| Mar 29, 2026 | 1 | 1 | 2 | 2 |
 
-*Showing last 30 days. Full history available in the database (47 days total).*
+*Showing last 30 days. Full history available in the database (49 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~1 clones/day (last 30 days)
@@ -1274,14 +1273,14 @@
 
 ## opena2a-org/trust-badge-action
 
-**Summary** (60 days tracked)
+**Summary** (62 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
 | Views | 41 | 0 |
 | Unique Visitors | -- | 0 |
-| Clones | 113 | 16 |
-| Unique Cloners | -- | 16 |
+| Clones | 115 | 15 |
+| Unique Cloners | -- | 15 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -1295,6 +1294,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 0 | 0 | 1 | 1 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 0 | 0 |
 | Apr 25, 2026 | 0 | 0 | 0 | 0 |
@@ -1323,10 +1324,8 @@
 | Apr 2, 2026 | 0 | 0 | 1 | 1 |
 | Apr 1, 2026 | 0 | 0 | 3 | 3 |
 | Mar 31, 2026 | 4 | 1 | 1 | 1 |
-| Mar 30, 2026 | 1 | 1 | 4 | 4 |
-| Mar 29, 2026 | 3 | 1 | 4 | 4 |
 
-*Showing last 30 days. Full history available in the database (60 days total).*
+*Showing last 30 days. Full history available in the database (62 days total).*
 
 **Insights**
 - Average: ~0 views/day, ~1 clones/day (last 30 days)
@@ -1335,14 +1334,14 @@
 
 ## opena2a-org/agent-identity-protocol
 
-**Summary** (49 days tracked)
+**Summary** (51 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 39 | 3 |
-| Unique Visitors | -- | 3 |
-| Clones | 47 | 12 |
-| Unique Cloners | -- | 12 |
+| Views | 39 | 0 |
+| Unique Visitors | -- | 0 |
+| Clones | 50 | 14 |
+| Unique Cloners | -- | 14 |
 | Stars | 1 | -- |
 | Forks | 0 | -- |
 
@@ -1356,6 +1355,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 3 | 3 |
+| Apr 28, 2026 | 0 | 0 | 0 | 0 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 1 | 1 |
 | Apr 25, 2026 | 0 | 0 | 1 | 1 |
@@ -1384,10 +1385,8 @@
 | Apr 2, 2026 | 1 | 1 | 1 | 1 |
 | Apr 1, 2026 | 0 | 0 | 2 | 2 |
 | Mar 31, 2026 | 3 | 2 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 3 | 3 |
-| Mar 29, 2026 | 2 | 1 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (49 days total).*
+*Showing last 30 days. Full history available in the database (51 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~1 clones/day (last 30 days)
@@ -1396,13 +1395,13 @@
 
 ## opena2a-org/ai-credential-safety
 
-**Summary** (32 days tracked)
+**Summary** (34 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 34 | 27 |
-| Unique Visitors | -- | 15 |
-| Clones | 33 | 15 |
+| Views | 37 | 29 |
+| Unique Visitors | -- | 16 |
+| Clones | 39 | 19 |
 | Unique Cloners | -- | 15 |
 | Stars | 1 | -- |
 | Forks | 1 | -- |
@@ -1419,6 +1418,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 6 | 2 |
+| Apr 28, 2026 | 3 | 2 | 0 | 0 |
 | Apr 27, 2026 | 4 | 3 | 1 | 1 |
 | Apr 26, 2026 | 5 | 2 | 0 | 0 |
 | Apr 25, 2026 | 2 | 2 | 0 | 0 |
@@ -1447,10 +1448,8 @@
 | Apr 2, 2026 | 0 | 0 | 0 | 0 |
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 | Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (32 days total).*
+*Showing last 30 days. Full history available in the database (34 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~1 clones/day (last 30 days)
@@ -1459,13 +1458,13 @@
 
 ## opena2a-org/a2a-security-examples
 
-**Summary** (32 days tracked)
+**Summary** (34 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 26 | 19 |
-| Unique Visitors | -- | 10 |
-| Clones | 53 | 20 |
+| Views | 32 | 21 |
+| Unique Visitors | -- | 9 |
+| Clones | 55 | 20 |
 | Unique Cloners | -- | 16 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
@@ -1474,13 +1473,14 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| Google | 6 | 3 |
-| github.com | 2 | 1 |
+| Google | 9 | 4 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 4 | 2 | 2 | 2 |
+| Apr 28, 2026 | 2 | 1 | 0 | 0 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 5 | 2 | 0 | 0 |
 | Apr 25, 2026 | 1 | 1 | 1 | 1 |
@@ -1509,143 +1509,24 @@
 | Apr 2, 2026 | 0 | 0 | 0 | 0 |
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 | Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (32 days total).*
+*Showing last 30 days. Full history available in the database (34 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~2 clones/day (last 30 days)
 
 ---
 
-## opena2a-org/ai-agent-kill-chain
-
-**Summary** (49 days tracked)
-
-| Metric | All-Time Total | Last 14 Days (API) |
-|--------|---------------|-------------------|
-| Views | 22 | 6 |
-| Unique Visitors | -- | 4 |
-| Clones | 46 | 12 |
-| Unique Cloners | -- | 12 |
-| Stars | 2 | -- |
-| Forks | 0 | -- |
-
-**Top Referrers** (last 14 days)
-
-| Source | Views | Unique Visitors |
-|--------|-------|----------------|
-| github.com | 4 | 2 |
-| Bing | 1 | 1 |
-
-**Daily Breakdown** (last 30 days)
-
-| Date | Views | Unique Visitors | Clones | Unique Cloners |
-|------|-------|-----------------|--------|----------------|
-| Apr 27, 2026 | 0 | 0 | 0 | 0 |
-| Apr 26, 2026 | 0 | 0 | 0 | 0 |
-| Apr 25, 2026 | 0 | 0 | 0 | 0 |
-| Apr 24, 2026 | 3 | 1 | 0 | 0 |
-| Apr 23, 2026 | 0 | 0 | 0 | 0 |
-| Apr 22, 2026 | 0 | 0 | 1 | 1 |
-| Apr 21, 2026 | 1 | 1 | 0 | 0 |
-| Apr 20, 2026 | 0 | 0 | 0 | 0 |
-| Apr 19, 2026 | 0 | 0 | 0 | 0 |
-| Apr 18, 2026 | 0 | 0 | 1 | 1 |
-| Apr 17, 2026 | 0 | 0 | 9 | 9 |
-| Apr 16, 2026 | 1 | 1 | 0 | 0 |
-| Apr 15, 2026 | 0 | 0 | 1 | 1 |
-| Apr 14, 2026 | 1 | 1 | 0 | 0 |
-| Apr 13, 2026 | 0 | 0 | 4 | 4 |
-| Apr 12, 2026 | 0 | 0 | 0 | 0 |
-| Apr 11, 2026 | 0 | 0 | 0 | 0 |
-| Apr 10, 2026 | 0 | 0 | 0 | 0 |
-| Apr 9, 2026 | 0 | 0 | 2 | 2 |
-| Apr 8, 2026 | 0 | 0 | 0 | 0 |
-| Apr 7, 2026 | 0 | 0 | 2 | 2 |
-| Apr 6, 2026 | 0 | 0 | 0 | 0 |
-| Apr 5, 2026 | 0 | 0 | 0 | 0 |
-| Apr 4, 2026 | 0 | 0 | 0 | 0 |
-| Apr 3, 2026 | 0 | 0 | 0 | 0 |
-| Apr 2, 2026 | 0 | 0 | 2 | 2 |
-| Apr 1, 2026 | 0 | 0 | 2 | 2 |
-| Mar 31, 2026 | 2 | 1 | 0 | 0 |
-| Mar 30, 2026 | 1 | 1 | 2 | 2 |
-| Mar 29, 2026 | 3 | 2 | 0 | 0 |
-
-*Showing last 30 days. Full history available in the database (49 days total).*
-
-**Insights**
-- Average: ~0 views/day, ~1 clones/day (last 30 days)
-
----
-
-## opena2a-org/agent-hardening-guide
-
-**Summary** (32 days tracked)
-
-| Metric | All-Time Total | Last 14 Days (API) |
-|--------|---------------|-------------------|
-| Views | 21 | 12 |
-| Unique Visitors | -- | 3 |
-| Clones | 34 | 15 |
-| Unique Cloners | -- | 15 |
-| Stars | 1 | -- |
-| Forks | 0 | -- |
-
-**Daily Breakdown** (last 30 days)
-
-| Date | Views | Unique Visitors | Clones | Unique Cloners |
-|------|-------|-----------------|--------|----------------|
-| Apr 27, 2026 | 2 | 1 | 0 | 0 |
-| Apr 26, 2026 | 0 | 0 | 0 | 0 |
-| Apr 25, 2026 | 1 | 1 | 2 | 2 |
-| Apr 24, 2026 | 1 | 1 | 0 | 0 |
-| Apr 23, 2026 | 1 | 1 | 0 | 0 |
-| Apr 22, 2026 | 0 | 0 | 0 | 0 |
-| Apr 21, 2026 | 1 | 1 | 1 | 1 |
-| Apr 20, 2026 | 1 | 1 | 0 | 0 |
-| Apr 19, 2026 | 1 | 1 | 0 | 0 |
-| Apr 18, 2026 | 0 | 0 | 0 | 0 |
-| Apr 17, 2026 | 0 | 0 | 10 | 10 |
-| Apr 16, 2026 | 1 | 1 | 0 | 0 |
-| Apr 15, 2026 | 1 | 1 | 1 | 1 |
-| Apr 14, 2026 | 2 | 1 | 1 | 1 |
-| Apr 13, 2026 | 0 | 0 | 3 | 3 |
-| Apr 12, 2026 | 2 | 2 | 2 | 2 |
-| Apr 11, 2026 | 1 | 1 | 2 | 2 |
-| Apr 10, 2026 | 4 | 3 | 3 | 2 |
-| Apr 9, 2026 | 2 | 2 | 9 | 9 |
-| Apr 8, 2026 | 0 | 0 | 0 | 0 |
-| Apr 7, 2026 | 0 | 0 | 0 | 0 |
-| Apr 6, 2026 | 0 | 0 | 0 | 0 |
-| Apr 5, 2026 | 0 | 0 | 0 | 0 |
-| Apr 4, 2026 | 0 | 0 | 0 | 0 |
-| Apr 3, 2026 | 0 | 0 | 0 | 0 |
-| Apr 2, 2026 | 0 | 0 | 0 | 0 |
-| Apr 1, 2026 | 0 | 0 | 0 | 0 |
-| Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
-
-*Showing last 30 days. Full history available in the database (32 days total).*
-
-**Insights**
-- Average: ~1 views/day, ~1 clones/day (last 30 days)
-
----
-
 ## opena2a-org/agent-trust-protocol
 
-**Summary** (49 days tracked)
+**Summary** (51 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 21 | 0 |
-| Unique Visitors | -- | 0 |
-| Clones | 66 | 13 |
-| Unique Cloners | -- | 13 |
+| Views | 23 | 2 |
+| Unique Visitors | -- | 1 |
+| Clones | 81 | 27 |
+| Unique Cloners | -- | 24 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -1653,12 +1534,14 @@
 
 | Source | Views | Unique Visitors |
 |--------|-------|----------------|
-| github.com | 6 | 1 |
+| github.com | 2 | 1 |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 3 | 3 |
+| Apr 28, 2026 | 2 | 1 | 12 | 9 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 0 | 0 |
 | Apr 25, 2026 | 0 | 0 | 0 | 0 |
@@ -1687,10 +1570,8 @@
 | Apr 2, 2026 | 0 | 0 | 2 | 2 |
 | Apr 1, 2026 | 0 | 0 | 2 | 2 |
 | Mar 31, 2026 | 2 | 1 | 0 | 0 |
-| Mar 30, 2026 | 1 | 1 | 1 | 1 |
-| Mar 29, 2026 | 1 | 1 | 4 | 4 |
 
-*Showing last 30 days. Full history available in the database (49 days total).*
+*Showing last 30 days. Full history available in the database (51 days total).*
 
 **Insights**
 - Average: ~0 views/day, ~1 clones/day (last 30 days)
@@ -1699,14 +1580,14 @@
 
 ## opena2a-org/mcp-security-checklist
 
-**Summary** (32 days tracked)
+**Summary** (34 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 21 | 15 |
-| Unique Visitors | -- | 7 |
-| Clones | 65 | 22 |
-| Unique Cloners | -- | 18 |
+| Views | 23 | 14 |
+| Unique Visitors | -- | 6 |
+| Clones | 68 | 23 |
+| Unique Cloners | -- | 19 |
 | Stars | 2 | -- |
 | Forks | 0 | -- |
 
@@ -1720,6 +1601,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 1 | 1 | 2 | 2 |
+| Apr 28, 2026 | 1 | 1 | 1 | 1 |
 | Apr 27, 2026 | 1 | 1 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 0 | 0 |
 | Apr 25, 2026 | 0 | 0 | 1 | 1 |
@@ -1748,52 +1631,52 @@
 | Apr 2, 2026 | 0 | 0 | 0 | 0 |
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 | Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (32 days total).*
+*Showing last 30 days. Full history available in the database (34 days total).*
 
 **Insights**
 - Average: ~1 views/day, ~2 clones/day (last 30 days)
 
 ---
 
-## ecolibria/enterprise-workforce-agents
+## opena2a-org/agent-hardening-guide
 
-**Summary** (32 days tracked)
+**Summary** (34 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 12 | 9 |
+| Views | 22 | 10 |
 | Unique Visitors | -- | 3 |
-| Clones | 25 | 8 |
-| Unique Cloners | -- | 7 |
-| Stars | 0 | -- |
+| Clones | 35 | 14 |
+| Unique Cloners | -- | 14 |
+| Stars | 1 | -- |
 | Forks | 0 | -- |
 
 **Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
-| Apr 27, 2026 | 1 | 1 | 0 | 0 |
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 1 | 1 | 0 | 0 |
+| Apr 27, 2026 | 2 | 1 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 0 | 0 |
-| Apr 25, 2026 | 0 | 0 | 0 | 0 |
+| Apr 25, 2026 | 1 | 1 | 2 | 2 |
 | Apr 24, 2026 | 1 | 1 | 0 | 0 |
-| Apr 23, 2026 | 0 | 0 | 2 | 1 |
+| Apr 23, 2026 | 1 | 1 | 0 | 0 |
 | Apr 22, 2026 | 0 | 0 | 0 | 0 |
-| Apr 21, 2026 | 2 | 1 | 1 | 1 |
-| Apr 20, 2026 | 1 | 1 | 1 | 1 |
+| Apr 21, 2026 | 1 | 1 | 1 | 1 |
+| Apr 20, 2026 | 1 | 1 | 0 | 0 |
 | Apr 19, 2026 | 1 | 1 | 0 | 0 |
 | Apr 18, 2026 | 0 | 0 | 0 | 0 |
-| Apr 17, 2026 | 0 | 0 | 2 | 2 |
-| Apr 16, 2026 | 0 | 0 | 0 | 0 |
-| Apr 15, 2026 | 2 | 1 | 1 | 1 |
-| Apr 14, 2026 | 1 | 1 | 1 | 1 |
-| Apr 13, 2026 | 1 | 1 | 0 | 0 |
-| Apr 12, 2026 | 0 | 0 | 3 | 3 |
-| Apr 11, 2026 | 1 | 1 | 0 | 0 |
-| Apr 10, 2026 | 1 | 1 | 0 | 0 |
-| Apr 9, 2026 | 0 | 0 | 14 | 13 |
+| Apr 17, 2026 | 0 | 0 | 10 | 10 |
+| Apr 16, 2026 | 1 | 1 | 0 | 0 |
+| Apr 15, 2026 | 1 | 1 | 1 | 1 |
+| Apr 14, 2026 | 2 | 1 | 1 | 1 |
+| Apr 13, 2026 | 0 | 0 | 3 | 3 |
+| Apr 12, 2026 | 2 | 2 | 2 | 2 |
+| Apr 11, 2026 | 1 | 1 | 2 | 2 |
+| Apr 10, 2026 | 4 | 3 | 3 | 2 |
+| Apr 9, 2026 | 2 | 2 | 9 | 9 |
 | Apr 8, 2026 | 0 | 0 | 0 | 0 |
 | Apr 7, 2026 | 0 | 0 | 0 | 0 |
 | Apr 6, 2026 | 0 | 0 | 0 | 0 |
@@ -1803,10 +1686,70 @@
 | Apr 2, 2026 | 0 | 0 | 0 | 0 |
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 | Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (32 days total).*
+*Showing last 30 days. Full history available in the database (34 days total).*
+
+**Insights**
+- Average: ~1 views/day, ~1 clones/day (last 30 days)
+
+---
+
+## opena2a-org/ai-agent-kill-chain
+
+**Summary** (51 days tracked)
+
+| Metric | All-Time Total | Last 14 Days (API) |
+|--------|---------------|-------------------|
+| Views | 22 | 5 |
+| Unique Visitors | -- | 3 |
+| Clones | 48 | 13 |
+| Unique Cloners | -- | 13 |
+| Stars | 2 | -- |
+| Forks | 0 | -- |
+
+**Top Referrers** (last 14 days)
+
+| Source | Views | Unique Visitors |
+|--------|-------|----------------|
+| github.com | 3 | 1 |
+| Bing | 1 | 1 |
+
+**Daily Breakdown** (last 30 days)
+
+| Date | Views | Unique Visitors | Clones | Unique Cloners |
+|------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 2 | 2 |
+| Apr 28, 2026 | 0 | 0 | 0 | 0 |
+| Apr 27, 2026 | 0 | 0 | 0 | 0 |
+| Apr 26, 2026 | 0 | 0 | 0 | 0 |
+| Apr 25, 2026 | 0 | 0 | 0 | 0 |
+| Apr 24, 2026 | 3 | 1 | 0 | 0 |
+| Apr 23, 2026 | 0 | 0 | 0 | 0 |
+| Apr 22, 2026 | 0 | 0 | 1 | 1 |
+| Apr 21, 2026 | 1 | 1 | 0 | 0 |
+| Apr 20, 2026 | 0 | 0 | 0 | 0 |
+| Apr 19, 2026 | 0 | 0 | 0 | 0 |
+| Apr 18, 2026 | 0 | 0 | 1 | 1 |
+| Apr 17, 2026 | 0 | 0 | 9 | 9 |
+| Apr 16, 2026 | 1 | 1 | 0 | 0 |
+| Apr 15, 2026 | 0 | 0 | 1 | 1 |
+| Apr 14, 2026 | 1 | 1 | 0 | 0 |
+| Apr 13, 2026 | 0 | 0 | 4 | 4 |
+| Apr 12, 2026 | 0 | 0 | 0 | 0 |
+| Apr 11, 2026 | 0 | 0 | 0 | 0 |
+| Apr 10, 2026 | 0 | 0 | 0 | 0 |
+| Apr 9, 2026 | 0 | 0 | 2 | 2 |
+| Apr 8, 2026 | 0 | 0 | 0 | 0 |
+| Apr 7, 2026 | 0 | 0 | 2 | 2 |
+| Apr 6, 2026 | 0 | 0 | 0 | 0 |
+| Apr 5, 2026 | 0 | 0 | 0 | 0 |
+| Apr 4, 2026 | 0 | 0 | 0 | 0 |
+| Apr 3, 2026 | 0 | 0 | 0 | 0 |
+| Apr 2, 2026 | 0 | 0 | 2 | 2 |
+| Apr 1, 2026 | 0 | 0 | 2 | 2 |
+| Mar 31, 2026 | 2 | 1 | 0 | 0 |
+
+*Showing last 30 days. Full history available in the database (51 days total).*
 
 **Insights**
 - Average: ~0 views/day, ~1 clones/day (last 30 days)
@@ -1815,14 +1758,14 @@
 
 ## ecolibria/finops-agent-setup
 
-**Summary** (32 days tracked)
+**Summary** (34 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 12 | 9 |
-| Unique Visitors | -- | 4 |
-| Clones | 19 | 4 |
-| Unique Cloners | -- | 4 |
+| Views | 15 | 9 |
+| Unique Visitors | -- | 3 |
+| Clones | 19 | 2 |
+| Unique Cloners | -- | 2 |
 | Stars | 0 | -- |
 | Forks | 0 | -- |
 
@@ -1830,6 +1773,8 @@
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 1 | 1 | 0 | 0 |
+| Apr 28, 2026 | 2 | 1 | 0 | 0 |
 | Apr 27, 2026 | 0 | 0 | 0 | 0 |
 | Apr 26, 2026 | 0 | 0 | 0 | 0 |
 | Apr 25, 2026 | 1 | 1 | 0 | 0 |
@@ -1858,10 +1803,63 @@
 | Apr 2, 2026 | 0 | 0 | 0 | 0 |
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 | Mar 31, 2026 | 0 | 0 | 0 | 0 |
-| Mar 30, 2026 | 0 | 0 | 0 | 0 |
-| Mar 29, 2026 | 0 | 0 | 0 | 0 |
 
-*Showing last 30 days. Full history available in the database (32 days total).*
+*Showing last 30 days. Full history available in the database (34 days total).*
+
+**Insights**
+- Average: ~1 views/day, ~1 clones/day (last 30 days)
+
+---
+
+## ecolibria/enterprise-workforce-agents
+
+**Summary** (34 days tracked)
+
+| Metric | All-Time Total | Last 14 Days (API) |
+|--------|---------------|-------------------|
+| Views | 14 | 8 |
+| Unique Visitors | -- | 2 |
+| Clones | 26 | 7 |
+| Unique Cloners | -- | 6 |
+| Stars | 0 | -- |
+| Forks | 0 | -- |
+
+**Daily Breakdown** (last 30 days)
+
+| Date | Views | Unique Visitors | Clones | Unique Cloners |
+|------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 0 | 0 | 1 | 1 |
+| Apr 28, 2026 | 2 | 1 | 0 | 0 |
+| Apr 27, 2026 | 1 | 1 | 0 | 0 |
+| Apr 26, 2026 | 0 | 0 | 0 | 0 |
+| Apr 25, 2026 | 0 | 0 | 0 | 0 |
+| Apr 24, 2026 | 1 | 1 | 0 | 0 |
+| Apr 23, 2026 | 0 | 0 | 2 | 1 |
+| Apr 22, 2026 | 0 | 0 | 0 | 0 |
+| Apr 21, 2026 | 2 | 1 | 1 | 1 |
+| Apr 20, 2026 | 1 | 1 | 1 | 1 |
+| Apr 19, 2026 | 1 | 1 | 0 | 0 |
+| Apr 18, 2026 | 0 | 0 | 0 | 0 |
+| Apr 17, 2026 | 0 | 0 | 2 | 2 |
+| Apr 16, 2026 | 0 | 0 | 0 | 0 |
+| Apr 15, 2026 | 2 | 1 | 1 | 1 |
+| Apr 14, 2026 | 1 | 1 | 1 | 1 |
+| Apr 13, 2026 | 1 | 1 | 0 | 0 |
+| Apr 12, 2026 | 0 | 0 | 3 | 3 |
+| Apr 11, 2026 | 1 | 1 | 0 | 0 |
+| Apr 10, 2026 | 1 | 1 | 0 | 0 |
+| Apr 9, 2026 | 0 | 0 | 14 | 13 |
+| Apr 8, 2026 | 0 | 0 | 0 | 0 |
+| Apr 7, 2026 | 0 | 0 | 0 | 0 |
+| Apr 6, 2026 | 0 | 0 | 0 | 0 |
+| Apr 5, 2026 | 0 | 0 | 0 | 0 |
+| Apr 4, 2026 | 0 | 0 | 0 | 0 |
+| Apr 3, 2026 | 0 | 0 | 0 | 0 |
+| Apr 2, 2026 | 0 | 0 | 0 | 0 |
+| Apr 1, 2026 | 0 | 0 | 0 | 0 |
+| Mar 31, 2026 | 0 | 0 | 0 | 0 |
+
+*Showing last 30 days. Full history available in the database (34 days total).*
 
 **Insights**
 - Average: ~0 views/day, ~1 clones/day (last 30 days)
@@ -1870,14 +1868,14 @@
 
 ## opena2a-org/aiis-signatures
 
-**Summary** (27 days tracked)
+**Summary** (29 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 6 | 6 |
-| Unique Visitors | -- | 4 |
-| Clones | 51 | 51 |
-| Unique Cloners | -- | 31 |
+| Views | 9 | 8 |
+| Unique Visitors | -- | 3 |
+| Clones | 54 | 54 |
+| Unique Cloners | -- | 32 |
 | Stars | 0 | -- |
 | Forks | 0 | -- |
 
@@ -1887,10 +1885,12 @@
 |--------|-------|----------------|
 | github.com | 1 | 1 |
 
-**Daily Breakdown** (last 27 days)
+**Daily Breakdown** (last 29 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 2 | 1 | 2 | 2 |
+| Apr 28, 2026 | 1 | 1 | 1 | 1 |
 | Apr 27, 2026 | 1 | 1 | 2 | 1 |
 | Apr 26, 2026 | 0 | 0 | 1 | 1 |
 | Apr 25, 2026 | 1 | 1 | 1 | 1 |
@@ -1920,27 +1920,47 @@
 | Apr 1, 2026 | 0 | 0 | 0 | 0 |
 
 **Insights**
-- Average: ~0 views/day, ~2 clones/day (last 27 days)
+- Average: ~0 views/day, ~2 clones/day (last 29 days)
 
 ---
 
 ## opena2a-org/github-analytics-tracker
 
-**Summary** (3 days tracked)
+**Summary** (17 days tracked)
 
 | Metric | All-Time Total | Last 14 Days (API) |
 |--------|---------------|-------------------|
-| Views | 4 | 0 |
-| Unique Visitors | -- | 0 |
-| Clones | 44 | 0 |
-| Unique Cloners | -- | 0 |
+| Views | 8 | 4 |
+| Unique Visitors | -- | 1 |
+| Clones | 97 | 53 |
+| Unique Cloners | -- | 9 |
 | Stars | 0 | -- |
 | Forks | 0 | -- |
 
-**Daily Breakdown** (last 28 days)
+**Top Referrers** (last 14 days)
+
+| Source | Views | Unique Visitors |
+|--------|-------|----------------|
+| github.com | 4 | 1 |
+
+**Daily Breakdown** (last 30 days)
 
 | Date | Views | Unique Visitors | Clones | Unique Cloners |
 |------|-------|-----------------|--------|----------------|
+| Apr 29, 2026 | 4 | 1 | 15 | 9 |
+| Apr 28, 2026 | 0 | 0 | 2 | 2 |
+| Apr 27, 2026 | 0 | 0 | 3 | 2 |
+| Apr 26, 2026 | 0 | 0 | 3 | 2 |
+| Apr 25, 2026 | 0 | 0 | 3 | 2 |
+| Apr 24, 2026 | 0 | 0 | 3 | 2 |
+| Apr 23, 2026 | 0 | 0 | 3 | 2 |
+| Apr 22, 2026 | 0 | 0 | 3 | 2 |
+| Apr 21, 2026 | 0 | 0 | 3 | 2 |
+| Apr 20, 2026 | 0 | 0 | 3 | 2 |
+| Apr 19, 2026 | 0 | 0 | 3 | 2 |
+| Apr 18, 2026 | 0 | 0 | 3 | 2 |
+| Apr 17, 2026 | 0 | 0 | 3 | 2 |
+| Apr 16, 2026 | 0 | 0 | 3 | 2 |
 | Dec 8, 2025 | 0 | 0 | 1 | 1 |
 | Dec 7, 2025 | 0 | 0 | 1 | 1 |
 | Dec 6, 2025 | 0 | 0 | 1 | 1 |
@@ -1957,21 +1977,11 @@
 | Nov 25, 2025 | 0 | 0 | 1 | 1 |
 | Nov 6, 2025 | 0 | 0 | 1 | 1 |
 | Nov 5, 2025 | 1 | 1 | 1 | 1 |
-| Nov 4, 2025 | 0 | 0 | 1 | 1 |
-| Nov 3, 2025 | 0 | 0 | 2 | 2 |
-| Nov 2, 2025 | 0 | 0 | 2 | 2 |
-| Nov 1, 2025 | 0 | 0 | 2 | 2 |
-| Oct 31, 2025 | 0 | 0 | 1 | 1 |
-| Oct 30, 2025 | 0 | 0 | 1 | 1 |
-| Oct 29, 2025 | 0 | 0 | 1 | 1 |
-| Oct 28, 2025 | 0 | 0 | 3 | 3 |
-| Oct 27, 2025 | 0 | 0 | 1 | 1 |
-| Oct 26, 2025 | 0 | 0 | 1 | 1 |
-| Oct 25, 2025 | 0 | 0 | 6 | 6 |
-| Oct 24, 2025 | 1 | 1 | 7 | 6 |
+
+*Showing last 30 days. Full history available in the database (42 days total).*
 
 **Insights**
-- Average: ~0 views/day, ~2 clones/day (last 28 days)
+- Average: ~0 views/day, ~2 clones/day (last 30 days)
 
 ---
 
@@ -1981,36 +1991,36 @@
 |------------|---------------|-----------------|--------------------|----|
 | agent-identity-management | 5,513 | 6,448 | 104 | 42 |
 | hackmyagent | 2,584 | 6,876 | 91 | 27 |
-| secretless-ai | 2,108 | 2,041 | 21 | 20 |
-| opena2a | 2,010 | 7,675 | 41 | 14 |
-| damn-vulnerable-ai-agent | 1,830 | 1,763 | 133 | 16 |
+| secretless-ai | 2,140 | 2,204 | 18 | 19 |
+| opena2a | 2,047 | 9,173 | 36 | 14 |
+| damn-vulnerable-ai-agent | 1,912 | 1,778 | 134 | 17 |
 | cryptoserve | 641 | 2,241 | 23 | 3 |
-| ai-browserguard | 480 | 828 | 18 | 3 |
-| ai-trust | 284 | 1,547 | 11 | 2 |
-| agent-runtime-protection | 246 | 385 | 7 | 2 |
-| .github | 217 | 410 | 4 | 1 |
-| oasb | 194 | 908 | 14 | 2 |
-| nanomind | 169 | 764 | 12 | 2 |
+| ai-browserguard | 486 | 831 | 12 | 3 |
+| ai-trust | 290 | 1,672 | 6 | 2 |
+| agent-runtime-protection | 249 | 386 | 7 | 2 |
+| .github | 220 | 411 | 3 | 1 |
+| oasb | 201 | 915 | 11 | 2 |
+| nanomind | 176 | 913 | 7 | 2 |
 | open-agent-security-benchmark | 167 | 227 | 13 | 2 |
-| agent-governance-spec | 140 | 117 | 6 | 2 |
+| agent-governance-spec | 140 | 118 | 5 | 2 |
 | AI-BrowserGuard | 125 | 391 | 17 | 2 |
 | homebrew-tap | 104 | 901 | 10 | 1 |
 | arp | 55 | 142 | 14 | 1 |
 | opena2a-website | 54 | 56 | 0 | 0 |
-| trust-gate | 52 | 101 | 0 | 2 |
-| agent-threat-matrix | 47 | 70 | 5 | 2 |
-| trust-badge-action | 41 | 113 | 0 | 2 |
-| agent-identity-protocol | 39 | 47 | 3 | 1 |
-| ai-credential-safety | 34 | 33 | 15 | 1 |
-| a2a-security-examples | 26 | 53 | 10 | 2 |
-| ai-agent-kill-chain | 22 | 46 | 4 | 2 |
-| agent-hardening-guide | 21 | 34 | 3 | 1 |
-| agent-trust-protocol | 21 | 66 | 0 | 2 |
-| mcp-security-checklist | 21 | 65 | 7 | 2 |
-| enterprise-workforce-agents | 12 | 25 | 3 | 0 |
-| finops-agent-setup | 12 | 19 | 4 | 0 |
-| aiis-signatures | 6 | 51 | 4 | 0 |
-| github-analytics-tracker | 4 | 44 | 0 | 0 |
+| trust-gate | 52 | 102 | 0 | 2 |
+| agent-threat-matrix | 47 | 72 | 5 | 2 |
+| trust-badge-action | 41 | 115 | 0 | 2 |
+| agent-identity-protocol | 39 | 50 | 0 | 1 |
+| ai-credential-safety | 37 | 39 | 16 | 1 |
+| a2a-security-examples | 32 | 55 | 9 | 2 |
+| agent-trust-protocol | 23 | 81 | 1 | 2 |
+| mcp-security-checklist | 23 | 68 | 6 | 2 |
+| agent-hardening-guide | 22 | 35 | 3 | 1 |
+| ai-agent-kill-chain | 22 | 48 | 3 | 2 |
+| finops-agent-setup | 15 | 19 | 3 | 0 |
+| enterprise-workforce-agents | 14 | 26 | 2 | 0 |
+| aiis-signatures | 9 | 54 | 3 | 0 |
+| github-analytics-tracker | 8 | 97 | 1 | 0 |
 
 ---
 
@@ -2029,51 +2039,51 @@
 *Generated by [GitHub Analytics Tracker](https://github.com/opena2a-org/github-analytics-tracker)*
 ## npm Package Details
 
-### hackmyagent v0.21.1
+### hackmyagent v0.22.0
 
 > Find it. Break it. Fix it. The hacker's toolkit for AI agents.
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 964 |
-| Last 30 days | 7,505 |
-| Last 90 days | 15,335 |
-| All time | 15,335 |
+| Last 7 days | 991 |
+| Last 30 days | 7,792 |
+| Last 90 days | 15,690 |
+| All time | 15,690 |
 
 **Insights**
-- Average: ~250 downloads/day (last 30 days)
+- Average: ~260 downloads/day (last 30 days)
 - Peak: Apr 9, 2026 with 1,845 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.17.11 | 230 |
-| 0.19.0 | 132 |
-| 0.18.2 | 129 |
+| 0.17.11 | 305 |
+| 0.19.0 | 136 |
+| 0.18.2 | 130 |
 | 0.18.3 | 127 |
-| 0.16.7 | 108 |
-| 0.17.0 | 108 |
-| 0.20.0 | 105 |
-| 0.11.15 | 26 |
-| 0.17.9 | 21 |
-| 0.15.7 | 10 |
+| 0.20.0 | 117 |
+| 0.21.0 | 112 |
+| 0.21.1 | 110 |
+| 0.16.7 | 93 |
+| 0.17.0 | 92 |
+| 0.11.15 | 23 |
 
 ---
 
-### opena2a-cli v0.9.1
+### opena2a-cli v0.10.1
 
 > Unified CLI for the OpenA2A security platform
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 310 |
-| Last 30 days | 2,151 |
-| Last 90 days | 7,286 |
-| All time | 7,286 |
+| Last 7 days | 289 |
+| Last 30 days | 2,368 |
+| Last 90 days | 7,509 |
+| All time | 7,509 |
 
 **Insights**
-- Average: ~72 downloads/day (last 30 days)
+- Average: ~79 downloads/day (last 30 days)
 - Peak: Apr 3, 2026 with 374 downloads
 
 **Downloads by Version** (last week)
@@ -2081,15 +2091,15 @@
 | Version | Downloads |
 |---------|-----------|
 | 0.8.24 | 133 |
-| 0.8.25 | 108 |
-| 0.8.23 | 24 |
+| 0.8.25 | 130 |
+| 0.8.26 | 104 |
+| 0.9.0 | 96 |
+| 0.8.23 | 23 |
 | 0.8.20 | 8 |
 | 0.8.22 | 8 |
 | 0.8.16 | 5 |
 | 0.8.18 | 5 |
 | 0.8.19 | 5 |
-| 0.8.21 | 5 |
-| 0.3.0 | 2 |
 
 ---
 
@@ -2099,61 +2109,61 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 987 |
-| Last 30 days | 4,545 |
-| Last 90 days | 6,755 |
-| All time | 6,755 |
+| Last 7 days | 851 |
+| Last 30 days | 4,733 |
+| Last 90 days | 6,968 |
+| All time | 6,968 |
 
 **Insights**
-- Average: ~152 downloads/day (last 30 days)
+- Average: ~158 downloads/day (last 30 days)
 - Peak: Apr 9, 2026 with 1,101 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.2.25 | 227 |
-| 0.5.0 | 141 |
+| 0.2.25 | 305 |
+| 0.5.0 | 145 |
 | 0.3.0 | 132 |
 | 0.4.0 | 128 |
-| 0.3.1 | 110 |
-| 0.2.23 | 106 |
-| 0.6.0 | 96 |
-| 0.1.3 | 30 |
-| 0.2.24 | 10 |
-| 0.2.9 | 8 |
+| 0.3.1 | 111 |
+| 0.6.0 | 110 |
+| 0.7.0 | 94 |
+| 0.2.23 | 92 |
+| 0.1.3 | 28 |
+| 0.2.24 | 13 |
 
 ---
 
-### secretless-ai v0.16.2
+### secretless-ai v0.16.4
 
 > One command to keep secrets out of AI. Works with Claude Code, Cursor, Copilot, Windsurf, and any AI coding tool.
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 274 |
-| Last 30 days | 1,491 |
-| Last 90 days | 5,359 |
-| All time | 5,359 |
+| Last 7 days | 394 |
+| Last 30 days | 1,780 |
+| Last 90 days | 5,651 |
+| All time | 5,651 |
 
 **Insights**
-- Average: ~50 downloads/day (last 30 days)
+- Average: ~59 downloads/day (last 30 days)
 - Peak: Apr 1, 2026 with 389 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.14.1 | 131 |
-| 0.15.1 | 123 |
-| 0.15.0 | 26 |
+| 0.14.1 | 151 |
+| 0.15.1 | 138 |
+| 0.16.2 | 121 |
+| 0.16.1 | 106 |
+| 0.15.0 | 24 |
+| 0.14.0 | 3 |
 | 0.10.0 | 2 |
 | 0.12.0 | 2 |
-| 0.14.0 | 2 |
+| 0.10.1 | 1 |
 | 0.10.2 | 1 |
-| 0.11.2 | 1 |
-| 0.11.4 | 1 |
-| 0.11.6 | 1 |
 
 ---
 
@@ -2163,22 +2173,23 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 524 |
-| Last 30 days | 2,060 |
-| Last 90 days | 3,395 |
-| All time | 3,395 |
+| Last 7 days | 374 |
+| Last 30 days | 2,198 |
+| Last 90 days | 3,549 |
+| All time | 3,549 |
 
 **Insights**
-- Average: ~69 downloads/day (last 30 days)
+- Average: ~73 downloads/day (last 30 days)
 - Peak: Apr 9, 2026 with 314 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 462 |
-| 0.2.0 | 150 |
-| 0.1.1 | 10 |
+| 0.1.2 | 504 |
+| 0.2.0 | 197 |
+| 0.1.1 | 12 |
+| 0.1.0 | 1 |
 
 ---
 
@@ -2188,22 +2199,22 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 464 |
-| Last 30 days | 1,980 |
-| Last 90 days | 2,999 |
-| All time | 2,999 |
+| Last 7 days | 302 |
+| Last 30 days | 2,068 |
+| Last 90 days | 3,102 |
+| All time | 3,102 |
 
 **Insights**
-- Average: ~66 downloads/day (last 30 days)
+- Average: ~69 downloads/day (last 30 days)
 - Peak: Apr 9, 2026 with 333 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 290 |
-| 0.1.0 | 161 |
-| 0.1.1 | 50 |
+| 0.1.2 | 345 |
+| 0.1.0 | 177 |
+| 0.1.1 | 45 |
 
 ---
 
@@ -2241,21 +2252,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 327 |
-| Last 30 days | 1,813 |
-| Last 90 days | 2,345 |
-| All time | 2,345 |
+| Last 7 days | 286 |
+| Last 30 days | 1,903 |
+| Last 90 days | 2,450 |
+| All time | 2,450 |
 
 **Insights**
-- Average: ~60 downloads/day (last 30 days)
+- Average: ~63 downloads/day (last 30 days)
 - Peak: Apr 9, 2026 with 334 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 205 |
-| 0.1.0 | 159 |
+| 0.1.1 | 255 |
+| 0.1.0 | 177 |
 
 ---
 
@@ -2265,10 +2276,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 10 |
-| Last 30 days | 47 |
-| Last 90 days | 1,096 |
-| All time | 1,096 |
+| Last 7 days | 14 |
+| Last 30 days | 52 |
+| Last 90 days | 1,102 |
+| All time | 1,102 |
 
 **Insights**
 - Average: ~2 downloads/day (last 30 days)
@@ -2277,9 +2288,12 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.4 | 8 |
+| 0.3.4 | 9 |
 | 0.2.1 | 2 |
 | 0.3.3 | 2 |
+| 0.1.1 | 1 |
+| 0.1.3 | 1 |
+| 0.3.2 | 1 |
 
 ---
 
@@ -2289,20 +2303,20 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 167 |
-| Last 30 days | 457 |
-| Last 90 days | 1,053 |
-| All time | 1,053 |
+| Last 7 days | 176 |
+| Last 30 days | 466 |
+| Last 90 days | 1,062 |
+| All time | 1,062 |
 
 **Insights**
-- Average: ~15 downloads/day (last 30 days)
+- Average: ~16 downloads/day (last 30 days)
 - Peak: Apr 14, 2026 with 203 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.8.2 | 96 |
+| 0.8.2 | 104 |
 | 0.7.4 | 30 |
 | 0.6.0 | 8 |
 | 0.6.2 | 7 |
@@ -2320,23 +2334,24 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 698 |
-| Last 30 days | 742 |
-| Last 90 days | 742 |
-| All time | 742 |
+| Last 7 days | 543 |
+| Last 30 days | 957 |
+| Last 90 days | 957 |
+| All time | 957 |
 
 **Insights**
-- Average: ~25 downloads/day (last 30 days)
+- Average: ~32 downloads/day (last 30 days)
 - Peak: Apr 22, 2026 with 370 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.2.0 | 279 |
-| 0.3.0 | 247 |
-| 0.4.0 | 117 |
-| 0.1.0 | 99 |
+| 0.2.0 | 287 |
+| 0.3.0 | 251 |
+| 0.4.0 | 164 |
+| 0.5.0 | 155 |
+| 0.1.0 | 56 |
 
 ---
 
@@ -2346,21 +2361,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 241 |
-| Last 30 days | 455 |
-| Last 90 days | 645 |
-| All time | 645 |
+| Last 7 days | 243 |
+| Last 30 days | 625 |
+| Last 90 days | 815 |
+| All time | 815 |
 
 **Insights**
-- Average: ~15 downloads/day (last 30 days)
-- Peak: Apr 22, 2026 with 168 downloads
+- Average: ~21 downloads/day (last 30 days)
+- Peak: Apr 28, 2026 with 170 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 159 |
-| 0.1.0 | 108 |
+| 0.1.1 | 226 |
+| 0.1.0 | 185 |
 
 ---
 
@@ -2370,21 +2385,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 230 |
-| Last 30 days | 444 |
-| Last 90 days | 611 |
-| All time | 611 |
+| Last 7 days | 196 |
+| Last 30 days | 569 |
+| Last 90 days | 736 |
+| All time | 736 |
 
 **Insights**
-- Average: ~15 downloads/day (last 30 days)
+- Average: ~19 downloads/day (last 30 days)
 - Peak: Apr 22, 2026 with 159 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 157 |
-| 0.1.0 | 99 |
+| 0.1.1 | 211 |
+| 0.1.0 | 144 |
 
 ---
 
@@ -2394,10 +2409,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 8 |
+| Last 7 days | 10 |
 | Last 30 days | 55 |
-| Last 90 days | 609 |
-| All time | 609 |
+| Last 90 days | 611 |
+| All time | 611 |
 
 **Insights**
 - Average: ~2 downloads/day (last 30 days)
@@ -2406,11 +2421,37 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.1 | 3 |
+| 0.3.1 | 5 |
 | 0.3.0 | 2 |
 | 0.1.0 | 1 |
 | 0.1.1 | 1 |
 | 0.2.0 | 1 |
+
+---
+
+### @nanomind/router v0.1.3
+
+> Intent classification and command mapping for CLI tools
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 216 |
+| Last 30 days | 317 |
+| Last 90 days | 583 |
+| All time | 583 |
+
+**Insights**
+- Average: ~11 downloads/day (last 30 days)
+- Peak: Apr 28, 2026 with 193 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.1.0 | 141 |
+| 0.1.3 | 86 |
+| 0.1.2 | 61 |
+| 0.1.1 | 5 |
 
 ---
 
@@ -2432,6 +2473,55 @@
 | 0.1.2 | 55 |
 | 0.1.0 | 1 |
 | 0.1.1 | 1 |
+
+---
+
+### @opena2a/check-core v0.2.0
+
+> Data-shape and orchestration primitives for the `check` command across OpenA2A CLIs. One implementation of input classification, registry → scan-on-miss flow, download-error translation, and canonical CheckOutput schema — consumed by hackmyagent, opena2a-
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 478 |
+| Last 30 days | 478 |
+| Last 90 days | 478 |
+| All time | 478 |
+
+**Insights**
+- Average: ~16 downloads/day (last 30 days)
+- Peak: Apr 23, 2026 with 244 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.1.0 | 205 |
+| 0.2.0 | 185 |
+| 0.0.0 | 88 |
+
+---
+
+### @opena2a/registry-client v0.1.0
+
+> HTTP client for the OpenA2A Registry trust query endpoints. Shared by hackmyagent, opena2a-cli, and ai-trust.
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 241 |
+| Last 30 days | 473 |
+| Last 90 days | 473 |
+| All time | 473 |
+
+**Insights**
+- Average: ~16 downloads/day (last 30 days)
+- Peak: Apr 22, 2026 with 232 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.1.0 | 370 |
+| 0.0.0 | 103 |
 
 ---
 
@@ -2476,77 +2566,28 @@
 
 ---
 
-### @opena2a/check-core v0.2.0
+### @opena2a/telemetry v0.1.2
 
-> Data-shape and orchestration primitives for the `check` command across OpenA2A CLIs. One implementation of input classification, registry → scan-on-miss flow, download-error translation, and canonical CheckOutput schema — consumed by hackmyagent, opena2a-
+> Tier-1 anonymous usage telemetry SDK for OpenA2A CLIs and tools. Fire-and-forget, opt-out, no content collection.
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 419 |
-| Last 30 days | 419 |
-| Last 90 days | 419 |
-| All time | 419 |
+| Last 7 days | 413 |
+| Last 30 days | 413 |
+| Last 90 days | 413 |
+| All time | 413 |
 
 **Insights**
 - Average: ~14 downloads/day (last 30 days)
-- Peak: Apr 23, 2026 with 244 downloads
+- Peak: Apr 27, 2026 with 299 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 203 |
-| 0.2.0 | 128 |
-| 0.0.0 | 88 |
-
----
-
-### @opena2a/registry-client v0.1.0
-
-> HTTP client for the OpenA2A Registry trust query endpoints. Shared by hackmyagent, opena2a-cli, and ai-trust.
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 402 |
-| Last 30 days | 402 |
-| Last 90 days | 402 |
-| All time | 402 |
-
-**Insights**
-- Average: ~13 downloads/day (last 30 days)
-- Peak: Apr 22, 2026 with 232 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.0 | 299 |
-| 0.0.0 | 103 |
-
----
-
-### @nanomind/router v0.1.3
-
-> Intent classification and command mapping for CLI tools
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 100 |
-| Last 30 days | 127 |
-| Last 90 days | 390 |
-| All time | 390 |
-
-**Insights**
-- Average: ~4 downloads/day (last 30 days)
-- Peak: Apr 22, 2026 with 77 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.0 | 95 |
-| 0.1.2 | 4 |
-| 0.1.1 | 1 |
+| 0.1.2 | 207 |
+| 0.1.1 | 126 |
+| 0.1.0 | 80 |
 
 ---
 
@@ -2556,22 +2597,70 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 200 |
-| Last 30 days | 215 |
-| Last 90 days | 366 |
-| All time | 366 |
+| Last 7 days | 75 |
+| Last 30 days | 250 |
+| Last 90 days | 401 |
+| All time | 401 |
 
 **Insights**
-- Average: ~7 downloads/day (last 30 days)
+- Average: ~8 downloads/day (last 30 days)
 - Peak: Apr 22, 2026 with 160 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 98 |
-| 0.1.0 | 85 |
+| 0.1.0 | 119 |
+| 0.1.2 | 99 |
 | 0.1.1 | 17 |
+
+---
+
+### @nanomind/atc v0.1.1
+
+> ATC intent handler — trust queries against the OpenA2A Registry
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 69 |
+| Last 30 days | 171 |
+| Last 90 days | 340 |
+| All time | 340 |
+
+**Insights**
+- Average: ~6 downloads/day (last 30 days)
+- Peak: Apr 22, 2026 with 77 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.1.0 | 141 |
+| 0.1.1 | 5 |
+
+---
+
+### @opena2a/ai-classifier v0.1.1
+
+> Tier-based AI package classification (native / adjacent / unrelated) for OpenA2A trust tooling
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 101 |
+| Last 30 days | 332 |
+| Last 90 days | 332 |
+| All time | 332 |
+
+**Insights**
+- Average: ~11 downloads/day (last 30 days)
+- Peak: Apr 22, 2026 with 191 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.1.1 | 234 |
+| 0.1.0 | 80 |
 
 ---
 
@@ -2614,79 +2703,6 @@
 
 ---
 
-### @opena2a/ai-classifier v0.1.1
-
-> Tier-based AI package classification (native / adjacent / unrelated) for OpenA2A trust tooling
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 264 |
-| Last 30 days | 304 |
-| Last 90 days | 304 |
-| All time | 304 |
-
-**Insights**
-- Average: ~10 downloads/day (last 30 days)
-- Peak: Apr 22, 2026 with 191 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.1 | 206 |
-| 0.1.0 | 120 |
-
----
-
-### @opena2a/telemetry v0.1.2
-
-> Tier-1 anonymous usage telemetry SDK for OpenA2A CLIs and tools. Fire-and-forget, opt-out, no content collection.
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 299 |
-| Last 30 days | 299 |
-| Last 90 days | 299 |
-| All time | 299 |
-
-**Insights**
-- Average: ~10 downloads/day (last 30 days)
-- Peak: Apr 27, 2026 with 299 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.1 | 119 |
-| 0.1.2 | 107 |
-| 0.1.0 | 73 |
-
----
-
-### @nanomind/atc v0.1.1
-
-> ATC intent handler — trust queries against the OpenA2A Registry
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 101 |
-| Last 30 days | 126 |
-| Last 90 days | 295 |
-| All time | 295 |
-
-**Insights**
-- Average: ~4 downloads/day (last 30 days)
-- Peak: Apr 22, 2026 with 77 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.0 | 97 |
-| 0.1.1 | 4 |
-
----
-
 ### @opena2a/credvault-openclaw v0.1.2
 
 > Credential protection for OpenClaw bots — encrypted local store, environment variable resolution, per-skill isolation. Credentials never touch the LLM context window.
@@ -2713,10 +2729,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 220 |
-| Last 30 days | 220 |
-| Last 90 days | 220 |
-| All time | 220 |
+| Last 7 days | 38 |
+| Last 30 days | 221 |
+| Last 90 days | 221 |
+| All time | 221 |
 
 **Insights**
 - Average: ~7 downloads/day (last 30 days)
@@ -2726,7 +2742,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 136 |
+| 0.1.0 | 137 |
 | 0.0.0 | 84 |
 
 ---
@@ -2737,10 +2753,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 216 |
-| Last 30 days | 216 |
-| Last 90 days | 216 |
-| All time | 216 |
+| Last 7 days | 41 |
+| Last 30 days | 218 |
+| Last 90 days | 218 |
+| All time | 218 |
 
 **Insights**
 - Average: ~7 downloads/day (last 30 days)
@@ -2750,8 +2766,8 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 132 |
-| 0.0.0 | 84 |
+| 0.1.0 | 133 |
+| 0.0.0 | 85 |
 
 ---
 
@@ -2761,10 +2777,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 210 |
-| Last 30 days | 210 |
-| Last 90 days | 210 |
-| All time | 210 |
+| Last 7 days | 35 |
+| Last 30 days | 211 |
+| Last 90 days | 211 |
+| All time | 211 |
 
 **Insights**
 - Average: ~7 downloads/day (last 30 days)
@@ -2774,7 +2790,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 128 |
+| 0.1.0 | 129 |
 | 0.0.0 | 82 |
 
 ---
@@ -2785,10 +2801,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 206 |
-| Last 30 days | 206 |
-| Last 90 days | 206 |
-| All time | 206 |
+| Last 7 days | 35 |
+| Last 30 days | 207 |
+| Last 90 days | 207 |
+| All time | 207 |
 
 **Insights**
 - Average: ~7 downloads/day (last 30 days)
@@ -2798,8 +2814,32 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 118 |
+| 0.1.0 | 119 |
 | 0.0.0 | 88 |
+
+---
+
+### @nanomind/daemon v0.2.0
+
+> Persistent NanoMind inference daemon with HTTP and IPC interfaces
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 132 |
+| Last 30 days | 156 |
+| Last 90 days | 203 |
+| All time | 203 |
+
+**Insights**
+- Average: ~5 downloads/day (last 30 days)
+- Peak: Apr 28, 2026 with 129 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.2.0 | 99 |
+| 0.1.0 | 33 |
 
 ---
 
@@ -2809,8 +2849,8 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 20 |
-| Last 30 days | 67 |
+| Last 7 days | 5 |
+| Last 30 days | 64 |
 | Last 90 days | 179 |
 | All time | 179 |
 
@@ -2832,10 +2872,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 4 |
-| Last 30 days | 20 |
-| Last 90 days | 174 |
-| All time | 174 |
+| Last 7 days | 5 |
+| Last 30 days | 21 |
+| Last 90 days | 175 |
+| All time | 175 |
 
 **Insights**
 - Average: ~1 downloads/day (last 30 days)
@@ -2844,7 +2884,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 3 |
+| 0.1.1 | 4 |
 | 0.1.0 | 1 |
 
 ---
@@ -2855,10 +2895,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 5 |
-| Last 30 days | 17 |
-| Last 90 days | 102 |
-| All time | 102 |
+| Last 7 days | 6 |
+| Last 30 days | 16 |
+| Last 90 days | 103 |
+| All time | 103 |
 
 **Insights**
 - Average: ~1 downloads/day (last 30 days)
@@ -2867,29 +2907,20 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 5 |
+| 0.1.0 | 6 |
 
 ---
 
-### @nanomind/daemon v0.2.0
+### @opena2a/credential-patterns v0.1.1
 
-> Persistent NanoMind inference daemon with HTTP and IPC interfaces
+> Canonical credential regex catalog and match-with-allowlist helpers for OpenA2A security tools (secretless-ai, hackmyagent).
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 3 |
-| Last 30 days | 31 |
-| Last 90 days | 74 |
-| All time | 74 |
-
-**Insights**
-- Average: ~1 downloads/day (last 30 days)
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.1.0 | 3 |
+| Last 7 days | 0 |
+| Last 30 days | 0 |
+| Last 90 days | 0 |
+| All time | 0 |
 
 ---
 
@@ -2912,10 +2943,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 166 |
-| Last 30 days | 692 |
-| Last 90 days | 5,099 |
-| All time | 5,099 |
+| Last 7 days | 129 |
+| Last 30 days | 687 |
+| Last 90 days | 5,105 |
+| All time | 5,105 |
 
 **Insights**
 - Average: ~25 downloads/day (last 28 days)
@@ -2950,10 +2981,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 104 |
-| Last 30 days | 723 |
-| Last 90 days | 4,064 |
-| All time | 4,064 |
+| Last 7 days | 98 |
+| Last 30 days | 719 |
+| Last 90 days | 4,066 |
+| All time | 4,066 |
 
 **Insights**
 - Average: ~25 downloads/day (last 29 days)
@@ -2972,7 +3003,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 854 |
+| null | 856 |
 | Linux | 513 |
 | Darwin | 24 |
 | Windows | 2 |
@@ -2985,10 +3016,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 81 |
-| Last 30 days | 603 |
-| Last 90 days | 3,439 |
-| All time | 3,439 |
+| Last 7 days | 75 |
+| Last 30 days | 602 |
+| Last 90 days | 3,441 |
+| All time | 3,441 |
 
 **Insights**
 - Average: ~22 downloads/day (last 28 days)
@@ -3008,7 +3039,7 @@
 | OS | Downloads |
 |----|----------|
 | Linux | 643 |
-| null | 639 |
+| null | 641 |
 | Windows | 32 |
 | Darwin | 19 |
 
@@ -3020,10 +3051,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 58 |
-| Last 30 days | 441 |
-| Last 90 days | 2,124 |
-| All time | 2,124 |
+| Last 7 days | 51 |
+| Last 30 days | 438 |
+| Last 90 days | 2,125 |
+| All time | 2,125 |
 
 **Insights**
 - Average: ~17 downloads/day (last 26 days)
@@ -3043,7 +3074,7 @@
 | OS | Downloads |
 |----|----------|
 | Linux | 556 |
-| null | 357 |
+| null | 358 |
 | Windows | 24 |
 | Darwin | 15 |
 
@@ -3055,10 +3086,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 35 |
+| Last 7 days | 36 |
 | Last 30 days | 211 |
-| Last 90 days | 1,540 |
-| All time | 1,540 |
+| Last 90 days | 1,541 |
+| All time | 1,541 |
 
 **Insights**
 - Average: ~9 downloads/day (last 24 days)
@@ -3077,7 +3108,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 364 |
+| null | 365 |
 | Linux | 24 |
 | Darwin | 8 |
 | Windows | 2 |

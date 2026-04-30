@@ -1,14 +1,14 @@
 {
-  "lastUpdated": "2026-04-29T06:46:00.608Z",
+  "lastUpdated": "2026-04-30T06:48:38.796Z",
   "repository": "opena2a-org/agent-governance-spec",
   "stats": {
     "allTime": {
       "views": 140,
-      "clones": 117
+      "clones": 118
     },
     "recent14Days": {
-      "views": 6,
-      "viewsUnique": 6,
+      "views": 5,
+      "viewsUnique": 5,
       "clones": 18,
       "clonesUnique": 15
     },
