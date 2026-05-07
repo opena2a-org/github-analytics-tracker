@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-05-06T06:51:08.582Z",
+  "lastUpdated": "2026-05-07T06:55:18.281Z",
   "repository": "opena2a-org/oasb",
   "stats": {
     "allTime": {
       "views": 217,
-      "clones": 948
+      "clones": 949
     },
     "recent14Days": {
-      "views": 41,
-      "viewsUnique": 13,
-      "clones": 231,
-      "clonesUnique": 89
+      "views": 35,
+      "viewsUnique": 12,
+      "clones": 106,
+      "clonesUnique": 53
     },
     "stars": 2,
     "forks": 0
