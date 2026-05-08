@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-07T06:55:18.281Z",
+  "lastUpdated": "2026-05-08T06:32:38.307Z",
   "repository": "opena2a-org/nanomind",
   "stats": {
     "allTime": {
@@ -7,10 +7,10 @@
       "clones": 949
     },
     "recent14Days": {
-      "views": 59,
-      "viewsUnique": 17,
-      "clones": 256,
-      "clonesUnique": 94
+      "views": 58,
+      "viewsUnique": 16,
+      "clones": 243,
+      "clonesUnique": 90
     },
     "stars": 2,
     "forks": 0
