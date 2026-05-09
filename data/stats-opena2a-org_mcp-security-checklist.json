@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-05-08T06:32:38.306Z",
+  "lastUpdated": "2026-05-09T06:40:06.079Z",
   "repository": "opena2a-org/mcp-security-checklist",
   "stats": {
     "allTime": {
-      "views": 24,
+      "views": 25,
       "clones": 77
     },
     "recent14Days": {
-      "views": 6,
-      "viewsUnique": 2,
-      "clones": 14,
-      "clonesUnique": 10
+      "views": 5,
+      "viewsUnique": 1,
+      "clones": 13,
+      "clonesUnique": 9
     },
     "stars": 2,
     "forks": 0
