@@ -1,18 +1,18 @@
 {
-  "lastUpdated": "2026-05-11T07:04:29.675Z",
+  "lastUpdated": "2026-05-12T06:55:06.128Z",
   "repository": "opena2a-org/damn-vulnerable-ai-agent",
   "stats": {
     "allTime": {
-      "views": 2184,
-      "clones": 1888
+      "views": 2243,
+      "clones": 1917
     },
     "recent14Days": {
-      "views": 386,
-      "viewsUnique": 91,
-      "clones": 197,
-      "clonesUnique": 89
+      "views": 413,
+      "viewsUnique": 88,
+      "clones": 154,
+      "clonesUnique": 70
     },
-    "stars": 19,
+    "stars": 20,
     "forks": 12
   }
 }
