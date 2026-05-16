@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-15T07:01:47.163Z",
+  "lastUpdated": "2026-05-16T06:44:05.979Z",
   "repository": "opena2a-org/agent-runtime-protection",
   "stats": {
     "allTime": {
@@ -7,10 +7,10 @@
       "clones": 393
     },
     "recent14Days": {
-      "views": 9,
-      "viewsUnique": 6,
-      "clones": 5,
-      "clonesUnique": 5
+      "views": 8,
+      "viewsUnique": 5,
+      "clones": 4,
+      "clonesUnique": 4
     },
     "stars": 2,
     "forks": 0
