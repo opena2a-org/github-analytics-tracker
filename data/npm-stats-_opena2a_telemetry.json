@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-05-24T07:02:02.157Z",
+  "lastUpdated": "2026-05-25T07:27:14.335Z",
   "package": "@opena2a/telemetry",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "stats": {
-    "allTimeDownloads": 1083,
-    "last30Days": 1083
+    "allTimeDownloads": 1385,
+    "last30Days": 1385
   }
 }
