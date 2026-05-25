@@ -1,5 +1,6 @@
 # GitHub Analytics Tracker
 
+[![Status: experimental](https://img.shields.io/badge/status-experimental-orange)](./STATUS.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](./package.json)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
