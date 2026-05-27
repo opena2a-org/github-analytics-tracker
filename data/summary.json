@@ -1,21 +1,21 @@
 {
-  "lastUpdated": "2026-05-26T07:06:09.465Z",
+  "lastUpdated": "2026-05-27T07:20:14.115Z",
   "total": {
-    "adoption": 162600,
-    "adoptionExCrypto": 145851,
-    "npm": 73725,
-    "pypi": 18455,
-    "clones": 65668,
-    "docker": 4752,
-    "views": 19758,
+    "adoption": 165455,
+    "adoptionExCrypto": 148572,
+    "npm": 76016,
+    "pypi": 18589,
+    "clones": 65998,
+    "docker": 4852,
+    "views": 19899,
     "stars": 153,
     "repos": 39,
     "npmPackages": 39
   },
   "excludingCrypto": {
-    "npm": 72543,
-    "pypi": 5912,
-    "clones": 62644,
-    "docker": 4752
+    "npm": 74823,
+    "pypi": 5930,
+    "clones": 62967,
+    "docker": 4852
   }
 }
