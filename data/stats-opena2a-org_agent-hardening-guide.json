@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-05-27T07:20:13.938Z",
+  "lastUpdated": "2026-05-28T07:13:38.525Z",
   "repository": "opena2a-org/agent-hardening-guide",
   "stats": {
     "allTime": {
-      "views": 25,
-      "clones": 40
+      "views": 27,
+      "clones": 43
     },
     "recent14Days": {
-      "views": 1,
-      "viewsUnique": 1,
-      "clones": 0,
-      "clonesUnique": 0
+      "views": 3,
+      "viewsUnique": 3,
+      "clones": 3,
+      "clonesUnique": 3
     },
     "stars": 1,
     "forks": 0
