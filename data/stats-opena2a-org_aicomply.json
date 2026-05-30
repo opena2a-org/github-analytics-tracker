@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-05-29T07:13:54.882Z",
+  "lastUpdated": "2026-05-30T06:56:22.500Z",
   "repository": "opena2a-org/aicomply",
   "stats": {
     "allTime": {
-      "views": 5,
-      "clones": 80
+      "views": 11,
+      "clones": 112
     },
     "recent14Days": {
-      "views": 5,
-      "viewsUnique": 1,
-      "clones": 80,
-      "clonesUnique": 50
+      "views": 11,
+      "viewsUnique": 2,
+      "clones": 112,
+      "clonesUnique": 66
     },
     "stars": 1,
     "forks": 0
