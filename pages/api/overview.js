@@ -2,106 +2,36 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 /**
- * Fetch npm download counts for a custom date range.
- * Uses the npm point API: /downloads/point/{start}:{end}/{package}
- * Returns { downloads } or null on error.
+ * Compute windowed download metrics for one package straight from SQLite.
+ * Deterministic and fast — no external API calls. The daily collector keeps
+ * the store at most ~1 day stale, which we treat as the honest source of
+ * truth rather than racing 100+ live API calls on every page load.
+ *
+ * Returns { name, version, allTimeDownloads, last24hDownloads, last7Downloads,
+ *           last30Downloads, prev7Downloads, customDownloads }.
  */
-async function fetchNpmRangeDownloads(packageName, start, end, timeoutMs = 5000) {
-  const encodedName = encodeURIComponent(packageName);
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(
-      `https://api.npmjs.org/downloads/point/${start}:${end}/${encodedName}`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timer);
-    const data = await res.json();
-    return { downloads: data.downloads ?? 0 };
-  } catch {
-    return null;
-  }
-}
+function computeWindowedStats(db, table, fkColumn, fkId, { start, end, isCustomRange, name, version }) {
+  // Anchor rolling windows to the latest COLLECTED date, not "now". Collection
+  // lags real time by a day or two, so windowing from "now" leaves the trailing
+  // 7-day window short a couple of days and makes healthy adoption look like a
+  // drop (a phantom negative WoW). Anchoring to MAX(date) keeps the current and
+  // previous windows the same length and fairly comparable.
+  const anchor = `(SELECT MAX(date) FROM ${table})`;
+  const sum = (clause, ...params) => db.prepare(
+    `SELECT COALESCE(SUM(downloads), 0) AS total FROM ${table} WHERE ${fkColumn} = ?${clause ? ' AND ' + clause : ''}`
+  ).get(fkId, ...params).total;
 
-/**
- * Fetch PyPI download counts for a custom date range.
- * Uses pypistats overall API with start_date and end_date params.
- * Returns { downloads } or null on error.
- */
-async function fetchPypiRangeDownloads(packageName, start, end, timeoutMs = 5000) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(
-      `https://pypistats.org/api/packages/${encodeURIComponent(packageName)}/overall?start_date=${start}&end_date=${end}`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timer);
-    const data = await res.json();
-    const total = (data.data || []).reduce((sum, entry) => sum + (entry.downloads || 0), 0);
-    return { downloads: total };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fetch live npm download counts from the npm registry API.
- * Returns { lastDay, lastWeek, lastMonth } for the given package.
- * Falls back to null on timeout or error.
- */
-async function fetchNpmLiveDownloads(packageName, timeoutMs = 5000) {
-  const encodedName = encodeURIComponent(packageName);
-  const periods = {
-    lastDay: `https://api.npmjs.org/downloads/point/last-day/${encodedName}`,
-    lastWeek: `https://api.npmjs.org/downloads/point/last-week/${encodedName}`,
-    lastMonth: `https://api.npmjs.org/downloads/point/last-month/${encodedName}`,
+  return {
+    name,
+    version,
+    allTimeDownloads: sum(''),
+    last24hDownloads: sum(`date = ${anchor}`),
+    last7Downloads: sum(`date > date(${anchor}, '-7 days')`),
+    last30Downloads: sum(`date > date(${anchor}, '-30 days')`),
+    prev7Downloads: sum(`date > date(${anchor}, '-14 days') AND date <= date(${anchor}, '-7 days')`),
+    prev30Downloads: sum(`date > date(${anchor}, '-60 days') AND date <= date(${anchor}, '-30 days')`),
+    customDownloads: isCustomRange ? sum('date >= ? AND date <= ?', start, end) : 0,
   };
-
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-    const [dayRes, weekRes, monthRes] = await Promise.all(
-      Object.values(periods).map(url =>
-        fetch(url, { signal: controller.signal }).then(r => r.json())
-      )
-    );
-
-    clearTimeout(timer);
-
-    return {
-      lastDay: dayRes.downloads ?? 0,
-      lastWeek: weekRes.downloads ?? 0,
-      lastMonth: monthRes.downloads ?? 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fetch live PyPI download counts from the pypistats.org API.
- * Returns { lastDay, lastWeek, lastMonth } for the given package.
- */
-async function fetchPypiLiveDownloads(packageName, timeoutMs = 5000) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(
-      `https://pypistats.org/api/packages/${encodeURIComponent(packageName)}/recent`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timer);
-    const data = await res.json();
-    return {
-      lastDay: data.data?.last_day ?? 0,
-      lastWeek: data.data?.last_week ?? 0,
-      lastMonth: data.data?.last_month ?? 0,
-    };
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -226,103 +156,12 @@ export default async function handler(req, res) {
     let npmStats = [];
     if (npmTableExists) {
       const packages = db.prepare('SELECT * FROM npm_packages ORDER BY name').all();
-
-      if (isCustomRange) {
-        // Fetch custom range npm downloads from live API
-        const rangeResults = await Promise.all(
-          packages.map(pkg => fetchNpmRangeDownloads(pkg.name, start, end))
-        );
-
-        npmStats = packages.map((pkg, i) => {
-          const allTime = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ?
-          `).get(pkg.id);
-
-          const rangeData = rangeResults[i];
-          // Fallback to SQLite date-range query if API failed
-          let customDownloads = rangeData?.downloads ?? 0;
-          if (!rangeData) {
-            const sqlFallback = db.prepare(`
-              SELECT COALESCE(SUM(downloads), 0) as total
-              FROM npm_downloads WHERE package_id = ? AND date >= ? AND date <= ?
-            `).get(pkg.id, start, end);
-            customDownloads = sqlFallback.total;
-          }
-
-          return {
-            name: pkg.name,
-            version: pkg.version,
-            allTimeDownloads: allTime.total,
-            customDownloads,
-            last24hDownloads: 0,
-            last30Downloads: 0,
-            last7Downloads: 0,
-            prev7Downloads: 0,
-          };
-        });
-      } else {
-        // Fetch live npm download data for all packages in parallel
-        const liveResults = await Promise.all(
-          packages.map(pkg => fetchNpmLiveDownloads(pkg.name))
-        );
-
-        npmStats = packages.map((pkg, i) => {
-          // All-time downloads from SQLite (cumulative, still accurate)
-          const allTime = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ?
-          `).get(pkg.id);
-
-          const live = liveResults[i];
-
-          if (live) {
-            // Use live npm API data for time-windowed metrics
-            // Approximate prev7 as lastMonth minus lastWeek divided by ~3 remaining weeks
-            const prev7Approx = Math.max(0, Math.round((live.lastMonth - live.lastWeek) / 3));
-            return {
-              name: pkg.name,
-              version: pkg.version,
-              allTimeDownloads: allTime.total,
-              last24hDownloads: live.lastDay,
-              last30Downloads: live.lastMonth,
-              last7Downloads: live.lastWeek,
-              prev7Downloads: prev7Approx,
-            };
-          }
-
-          // Fallback to SQLite if npm API call failed
-          const last24h = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-1 day')
-          `).get(pkg.id);
-
-          const last30 = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-30 days')
-          `).get(pkg.id);
-
-          const last7 = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-7 days')
-          `).get(pkg.id);
-
-          const prev7 = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM npm_downloads WHERE package_id = ? AND date >= date('now', '-14 days') AND date < date('now', '-7 days')
-          `).get(pkg.id);
-
-          return {
-            name: pkg.name,
-            version: pkg.version,
-            allTimeDownloads: allTime.total,
-            last24hDownloads: last24h.total,
-            last30Downloads: last30.total,
-            last7Downloads: last7.total,
-            prev7Downloads: prev7.total,
-          };
-        });
-      }
+      // Source of truth is the daily-collected SQLite store (refreshed by the
+      // cron every morning). We deliberately do NOT hit the live npm API per
+      // package here: 38 packages x 3 endpoints = 100+ external calls per page
+      // load, whose timeouts used to collapse last7 to 0 and render a phantom
+      // "-100%" growth everywhere. SQLite is deterministic and at most ~1 day old.
+      npmStats = packages.map(pkg => computeWindowedStats(db, 'npm_downloads', 'package_id', pkg.id, { start, end, isCustomRange, name: pkg.name, version: pkg.version }));
     }
 
     // --- PyPI Metrics ---
@@ -333,65 +172,7 @@ export default async function handler(req, res) {
     let pypiStats = [];
     if (pypiTableExists) {
       const pypiPackages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
-
-      if (isCustomRange) {
-        // Fetch custom range PyPI downloads from live API
-        const rangeResults = await Promise.all(
-          pypiPackages.map(pkg => fetchPypiRangeDownloads(pkg.name, start, end))
-        );
-
-        pypiStats = pypiPackages.map((pkg, i) => {
-          const allTime = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM pypi_downloads WHERE package_id = ?
-          `).get(pkg.id);
-
-          const rangeData = rangeResults[i];
-          let customDownloads = rangeData?.downloads ?? 0;
-          if (!rangeData) {
-            const sqlFallback = db.prepare(`
-              SELECT COALESCE(SUM(downloads), 0) as total
-              FROM pypi_downloads WHERE package_id = ? AND date >= ? AND date <= ?
-            `).get(pkg.id, start, end);
-            customDownloads = sqlFallback.total;
-          }
-
-          return {
-            name: pkg.name,
-            version: pkg.version,
-            allTimeDownloads: allTime.total,
-            customDownloads,
-            last24hDownloads: 0,
-            last30Downloads: 0,
-            last7Downloads: 0,
-            prev7Downloads: 0,
-          };
-        });
-      } else {
-        // Fetch live PyPI downloads in parallel
-        const pypiLive = await Promise.all(
-          pypiPackages.map(pkg => fetchPypiLiveDownloads(pkg.name))
-        );
-
-        pypiStats = pypiPackages.map((pkg, i) => {
-          const allTime = db.prepare(`
-            SELECT COALESCE(SUM(downloads), 0) as total
-            FROM pypi_downloads WHERE package_id = ?
-          `).get(pkg.id);
-
-          const live = pypiLive[i];
-
-          return {
-            name: pkg.name,
-            version: pkg.version,
-            allTimeDownloads: allTime.total,
-            last24hDownloads: live ? live.lastDay : 0,
-            last30Downloads: live ? live.lastMonth : 0,
-            last7Downloads: live ? live.lastWeek : 0,
-            prev7Downloads: live ? Math.round((live.lastMonth - live.lastWeek) / 3) : 0,
-          };
-        });
-      }
+      pypiStats = pypiPackages.map(pkg => computeWindowedStats(db, 'pypi_downloads', 'package_id', pkg.id, { start, end, isCustomRange, name: pkg.name, version: pkg.version }));
     }
 
     // --- Docker Metrics ---
@@ -413,6 +194,29 @@ export default async function handler(req, res) {
           fullName: img.full_name,
           totalPulls: latest?.pull_count || 0,
           stars: latest?.star_count || 0,
+        };
+      });
+    }
+
+    // --- HuggingFace Metrics ---
+    const hfTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='huggingface_models'"
+    ).get();
+
+    let hfStats = [];
+    if (hfTableExists) {
+      const models = db.prepare('SELECT * FROM huggingface_models ORDER BY model_id').all();
+      hfStats = models.map(m => {
+        const latest = db.prepare(`
+          SELECT downloads_30d, downloads_all_time, likes
+          FROM huggingface_stats WHERE model_id = ?
+          ORDER BY date DESC LIMIT 1
+        `).get(m.id);
+        return {
+          modelId: m.model_id,
+          downloads30d: latest?.downloads_30d || 0,
+          downloadsAllTime: latest?.downloads_all_time || 0,
+          likes: latest?.likes || 0,
         };
       });
     }
@@ -482,6 +286,13 @@ export default async function handler(req, res) {
         pypiPackages: [],
         description: 'Security plugins for OpenClaw bots',
       },
+      'NanoMind': {
+        repos: ['nanomind'],
+        packages: ['@nanomind/cli', '@nanomind/engine', '@nanomind/daemon', '@nanomind/guard', '@nanomind/router', '@nanomind/runtime-core', '@nanomind/atc', '@nanomind/hma-adapter', '@nanomind/opena2a-adapter'],
+        pypiPackages: [],
+        hfModels: ['opena2a/nanomind-security-analyst', 'opena2a/nanomind-security-classifier'],
+        description: 'Nano Language Models for inline security analysis',
+      },
     };
 
     const products = Object.entries(productMap).map(([name, config]) => {
@@ -489,11 +300,13 @@ export default async function handler(req, res) {
       const matchedPackages = npmStats.filter(p => config.packages.includes(p.name));
       const matchedPypi = pypiStats.filter(p => (config.pypiPackages || []).includes(p.name));
       const matchedDocker = dockerStats.filter(d => (config.dockerImages || []).includes(d.fullName));
+      const matchedHf = hfStats.filter(m => (config.hfModels || []).includes(m.modelId));
 
       const githubClones = matchedRepos.reduce((s, r) => s + r.totalClones, 0);
       const npmDownloads = matchedPackages.reduce((s, p) => s + p.allTimeDownloads, 0);
       const pypiDownloads = matchedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
       const dockerPulls = matchedDocker.reduce((s, d) => s + d.totalPulls, 0);
+      const hfDownloads = matchedHf.reduce((s, m) => s + m.downloadsAllTime, 0);
 
       return {
         name,
@@ -535,8 +348,14 @@ export default async function handler(req, res) {
           totalPulls: dockerPulls,
           imageCount: matchedDocker.length,
         },
-        // Combined adoption: clones + npm downloads + pypi downloads + docker pulls
-        totalAdoption: githubClones + npmDownloads + pypiDownloads + dockerPulls,
+        hf: {
+          downloadsAllTime: hfDownloads,
+          downloads30d: matchedHf.reduce((s, m) => s + m.downloads30d, 0),
+          likes: matchedHf.reduce((s, m) => s + m.likes, 0),
+          modelCount: matchedHf.length,
+        },
+        // Combined adoption: clones + npm + pypi + docker pulls + HF model downloads
+        totalAdoption: githubClones + npmDownloads + pypiDownloads + dockerPulls + hfDownloads,
       };
     });
 
@@ -545,17 +364,20 @@ export default async function handler(req, res) {
     const allGroupedNpm = new Set(Object.values(productMap).flatMap(c => c.packages || []));
     const allGroupedPypi = new Set(Object.values(productMap).flatMap(c => c.pypiPackages || []));
     const allGroupedDocker = new Set(Object.values(productMap).flatMap(c => c.dockerImages || []));
+    const allGroupedHf = new Set(Object.values(productMap).flatMap(c => c.hfModels || []));
 
     const ungroupedRepos = repoStats.filter(r => !allGroupedRepos.has(r.repo));
     const ungroupedNpm = npmStats.filter(p => !allGroupedNpm.has(p.name));
     const ungroupedPypi = pypiStats.filter(p => !allGroupedPypi.has(p.name));
     const ungroupedDocker = dockerStats.filter(d => !allGroupedDocker.has(d.fullName));
+    const ungroupedHf = hfStats.filter(m => !allGroupedHf.has(m.modelId));
 
-    if (ungroupedRepos.length > 0 || ungroupedNpm.length > 0 || ungroupedPypi.length > 0 || ungroupedDocker.length > 0) {
+    if (ungroupedRepos.length > 0 || ungroupedNpm.length > 0 || ungroupedPypi.length > 0 || ungroupedDocker.length > 0 || ungroupedHf.length > 0) {
       const ugClones = ungroupedRepos.reduce((s, r) => s + r.totalClones, 0);
       const ugNpm = ungroupedNpm.reduce((s, p) => s + p.allTimeDownloads, 0);
       const ugPypi = ungroupedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
       const ugDocker = ungroupedDocker.reduce((s, d) => s + d.totalPulls, 0);
+      const ugHf = ungroupedHf.reduce((s, m) => s + m.downloadsAllTime, 0);
       products.push({
         name: 'Other',
         description: `${ungroupedRepos.length} repos, ${ungroupedNpm.length} npm, ${ungroupedPypi.length} PyPI packages not assigned to a tool`,
@@ -593,13 +415,20 @@ export default async function handler(req, res) {
           packageCount: ungroupedPypi.length,
         },
         docker: { totalPulls: ugDocker, imageCount: ungroupedDocker.length },
-        totalAdoption: ugClones + ugNpm + ugPypi + ugDocker,
+        hf: {
+          downloadsAllTime: ugHf,
+          downloads30d: ungroupedHf.reduce((s, m) => s + m.downloads30d, 0),
+          likes: ungroupedHf.reduce((s, m) => s + m.likes, 0),
+          modelCount: ungroupedHf.length,
+        },
+        totalAdoption: ugClones + ugNpm + ugPypi + ugDocker + ugHf,
       });
     }
 
     // --- Aggregate Totals ---
     const totalDockerPulls = dockerStats.reduce((s, d) => s + d.totalPulls, 0);
     const totalPypiDownloads = pypiStats.reduce((s, p) => s + p.allTimeDownloads, 0);
+    const totalHfDownloads = hfStats.reduce((s, m) => s + m.downloadsAllTime, 0);
     const totals = {
       github: {
         repos: repos.length,
@@ -621,6 +450,7 @@ export default async function handler(req, res) {
         last30Downloads: npmStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: npmStats.reduce((s, p) => s + p.last7Downloads, 0),
         prev7Downloads: npmStats.reduce((s, p) => s + p.prev7Downloads, 0),
+        prev30Downloads: npmStats.reduce((s, p) => s + p.prev30Downloads, 0),
       },
       pypi: {
         packages: pypiStats.length,
@@ -629,16 +459,24 @@ export default async function handler(req, res) {
         last30Downloads: pypiStats.reduce((s, p) => s + p.last30Downloads, 0),
         last7Downloads: pypiStats.reduce((s, p) => s + p.last7Downloads, 0),
         prev7Downloads: pypiStats.reduce((s, p) => s + p.prev7Downloads, 0),
+        prev30Downloads: pypiStats.reduce((s, p) => s + p.prev30Downloads, 0),
       },
       docker: {
         images: dockerStats.length,
         totalPulls: totalDockerPulls,
       },
+      hf: {
+        models: hfStats.length,
+        downloadsAllTime: totalHfDownloads,
+        downloads30d: hfStats.reduce((s, m) => s + m.downloads30d, 0),
+        likes: hfStats.reduce((s, m) => s + m.likes, 0),
+      },
       combined: {
         totalAdoption: repoStats.reduce((s, r) => s + r.totalClones, 0) +
                        npmStats.reduce((s, p) => s + p.allTimeDownloads, 0) +
                        totalPypiDownloads +
-                       totalDockerPulls,
+                       totalDockerPulls +
+                       totalHfDownloads,
         totalPageViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
       },
     };
@@ -747,6 +585,7 @@ export default async function handler(req, res) {
       npmPackages: npmStats,
       pypiPackages: pypiStats,
       dockerImages: dockerStats,
+      hfModels: hfStats,
       topCountries,
     });
   } catch (error) {

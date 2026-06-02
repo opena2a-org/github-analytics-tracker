@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
@@ -6,481 +6,429 @@ import {
   ComposedChart, PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  GitFork, Star, Eye, GitPullRequest, Calendar, Users, Download,
-  Package, TrendingUp, TrendingDown, BarChart3, Container,
-  Github, Box, Layers, Tag, Monitor, Code, FileDown, Search,
+  GitFork, Star, Eye, GitPullRequest, Users, Download, Heart,
+  Package, TrendingUp, TrendingDown, Container, Activity,
+  Github, Box, Brain, Menu, Search, ArrowUp, ArrowDown,
 } from 'lucide-react';
 
-/* ============================================
-   Constants
-   ============================================ */
+/* ============================================================
+   Source identity — one place defines color + icon per source
+   ============================================================ */
+const SOURCES = {
+  overview:    { label: 'Overview',    icon: Activity,  color: 'var(--accent)' },
+  github:      { label: 'GitHub',      icon: Github,    color: 'var(--c-github)' },
+  npm:         { label: 'npm',         icon: Box,       color: 'var(--c-npm)' },
+  pypi:        { label: 'PyPI',        icon: Package,   color: 'var(--c-pypi)' },
+  docker:      { label: 'Docker',      icon: Container, color: 'var(--c-docker)' },
+  huggingface: { label: 'HuggingFace', icon: Brain,     color: 'var(--c-hf)' },
+};
+const TAB_ORDER = ['overview', 'github', 'npm', 'pypi', 'docker', 'huggingface'];
+
+/* Detail-tab time ranges (drive the `days` query param) */
 const TIME_RANGES = [
-  { label: '24h', value: '1' },
-  { label: '7d', value: '7' },
-  { label: '14d', value: '14' },
-  { label: '30d', value: '30' },
-  { label: '90d', value: '90' },
-  { label: '6mo', value: '180' },
-  { label: '1yr', value: '365' },
+  { label: '7d', value: '7' }, { label: '30d', value: '30' },
+  { label: '90d', value: '90' }, { label: '1yr', value: '365' },
   { label: 'All', value: 'all' },
 ];
+/* Overview adoption periods (match what the data supports) */
+const PERIODS = [
+  { label: '24h', value: '24h' }, { label: '7d', value: '7d' },
+  { label: '30d', value: '30d' }, { label: 'All', value: 'all' },
+  { label: 'Custom', value: 'custom' },
+];
+const PERIOD_LABEL = { '24h': 'last 24h', '7d': 'last 7d', '30d': 'last 30d', all: 'all time', custom: 'custom range' };
 
-const TABS = [
-  { id: 'overview', label: 'Overview', color: '#00d4aa' },
-  { id: 'github', label: 'GitHub', color: '#4c9aff' },
-  { id: 'npm', label: 'npm', color: '#ff6b6b' },
-  { id: 'pypi', label: 'PyPI', color: '#f59e0b' },
-  { id: 'docker', label: 'Docker', color: '#38bdf8' },
+const GRANULARITIES = [
+  { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, { label: 'Monthly', value: 'monthly' },
 ];
 
-/* Chart theme constants for dark backgrounds */
+/* Hex palette for recharts (CSS vars can't be read by SVG fills) */
 const C = {
-  grid: 'rgba(255,255,255,0.06)',
-  axisLabel: '#56657a',
-  blue: '#4c9aff', blueFill: 'rgba(76,154,255,0.15)',
-  teal: '#00d4aa', tealFill: 'rgba(0,212,170,0.12)',
-  purple: '#a78bfa', purpleFill: 'rgba(167,139,250,0.12)',
-  pink: '#f472b6',
-  red: '#ff6b6b', redFill: 'rgba(255,107,107,0.15)',
-  amber: '#f59e0b', amberFill: 'rgba(245,158,11,0.15)',
-  sky: '#38bdf8', skyFill: 'rgba(56,189,248,0.15)',
-  dark: '#1a2035',
-  green: '#22c55e', greenFill: 'rgba(34,197,94,0.15)',
-  orange: '#fb923c', orangeFill: 'rgba(251,146,60,0.15)',
-  cyan: '#06b6d4', cyanFill: 'rgba(6,182,212,0.15)',
-  rose: '#f43f5e', roseFill: 'rgba(244,63,94,0.15)',
+  accent: '#2dd4bf', github: '#6e9bff', npm: '#ff7a7a', pypi: '#f5b53c',
+  docker: '#4cb8f5', hf: '#ffce4d', violet: '#a78bfa', pink: '#f472b6', green: '#34d399',
+  grid: 'rgba(255,255,255,0.055)', axis: '#5f6c82',
+  fill: (hex, a = 0.16) => hexA(hex, a),
 };
-
-const axProps = { fontSize: 11, tick: { fill: C.axisLabel } };
-const xDateProps = { ...axProps, tickFormatter: formatDateLabel };
-const ttProps = {
-  contentStyle: {
-    background: '#232c42', border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: '8px', fontSize: '12px', color: '#e8edf5',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-  },
-  itemStyle: { color: '#8896ab' },
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+const ax = { fontSize: 11, tick: { fill: C.axis } };
+const axDate = { ...ax, tickFormatter: fmtDate };
+const tt = {
+  contentStyle: { background: '#171c29', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, fontSize: 12, color: '#eef2f8' },
+  itemStyle: { color: '#9aa7bd' },
 };
+const BREAKDOWN_COLORS = ['#6e9bff', '#2dd4bf', '#f5b53c', '#ff7a7a', '#a78bfa', '#4cb8f5', '#ffce4d', '#f472b6', '#34d399', '#fb923c'];
 
-/* ============================================
-   Helpers
-   ============================================ */
-function formatDateLabel(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T00:00:00Z');
+/* ============================================================
+   Formatting helpers
+   ============================================================ */
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s + 'T00:00:00Z');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
-function formatNumber(n) {
+function fmtNum(n) {
   if (n == null) return '0';
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
-function formatFullNumber(n) {
-  return (n || 0).toLocaleString();
+function fmtFull(n) { return (n || 0).toLocaleString(); }
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024));
+  return (b / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
+}
+/* Percentage change, or null when it can't be computed honestly */
+function pctChange(curr, prev) {
+  if (prev == null || curr == null || prev === 0) return null;
+  return parseFloat((((curr - prev) / prev) * 100).toFixed(1));
 }
 
-const BREAKDOWN_COLORS = [
-  '#4c9aff', '#00d4aa', '#f59e0b', '#ff6b6b', '#a78bfa',
-  '#38bdf8', '#f472b6', '#22c55e', '#fb923c', '#06b6d4',
-  '#e879f9', '#fbbf24', '#34d399', '#818cf8', '#f87171',
-];
-
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+function toWeekKey(s) {
+  const d = new Date(s + 'T00:00:00Z'); const day = d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() - day + (day === 0 ? -6 : 1));
+  return d.toISOString().split('T')[0];
+}
+function weeklyDownloads(rows) {
+  if (!rows?.length) return [];
+  const w = {};
+  rows.forEach(d => { const k = toWeekKey(d.date); (w[k] = w[k] || { week: k, downloads: 0 }).downloads += d.downloads || 0; });
+  return Object.values(w).sort((a, b) => a.week.localeCompare(b.week));
 }
 
-/* ============================================
-   Shared UI Components
-   ============================================ */
-function GrowthBadge({ value }) {
-  if (value == null) return null;
-  const num = parseFloat(value);
-  const up = num >= 0;
+/* Period picker for product rows (shared by table + KPI aggregation) */
+function periodPick(o, allKey, k30, k7, k24, period, kCustom) {
+  if (!o) return 0;
+  switch (period) {
+    case '24h': return o[k24] || 0;
+    case '7d': return o[k7] || 0;
+    case '30d': return o[k30] || 0;
+    case 'custom': return o[kCustom] || 0;
+    default: return o[allKey] || 0;
+  }
+}
+/* HuggingFace only reports all-time + rolling 30d, nothing finer */
+function hfPeriod(hf, period) {
+  if (!hf) return null;
+  if (period === 'all') return hf.downloadsAllTime || 0;
+  if (period === '30d') return hf.downloads30d || 0;
+  return null; // 24h / 7d / custom -> not measured at this granularity
+}
+function rowAdoption(p, period) {
+  const clones = periodPick(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', period, 'customClones');
+  const npm = periodPick(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+  const pypi = periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+  const docker = period === 'all' ? (p.docker?.totalPulls || 0) : 0;
+  const hf = hfPeriod(p.hf, period) || 0;
+  return clones + npm + pypi + docker + hf;
+}
+
+/* ============================================================
+   Primitive UI
+   ============================================================ */
+function Delta({ value, size = 'sm' }) {
+  if (value == null || !isFinite(value)) return null;
+  const cls = value > 0 ? 'up' : value < 0 ? 'down' : 'flat';
+  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : null;
   return (
-    <span className={`growth ${up ? 'up' : 'down'}`}>
-      {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-      {up ? '+' : ''}{value}%
+    <span className={`delta ${cls}`}>
+      {Icon && <Icon size={12} />}{value > 0 ? '+' : ''}{value}%
     </span>
   );
 }
+function MiniDelta({ curr, prev }) {
+  const v = pctChange(curr, prev);
+  if (v == null || v === 0) return null;
+  return <span className={`delta-mini ${v > 0 ? 'up' : 'down'}`}>{v > 0 ? '+' : ''}{v}%</span>;
+}
 
-function MetricCard({ icon, iconBg, label, value, sub, growth }) {
+function Kpi({ icon, color, label, value, sub, delta }) {
   return (
-    <div className="metric-card">
-      <div className="metric-icon" style={{ background: iconBg }}>{icon}</div>
-      <div className="metric-label">{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-        <div className="metric-value">{value}</div>
-        {growth != null && <GrowthBadge value={growth} />}
+    <div className="kpi">
+      <div className="kpi-top">
+        <div className="kpi-ico" style={{ background: hexA(color, 0.12), color }}>{icon}</div>
+        {delta != null && <Delta value={delta} />}
       </div>
-      {sub && <div className="metric-sub">{sub}</div>}
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-val">{value}</div>
+      {sub && <div className="kpi-sub">{sub}</div>}
     </div>
   );
 }
 
-function EcoCard({ name, color, icon, rows }) {
+function Panel({ title, sub, tools, children, pad = true }) {
   return (
-    <div className="eco-card">
-      <div className="eco-header">
-        <span className="eco-dot" style={{ background: color }} />
-        <span className="eco-name">{name}</span>
-        {icon}
-      </div>
-      {rows.map(r => (
-        <div className="eco-row" key={r.label}>
-          <span className="eco-row-label">{r.label}</span>
-          <span className="eco-row-value">{formatFullNumber(r.value)}</span>
+    <div className="panel">
+      <div className="panel-head">
+        <div>
+          <div className="panel-title">{title}</div>
+          {sub && <div className="panel-sub">{sub}</div>}
         </div>
-      ))}
+        {tools && <div className="panel-tools">{tools}</div>}
+      </div>
+      {pad ? <div className="panel-body">{children}</div> : children}
     </div>
   );
 }
 
-function ChartWrap({ title, sub, children }) {
+function Chart({ title, sub, tools, height = 300, children }) {
   return (
-    <div className="chart-card">
+    <div className="chart">
       <div className="chart-head">
-        <div className="chart-title">{title}</div>
-        {sub && <div className="chart-sub">{sub}</div>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Selector({ label, value, onChange, items, nameKey = 'name', idKey = 'id' }) {
-  const [filter, setFilter] = useState('');
-  const filtered = filter
-    ? items.filter(it => {
-        const text = (it.full_name || it[nameKey] || '').toLowerCase();
-        return text.includes(filter.toLowerCase());
-      })
-    : items;
-  return (
-    <div className="section-card">
-      <div className="section-body">
-        <div className="field-group">
-          <label className="field-label">{label}</label>
-          {items.length > 3 && (
-            <SearchInput value={filter} onChange={setFilter} placeholder={`Filter ${label.toLowerCase()}...`} />
-          )}
-          <select className="select-field" value={value || ''} onChange={e => onChange(Number(e.target.value))}>
-            {filtered.map(it => <option key={it[idKey]} value={it[idKey]}>{it.full_name || it[nameKey]}</option>)}
-          </select>
+        <div>
+          <div className="chart-title">{title}</div>
+          {sub && <div className="chart-sub">{sub}</div>}
         </div>
+        {tools}
       </div>
+      <ResponsiveContainer width="100%" height={height}>{children}</ResponsiveContainer>
     </div>
   );
 }
 
-function BreakdownChart({ title, sub, data, nameKey, valueKey, maxItems = 10, color }) {
-  if (!data || data.length === 0) return null;
-  const sorted = [...data].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0));
-  const top = sorted.slice(0, maxItems);
-
+function Segmented({ items, value, onChange }) {
   return (
-    <ChartWrap title={title} sub={sub}>
-      <ResponsiveContainer width="100%" height={Math.max(200, top.length * 36)}>
-        <BarChart data={top} layout="vertical" margin={{ left: 80 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-          <XAxis type="number" {...axProps} />
-          <YAxis type="category" dataKey={nameKey} {...axProps} width={80} />
-          <Tooltip {...ttProps} />
-          <Bar dataKey={valueKey} name="Downloads" radius={[0, 4, 4, 0]}>
-            {top.map((entry, idx) => (
-              <Cell key={idx} fill={color || BREAKDOWN_COLORS[idx % BREAKDOWN_COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </ChartWrap>
-  );
-}
-
-function BreakdownTable({ title, columns, data }) {
-  if (!data || data.length === 0) return null;
-  return (
-    <div className="section-card">
-      <div className="section-header"><div className="section-title">{title}</div></div>
-      <div className="table-scroll">
-        <table className="data-table">
-          <thead>
-            <tr>
-              {columns.map(col => (
-                <th key={col.key} className={col.align === 'right' ? 'r' : ''}>{col.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, i) => (
-              <tr key={i}>
-                {columns.map(col => (
-                  <td key={col.key} className={col.align === 'right' ? 'num' : ''}>
-                    {col.format ? col.format(row[col.key], row) : row[col.key]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function Loading() {
-  return <div className="loading"><div className="spinner" /><p>Loading analytics...</p></div>;
-}
-
-function Empty({ message, command }) {
-  return (
-    <div className="empty">
-      <Calendar size={36} color="#56657a" />
-      <p>{message}</p>
-      <code>{command}</code>
-    </div>
-  );
-}
-
-function SearchInput({ value, onChange, placeholder = 'Search...' }) {
-  return (
-    <div className="search-wrap">
-      <Search size={14} className="search-icon" />
-      <input
-        type="text"
-        className="search-input"
-        placeholder={placeholder}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-const GRANULARITIES = [
-  { label: 'Daily', value: 'daily' },
-  { label: 'Weekly', value: 'weekly' },
-  { label: 'Monthly', value: 'monthly' },
-];
-
-function GranularitySelector({ value, onChange }) {
-  return (
-    <div className="granularity-bar">
-      {GRANULARITIES.map(g => (
-        <button key={g.value}
-          className={`granularity-btn ${value === g.value ? 'active' : ''}`}
-          onClick={() => onChange(g.value)}>
-          {g.label}
+    <div className="segmented">
+      {items.map(it => (
+        <button key={it.value} className={`seg-btn ${value === it.value ? 'active' : ''}`} onClick={() => onChange(it.value)}>
+          {it.label}
         </button>
       ))}
     </div>
   );
 }
 
-/* ============================================
-   Weekly aggregation helpers
-   ============================================ */
-function toWeekKey(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00Z');
-  const day = date.getUTCDay();
-  const diff = date.getUTCDate() - day + (day === 0 ? -6 : 1);
-  const ws = new Date(date);
-  ws.setUTCDate(diff);
-  return ws.toISOString().split('T')[0];
+function Filter({ value, onChange, placeholder }) {
+  return (
+    <div className="filter">
+      <Search size={14} className="ico" />
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || 'Search...'} />
+    </div>
+  );
 }
 
-function getWeeklyDownloadData(downloads) {
-  if (!downloads || downloads.length === 0) return [];
-  const weeks = {};
-  downloads.forEach(d => {
-    const wk = toWeekKey(d.date);
-    if (!weeks[wk]) weeks[wk] = { week: wk, downloads: 0 };
-    weeks[wk].downloads += d.downloads || 0;
-  });
-  return Object.values(weeks).sort((a, b) => a.week.localeCompare(b.week));
+function SecLabel({ children }) {
+  return <div className="sec-label"><h2>{children}</h2><div className="rule" /></div>;
+}
+function Loading() { return <div className="loading"><div className="spinner" /><p>Loading analytics…</p></div>; }
+function Empty({ message, command }) {
+  return <div className="empty"><Activity size={32} color="#3c4659" /><p>{message}</p>{command && <code>{command}</code>}</div>;
 }
 
-/* ============================================
-   Dashboard Root
-   ============================================ */
+/* ============================================================
+   DataTable — sortable, with optional row selection + footer
+   columns: { key, label, align?, sortable?, render?(row), sortValue?(row) }
+   ============================================================ */
+function DataTable({ columns, rows, getKey, onRowClick, selectedKey, initialSort, footer }) {
+  const [sort, setSort] = useState(initialSort || { key: columns[0].key, dir: 'asc' });
+
+  const sorted = useMemo(() => {
+    const col = columns.find(c => c.key === sort.key);
+    if (!col) return rows;
+    const get = col.sortValue || (r => r[col.key]);
+    return [...rows].sort((a, b) => {
+      const av = get(a), bv = get(b);
+      if (typeof av === 'number' && typeof bv === 'number') return sort.dir === 'asc' ? av - bv : bv - av;
+      return sort.dir === 'asc' ? String(av ?? '').localeCompare(String(bv ?? '')) : String(bv ?? '').localeCompare(String(av ?? ''));
+    });
+  }, [rows, sort, columns]);
+
+  const toggle = key => setSort(s => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'desc' });
+
+  return (
+    <div className="scroll">
+      <table className="tbl">
+        <thead>
+          <tr>
+            {columns.map(col => {
+              const sortable = col.sortable !== false;
+              const isSorted = sort.key === col.key;
+              return (
+                <th key={col.key}
+                  className={`${col.align === 'right' ? 'r' : ''} ${sortable ? 'sortable' : ''} ${isSorted ? 'sorted' : ''}`}
+                  onClick={sortable ? () => toggle(col.key) : undefined}>
+                  {col.label}
+                  {sortable && <span className="sort-ind">{isSorted ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(row => {
+            const key = getKey(row);
+            return (
+              <tr key={key}
+                className={`${onRowClick ? 'clickable' : ''} ${selectedKey === key ? 'selected' : ''}`}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}>
+                {columns.map(col => (
+                  <td key={col.key} className={col.align === 'right' ? 'num' + (col.lead ? ' lead' : '') : ''}>
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+        {footer && <tfoot><tr>{footer}</tr></tfoot>}
+      </table>
+    </div>
+  );
+}
+
+function BreakdownChart({ title, sub, data, nameKey, valueKey, maxItems = 12, color, valueLabel = 'Downloads' }) {
+  if (!data?.length) return null;
+  const top = [...data].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0)).slice(0, maxItems);
+  return (
+    <Chart title={title} sub={sub} height={Math.max(200, top.length * 34)}>
+      <BarChart data={top} layout="vertical" margin={{ left: 70 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+        <XAxis type="number" {...ax} tickFormatter={fmtNum} />
+        <YAxis type="category" dataKey={nameKey} {...ax} width={90} />
+        <Tooltip {...tt} formatter={v => [fmtFull(v), valueLabel]} />
+        <Bar dataKey={valueKey} name={valueLabel} radius={[0, 4, 4, 0]}>
+          {top.map((e, i) => <Cell key={i} fill={color || BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length]} />)}
+        </Bar>
+      </BarChart>
+    </Chart>
+  );
+}
+
+/* ============================================================
+   Root
+   ============================================================ */
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [timeRange, setTimeRange] = useState('30');
-
-  const [repos, setRepos] = useState([]);
-  const [selectedRepo, setSelectedRepo] = useState(null);
-  const [githubData, setGithubData] = useState(null);
-  const [githubLoading, setGithubLoading] = useState(false);
-
-  const [npmPackages, setNpmPackages] = useState([]);
-  const [selectedNpmPackage, setSelectedNpmPackage] = useState(null);
-  const [npmData, setNpmData] = useState(null);
-  const [npmLoading, setNpmLoading] = useState(false);
-
-  const [pypiPackages, setPypiPackages] = useState([]);
-  const [selectedPypiPackage, setSelectedPypiPackage] = useState(null);
-  const [pypiData, setPypiData] = useState(null);
-  const [pypiLoading, setPypiLoading] = useState(false);
-
-  const [dockerImages, setDockerImages] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [dockerData, setDockerData] = useState(null);
-  const [dockerLoading, setDockerLoading] = useState(false);
-
-  const [overview, setOverview] = useState(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [tab, setTab] = useState('overview');
+  const [range, setRange] = useState('30');       // detail tabs
+  const [period, setPeriod] = useState('30d');    // overview adoption
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [trends, setTrends] = useState(null);
-  const [trendsGranularity, setTrendsGranularity] = useState('weekly');
+  const [repos, setRepos] = useState([]);
+  const [selRepo, setSelRepo] = useState(null);
+  const [ghData, setGhData] = useState(null); const [ghLoading, setGhLoading] = useState(false);
 
-  /* --- Fetch on mount --- */
+  const [npmPkgs, setNpmPkgs] = useState([]); const [selNpm, setSelNpm] = useState(null);
+  const [npmData, setNpmData] = useState(null); const [npmLoading, setNpmLoading] = useState(false);
+
+  const [pypiPkgs, setPypiPkgs] = useState([]); const [selPypi, setSelPypi] = useState(null);
+  const [pypiData, setPypiData] = useState(null); const [pypiLoading, setPypiLoading] = useState(false);
+
+  const [images, setImages] = useState([]); const [selImg, setSelImg] = useState(null);
+  const [dockerData, setDockerData] = useState(null); const [dockerLoading, setDockerLoading] = useState(false);
+
+  const [hfModels, setHfModels] = useState([]); const [selHf, setSelHf] = useState(null);
+  const [hfData, setHfData] = useState(null); const [hfLoading, setHfLoading] = useState(false);
+
+  const [overview, setOverview] = useState(null); const [ovLoading, setOvLoading] = useState(true);
+  const [trends, setTrends] = useState(null);
+  const [granularity, setGranularity] = useState('weekly');
+
   useEffect(() => {
     fetch('/api/repos').then(r => r.ok ? r.json() : []).then(d => {
-      if (Array.isArray(d)) { setRepos(d); if (d.length) setSelectedRepo(d[0].id); }
+      if (Array.isArray(d)) { setRepos(d); if (d.length) setSelRepo(d[0].id); }
     }).catch(() => {});
-    fetch('/api/npm-stats').then(r => r.ok ? r.json() : {}).then(d => {
-      setNpmPackages(d.packages || []);
-      if (d.packages?.length) setSelectedNpmPackage(d.packages[0].id);
-    }).catch(() => {});
-    fetch('/api/pypi-stats').then(r => r.ok ? r.json() : {}).then(d => {
-      setPypiPackages(d.packages || []);
-      if (d.packages?.length) setSelectedPypiPackage(d.packages[0].id);
-    }).catch(() => {});
-    fetch('/api/docker-stats').then(r => r.ok ? r.json() : {}).then(d => {
-      setDockerImages(d.images || []);
-      if (d.images?.length) setSelectedImage(d.images[0].id);
-    }).catch(() => {});
-    fetch('/api/overview?days=all').then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.totals) setOverview(d);
-    }).catch(() => {}).finally(() => setOverviewLoading(false));
+    fetch('/api/npm-stats').then(r => r.ok ? r.json() : {}).then(d => { setNpmPkgs(d.packages || []); if (d.packages?.length) setSelNpm(d.packages[0].id); }).catch(() => {});
+    fetch('/api/pypi-stats').then(r => r.ok ? r.json() : {}).then(d => { setPypiPkgs(d.packages || []); if (d.packages?.length) setSelPypi(d.packages[0].id); }).catch(() => {});
+    fetch('/api/docker-stats').then(r => r.ok ? r.json() : {}).then(d => { setImages(d.images || []); if (d.images?.length) setSelImg(d.images[0].id); }).catch(() => {});
+    fetch('/api/huggingface-stats').then(r => r.ok ? r.json() : {}).then(d => { setHfModels(d.models || []); if (d.models?.length) setSelHf(d.models[0].id); }).catch(() => {});
+    fetch('/api/overview?days=all').then(r => r.ok ? r.json() : null).then(d => { if (d?.totals) setOverview(d); }).catch(() => {}).finally(() => setOvLoading(false));
   }, []);
 
-  /* --- Fetch trends when granularity or time range changes --- */
   useEffect(() => {
-    const trendsDays = timeRange === 'all' ? 'all' : timeRange;
-    fetch(`/api/trends?granularity=${trendsGranularity}&days=${trendsDays}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setTrends(d); })
-      .catch(() => {});
-  }, [trendsGranularity, timeRange]);
+    fetch(`/api/trends?granularity=${granularity}&days=all`).then(r => r.ok ? r.json() : null).then(d => { if (d) setTrends(d); }).catch(() => {});
+  }, [granularity]);
 
-  /* --- Fetch detail data when selection/range changes --- */
-  useEffect(() => { if (selectedRepo) fetchDetail(`/api/stats?repo_id=${selectedRepo}&days=${timeRange}`, setGithubData, setGithubLoading); }, [selectedRepo, timeRange]);
-  useEffect(() => { if (selectedNpmPackage) fetchDetail(`/api/npm-stats?package_id=${selectedNpmPackage}&days=${timeRange}`, setNpmData, setNpmLoading); }, [selectedNpmPackage, timeRange]);
-  useEffect(() => { if (selectedPypiPackage) fetchDetail(`/api/pypi-stats?package_id=${selectedPypiPackage}&days=${timeRange}`, setPypiData, setPypiLoading); }, [selectedPypiPackage, timeRange]);
-  useEffect(() => { if (selectedImage) fetchDetail(`/api/docker-stats?image_id=${selectedImage}&days=${timeRange}`, setDockerData, setDockerLoading); }, [selectedImage, timeRange]);
+  const detail = (url, setData, setLoading) => { setLoading(true); fetch(url).then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d); }).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { if (selRepo) detail(`/api/stats?repo_id=${selRepo}&days=${range}`, setGhData, setGhLoading); }, [selRepo, range]);
+  useEffect(() => { if (selNpm) detail(`/api/npm-stats?package_id=${selNpm}&days=${range}`, setNpmData, setNpmLoading); }, [selNpm, range]);
+  useEffect(() => { if (selPypi) detail(`/api/pypi-stats?package_id=${selPypi}&days=${range}`, setPypiData, setPypiLoading); }, [selPypi, range]);
+  useEffect(() => { if (selImg) detail(`/api/docker-stats?image_id=${selImg}&days=${range}`, setDockerData, setDockerLoading); }, [selImg, range]);
+  useEffect(() => { if (selHf) detail(`/api/huggingface-stats?model_id=${selHf}&days=${range}`, setHfData, setHfLoading); }, [selHf, range]);
 
-  function fetchDetail(url, setData, setLoading) {
-    setLoading(true);
-    fetch(url).then(r => r.ok ? r.json() : null).then(d => { if (d) setData(d); }).catch(() => {}).finally(() => setLoading(false));
-  }
-
-  /* --- GitHub combined data --- */
-  const getCombinedGithubData = () => {
-    if (!githubData) return [];
+  const ghCombined = () => {
+    if (!ghData) return [];
     const m = {};
-    (githubData.views || []).forEach(v => { m[v.date] = { date: v.date, views: v.count, viewsUnique: v.uniques }; });
-    (githubData.clones || []).forEach(c => { if (!m[c.date]) m[c.date] = { date: c.date }; m[c.date].clones = c.count; m[c.date].clonesUnique = c.uniques; });
+    (ghData.views || []).forEach(v => { m[v.date] = { date: v.date, views: v.count, viewsUnique: v.uniques }; });
+    (ghData.clones || []).forEach(c => { (m[c.date] = m[c.date] || { date: c.date }).clones = c.count; m[c.date].clonesUnique = c.uniques; });
     return Object.values(m).sort((a, b) => a.date.localeCompare(b.date));
   };
-  const getWeeklyGithubData = () => {
-    const combined = getCombinedGithubData();
-    if (!combined.length) return [];
+  const ghWeekly = () => {
+    const c = ghCombined(); if (!c.length) return [];
     const w = {};
-    combined.forEach(d => { const wk = toWeekKey(d.date); if (!w[wk]) w[wk] = { week: wk, views: 0, clones: 0 }; w[wk].views += d.views || 0; w[wk].clones += d.clones || 0; });
+    c.forEach(d => { const k = toWeekKey(d.date); (w[k] = w[k] || { week: k, views: 0, clones: 0 }); w[k].views += d.views || 0; w[k].clones += d.clones || 0; });
     return Object.values(w).sort((a, b) => a.week.localeCompare(b.week));
   };
 
-  const activeLabel = TABS.find(t => t.id === activeTab)?.label || '';
+  const counts = {
+    github: overview?.totals?.github?.repos, npm: overview?.totals?.npm?.packages,
+    pypi: overview?.totals?.pypi?.packages, docker: overview?.totals?.docker?.images,
+    huggingface: overview?.totals?.hf?.models,
+  };
+  const meta = SOURCES[tab];
 
   return (
     <>
       <Head>
-        <title>OpenA2A Analytics</title>
+        <title>OpenA2A · Ecosystem Analytics</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="dashboard">
-        {/* --- Sidebar --- */}
+      <div className="app">
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-          <div className="sidebar-brand">
-            <h1>Open<span>A2A</span></h1>
+          <div className="brand">
+            <div className="brand-mark">
+              <span className="brand-glyph"><Activity size={17} /></span>
+              <h1>Open<span>A2A</span></h1>
+            </div>
             <p>Ecosystem Analytics</p>
           </div>
-          <nav className="sidebar-nav">
-            {TABS.map(tab => (
-              <button key={tab.id} className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}>
-                <span className="nav-dot" style={{ background: tab.color }} />
-                {tab.label}
-              </button>
-            ))}
+          <nav className="nav">
+            {TAB_ORDER.map(id => {
+              const s = SOURCES[id]; const Icon = s.icon;
+              return (
+                <button key={id} className={`nav-link ${tab === id ? 'active' : ''}`} onClick={() => { setTab(id); setSidebarOpen(false); }}>
+                  <span className="nav-ico" style={{ color: s.color }}><Icon size={16} /></span>
+                  {s.label}
+                  {counts[id] != null && <span className="nav-count">{counts[id]}</span>}
+                </button>
+              );
+            })}
           </nav>
-          <div className="sidebar-footer">
-            {overview?.lastUpdated ? `Updated ${formatDateLabel(overview.lastUpdated.split('T')[0])}` : ''}
+          <div className="sidebar-foot">
+            <span className="dot">●</span> {overview?.lastUpdated ? `Updated ${fmtDate(overview.lastUpdated.split('T')[0])}` : 'Loading…'}
           </div>
         </aside>
 
-        {/* --- Mobile overlay --- */}
         <div className={`overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-        {/* --- Main area --- */}
-        <div className="main-area">
-          {/* Mobile top bar */}
-          <div className="mobile-bar">
-            <button className="burger" onClick={() => setSidebarOpen(true)}><Layers size={20} /></button>
-            <h2>{activeLabel}</h2>
+        <div className="main">
+          <div className="mobilebar">
+            <button className="burger" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
+            <h2>{meta.label}</h2>
           </div>
 
-          {/* Sticky topbar */}
           <div className="topbar">
-            <span className="topbar-title">{activeLabel}</span>
-            <div className="time-bar">
-              {TIME_RANGES.map(tr => (
-                <button key={tr.value} className={`time-btn ${timeRange === tr.value ? 'active' : ''}`}
-                  onClick={() => setTimeRange(tr.value)}>
-                  {tr.label}
-                </button>
-              ))}
+            <div className="topbar-l">
+              <span className="crumb">Analytics</span>
+              <span className="page-title">{meta.label}</span>
+            </div>
+            <div className="topbar-r">
+              {tab === 'overview'
+                ? <Segmented items={PERIODS} value={period} onChange={setPeriod} />
+                : <Segmented items={TIME_RANGES} value={range} onChange={setRange} />}
             </div>
           </div>
 
-          {/* Content */}
-          <div className="content">
-            {activeTab === 'overview' && <OverviewTab overview={overview} loading={overviewLoading}
-              trends={trends} trendsGranularity={trendsGranularity} setTrendsGranularity={setTrendsGranularity} />}
-            {activeTab === 'github' && (
-              <GitHubTab repos={repos} selectedRepo={selectedRepo} setSelectedRepo={setSelectedRepo}
-                data={githubData} loading={githubLoading}
-                getCombinedData={getCombinedGithubData} getWeeklyData={getWeeklyGithubData} />
-            )}
-            {activeTab === 'npm' && (
-              <PackageTab ecosystem="npm" color={C.red} fillColor={C.redFill} barColor={C.red}
-                packages={npmPackages} selectedPackage={selectedNpmPackage}
-                setSelectedPackage={setSelectedNpmPackage}
-                pkgData={npmData} loading={npmLoading}
-                getWeeklyData={() => getWeeklyDownloadData(npmData?.downloads)}
-                versionDownloads={npmData?.versionDownloads} />
-            )}
-            {activeTab === 'pypi' && (
-              <PackageTab ecosystem="PyPI" color={C.amber} fillColor={C.amberFill} barColor={C.amber}
-                packages={pypiPackages} selectedPackage={selectedPypiPackage}
-                setSelectedPackage={setSelectedPypiPackage}
-                pkgData={pypiData} loading={pypiLoading}
-                getWeeklyData={() => getWeeklyDownloadData(pypiData?.downloads)}
-                pythonVersions={pypiData?.pythonVersions}
-                systemStats={pypiData?.systemStats}
-                countryDownloads={pypiData?.countryDownloads} />
-            )}
-            {activeTab === 'docker' && (
-              <DockerTab images={dockerImages} selectedImage={selectedImage}
-                setSelectedImage={setSelectedImage} dockerData={dockerData} loading={dockerLoading} />
-            )}
+          <div className="content stack">
+            {tab === 'overview' && <OverviewTab overview={overview} loading={ovLoading} trends={trends} granularity={granularity} setGranularity={setGranularity} period={period} />}
+            {tab === 'github' && <GitHubTab repos={repos} selRepo={selRepo} setSelRepo={setSelRepo} data={ghData} loading={ghLoading} combined={ghCombined} weekly={ghWeekly} />}
+            {tab === 'npm' && <PackageTab eco="npm" color={C.npm} packages={npmPkgs} sel={selNpm} setSel={setSelNpm} data={npmData} loading={npmLoading} weekly={() => weeklyDownloads(npmData?.downloads)} versionDownloads={npmData?.versionDownloads} />}
+            {tab === 'pypi' && <PackageTab eco="PyPI" color={C.pypi} packages={pypiPkgs} sel={selPypi} setSel={setSelPypi} data={pypiData} loading={pypiLoading} weekly={() => weeklyDownloads(pypiData?.downloads)} pythonVersions={pypiData?.pythonVersions} systemStats={pypiData?.systemStats} countryDownloads={pypiData?.countryDownloads} />}
+            {tab === 'docker' && <DockerTab images={images} sel={selImg} setSel={setSelImg} data={dockerData} loading={dockerLoading} />}
+            {tab === 'huggingface' && <HuggingFaceTab models={hfModels} sel={selHf} setSel={setSelHf} data={hfData} loading={hfLoading} />}
           </div>
         </div>
       </div>
@@ -488,885 +436,537 @@ export default function Dashboard() {
   );
 }
 
-/* ============================================
-   Overview Tab
-   ============================================ */
-const ADOPTION_PERIODS = [
-  { label: 'All Time', value: 'all' },
-  { label: '30 Days', value: '30d' },
-  { label: '7 Days', value: '7d' },
-  { label: '24 Hours', value: '24h' },
-  { label: 'Custom', value: 'custom' },
-];
+/* ============================================================
+   Overview
+   ============================================================ */
+function OverviewTab({ overview, loading, trends, granularity, setGranularity, period }) {
+  const [filter, setFilter] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const ago14 = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+  const [cStart, setCStart] = useState(ago14);
+  const [cEnd, setCEnd] = useState(today);
+  const [custom, setCustom] = useState(null);
+  const [cLoading, setCLoading] = useState(false);
+  const [cKey, setCKey] = useState('');
 
-/** Helper: pick the correct metric value based on selected adoption period */
-function pickPeriodValue(obj, allKey, d30Key, d7Key, d24hKey, period, customKey) {
-  switch (period) {
-    case '24h': return obj?.[d24hKey] || 0;
-    case '7d': return obj?.[d7Key] || 0;
-    case '30d': return obj?.[d30Key] || 0;
-    case 'custom': return obj?.[customKey] || 0;
-    default: return obj?.[allKey] || 0;
-  }
-}
-
-/** WoW change indicator: compares current 7d vs previous 7d */
-function WowIndicator({ current, previous }) {
-  if (!previous || previous === 0) return null;
-  const pct = ((current - previous) / previous * 100).toFixed(0);
-  const num = Number(pct);
-  if (num === 0) return null;
-  const color = num > 0 ? '#22c55e' : '#ff6b6b';
-  const arrow = num > 0 ? '+' : '';
-  return (
-    <span style={{ fontSize: '10px', color, marginLeft: '4px', fontWeight: 600 }}>
-      {arrow}{pct}%
-    </span>
-  );
-}
-
-function OverviewTab({ overview, loading, trends, trendsGranularity, setTrendsGranularity }) {
-  const [productFilter, setProductFilter] = useState('');
-  const [adoptionPeriod, setAdoptionPeriod] = useState('30d');
-
-  // Custom date range state — default to last 14 days
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
-  const [customStart, setCustomStart] = useState(fourteenDaysAgo);
-  const [customEnd, setCustomEnd] = useState(todayStr);
-  const [customOverview, setCustomOverview] = useState(null);
-  const [customLoading, setCustomLoading] = useState(false);
-  const [customAppliedKey, setCustomAppliedKey] = useState('');
-
-  // Fetch custom range data when user clicks Apply
-  const fetchCustomRange = () => {
-    if (!customStart || !customEnd) return;
-    const key = `${customStart}_${customEnd}`;
-    if (key === customAppliedKey && customOverview) return; // already fetched
-    setCustomLoading(true);
-    fetch(`/api/overview?start=${customStart}&end=${customEnd}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.products) {
-          setCustomOverview(d);
-          setCustomAppliedKey(key);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setCustomLoading(false));
+  const applyCustom = () => {
+    if (!cStart || !cEnd) return;
+    const key = `${cStart}_${cEnd}`;
+    if (key === cKey && custom) return;
+    setCLoading(true);
+    fetch(`/api/overview?start=${cStart}&end=${cEnd}`).then(r => r.ok ? r.json() : null).then(d => { if (d?.products) { setCustom(d); setCKey(key); } }).catch(() => {}).finally(() => setCLoading(false));
   };
 
   if (loading) return <Loading />;
-  if (!overview) return <Empty message="No data available yet." command="npm run collect-all" />;
+  if (!overview) return <Empty message="No data collected yet." command="npm run collect-all" />;
 
-  // Use custom overview products when in custom mode, otherwise use the default overview
-  const activeOverview = (adoptionPeriod === 'custom' && customOverview) ? customOverview : overview;
-  const { totals, products = [], weeklyTrend = [] } = activeOverview;
+  const active = (period === 'custom' && custom) ? custom : overview;
+  const { totals, products = [] } = active;
 
-  // Compute WoW from live npm data instead of stale SQLite trends
-  const npmCurr7 = totals.npm?.last7Downloads || 0;
-  const npmPrev7 = totals.npm?.prev7Downloads || 0;
-  const npmWowPct = npmPrev7 > 0 ? parseFloat(((npmCurr7 - npmPrev7) / npmPrev7 * 100).toFixed(1)) : 0;
-  const wow = { downloads: npmWowPct, views: trends?.growth?.wow?.views ?? null };
-  const mom = trends?.growth?.mom;
+  // WoW / MoM from honest, complete, anchored windows (npm + PyPI installs).
+  // We deliberately avoid the trends-series growth here: its most recent bucket
+  // is usually a partial week/month, which produced phantom negative swings.
+  const curr7 = (totals.npm?.last7Downloads || 0) + (totals.pypi?.last7Downloads || 0);
+  const prev7 = (totals.npm?.prev7Downloads || 0) + (totals.pypi?.prev7Downloads || 0);
+  const curr30 = (totals.npm?.last30Downloads || 0) + (totals.pypi?.last30Downloads || 0);
+  const prev30 = (totals.npm?.prev30Downloads || 0) + (totals.pypi?.prev30Downloads || 0);
+  const wowDownloads = pctChange(curr7, prev7);
+  const momDownloads = pctChange(curr30, prev30);
 
-  const filteredProducts = productFilter
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(productFilter.toLowerCase()) ||
-        (p.description || '').toLowerCase().includes(productFilter.toLowerCase()))
+  const filtered = filter
+    ? products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || (p.description || '').toLowerCase().includes(filter.toLowerCase()))
     : products;
+
+  // Period-aware KPI totals, summed from products so KPIs always match the table
+  const pt = filtered.reduce((t, p) => {
+    t.views += periodPick(p.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews');
+    t.npm += periodPick(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+    t.pypi += periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+    return t;
+  }, { views: 0, npm: 0, pypi: 0 });
+
+  const periodWord = PERIOD_LABEL[period];
+  const docPeriod = period === 'all'; // docker/hf only meaningful all-time
+  const cumulative = trends?.series?.length > 1 ? (() => { let c = 0; return trends.series.map(s => ({ date: s.periodStart, cumulative: (c += s.totalDownloads || 0) })); })() : [];
+
+  const channelData = [
+    { name: 'npm', value: totals.npm?.allTimeDownloads || 0, color: C.npm },
+    { name: 'Git Clones', value: totals.github?.totalClones || 0, color: C.github },
+    { name: 'PyPI', value: totals.pypi?.allTimeDownloads || 0, color: C.pypi },
+    { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.docker },
+    { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
+  ].filter(d => d.value > 0);
+  const channelTotal = channelData.reduce((s, d) => s + d.value, 0);
 
   return (
     <>
-      {/* Hero + growth row */}
-      <div className="hero-card">
-        <div className="hero-label">Total Ecosystem Adoption</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px', flexWrap: 'wrap' }}>
-          <div className="hero-value">{formatFullNumber(totals.combined.totalAdoption)}</div>
-          {wow && (
-            <div className="growth-row">
-              <div className="growth-item">
-                <span className="growth-item-label">WoW</span>
-                <GrowthBadge value={wow.downloads} />
-              </div>
-              {mom && (
-                <div className="growth-item">
-                  <span className="growth-item-label">MoM</span>
-                  <GrowthBadge value={mom.downloads} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="hero-sub">Aggregated installs, clones, and pulls across {totals.github.repos} repositories and {(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages</div>
-      </div>
-
-      {/* KPI row */}
-      <div className="grid grid-5">
-        <MetricCard icon={<Eye size={18} color={C.blue} />} iconBg="rgba(76,154,255,0.10)"
-          label="Page Views" value={formatFullNumber(totals.combined.totalPageViews)}
-          sub={`${totals.github.repos} repositories`}
-          growth={wow?.views} />
-        <MetricCard icon={<Star size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
-          label="GitHub Stars" value={formatFullNumber(totals.github.totalStars)} sub="Community endorsements" />
-        <MetricCard icon={<Download size={18} color={C.red} />} iconBg="rgba(255,107,107,0.10)"
-          label="npm (30d)" value={formatFullNumber(totals.npm.last30Downloads)}
-          sub={`${totals.npm.packages} packages`} />
-        <MetricCard icon={<Package size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
-          label="PyPI (30d)" value={formatFullNumber(totals.pypi?.last30Downloads || 0)}
-          sub={`${totals.pypi?.packages || 0} packages`} />
-        <MetricCard icon={<Container size={18} color={C.sky} />} iconBg="rgba(56,189,248,0.10)"
-          label="Docker Pulls" value={formatFullNumber(totals.docker?.totalPulls || 0)}
-          sub={`${totals.docker?.images || 0} images`} />
-      </div>
-
-      {/* Tool Adoption table */}
-      <div className="section-card">
-        <div className="section-header">
-          <div className="section-title">Tool Adoption</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="adoption-period-tabs">
-              {ADOPTION_PERIODS.map(p => (
-                <button
-                  key={p.value}
-                  className={`adoption-period-tab${adoptionPeriod === p.value ? ' active' : ''}`}
-                  onClick={() => setAdoptionPeriod(p.value)}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            {adoptionPeriod === 'custom' && (
-              <div className="custom-date-range">
-                <input
-                  type="date"
-                  className="date-input"
-                  value={customStart}
-                  max={customEnd || todayStr}
-                  onChange={e => setCustomStart(e.target.value)}
-                />
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>to</span>
-                <input
-                  type="date"
-                  className="date-input"
-                  value={customEnd}
-                  min={customStart}
-                  max={todayStr}
-                  onChange={e => setCustomEnd(e.target.value)}
-                />
-                <button className="custom-date-apply" onClick={fetchCustomRange} disabled={customLoading}>
-                  {customLoading ? 'Loading...' : 'Apply'}
-                </button>
-              </div>
-            )}
+      <div className="hero">
+        <div className="hero-eyebrow">Total ecosystem adoption</div>
+        <div className="hero-main">
+          <div className="hero-figure">{fmtFull(totals.combined.totalAdoption)}</div>
+          <div className="hero-deltas">
+            {wowDownloads != null && <div className="hero-delta"><span>Installs WoW</span><Delta value={wowDownloads} /></div>}
+            {momDownloads != null && <div className="hero-delta"><span>Installs MoM</span><Delta value={momDownloads} /></div>}
           </div>
         </div>
-        <div style={{ padding: '12px 16px 0' }}>
-          <SearchInput value={productFilter} onChange={setProductFilter} placeholder="Filter tools..." />
-        </div>
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Tool</th>
-                <th className="r">Views</th>
-                <th className="r">Clones</th>
-                <th className="r">npm</th>
-                <th className="r">PyPI</th>
-                <th className="r">Docker</th>
-                <th className="r">Stars</th>
-                <th className="r">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adoptionPeriod === 'custom' && !customOverview && !customLoading && (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>Select a date range and click Apply to load data.</td></tr>
-              )}
-              {adoptionPeriod === 'custom' && customLoading && (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>Loading custom range data...</td></tr>
-              )}
-              {(adoptionPeriod !== 'custom' || customOverview) && filteredProducts.map(p => {
-                const views = pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod, 'customViews');
-                const clones = pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod, 'customClones');
-                const npm = pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
-                const pypi = pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
-                const docker = adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
-                const total = clones + npm + pypi + docker;
-                return (
-                  <tr key={p.name}>
-                    <td><div className="product-name">{p.name}</div><div className="product-desc">{p.description}</div></td>
-                    <td className="num">{formatFullNumber(views)}</td>
-                    <td className="num">{formatFullNumber(clones)}</td>
-                    <td className="num">
-                      {formatFullNumber(npm)}
-                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={p.npm?.last7Downloads || 0} previous={p.npm?.prev7Downloads || 0} />}
-                    </td>
-                    <td className="num">
-                      {formatFullNumber(pypi)}
-                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={p.pypi?.last7Downloads || 0} previous={p.pypi?.prev7Downloads || 0} />}
-                    </td>
-                    <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(docker) : '--'}</td>
-                    <td className="num">{p.github.stars || 0}</td>
-                    <td className="num strong">{formatFullNumber(total)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              {(() => {
-                let tViews = 0, tClones = 0, tNpm = 0, tPypi = 0, tDocker = 0, tStars = 0;
-                filteredProducts.forEach(p => {
-                  tViews += pickPeriodValue(p.github, 'views', 'views30d', 'views7d', 'views24h', adoptionPeriod, 'customViews');
-                  tClones += pickPeriodValue(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', adoptionPeriod, 'customClones');
-                  tNpm += pickPeriodValue(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
-                  tPypi += pickPeriodValue(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', adoptionPeriod, 'customDownloads');
-                  tDocker += adoptionPeriod === 'all' ? (p.docker?.totalPulls || 0) : 0;
-                  tStars += p.github.stars || 0;
-                });
-                const tTotal = tClones + tNpm + tPypi + tDocker;
-                const tNpm7 = filteredProducts.reduce((s, p) => s + (p.npm?.last7Downloads || 0), 0);
-                const tNpmPrev7 = filteredProducts.reduce((s, p) => s + (p.npm?.prev7Downloads || 0), 0);
-                const tPypi7 = filteredProducts.reduce((s, p) => s + (p.pypi?.last7Downloads || 0), 0);
-                const tPypiPrev7 = filteredProducts.reduce((s, p) => s + (p.pypi?.prev7Downloads || 0), 0);
-                return (
-                  <tr>
-                    <td>Total</td>
-                    <td className="num">{formatFullNumber(tViews)}</td>
-                    <td className="num">{formatFullNumber(tClones)}</td>
-                    <td className="num">
-                      {formatFullNumber(tNpm)}
-                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={tNpm7} previous={tNpmPrev7} />}
-                    </td>
-                    <td className="num">
-                      {formatFullNumber(tPypi)}
-                      {(adoptionPeriod === '30d' || adoptionPeriod === '7d') && <WowIndicator current={tPypi7} previous={tPypiPrev7} />}
-                    </td>
-                    <td className="num">{adoptionPeriod === 'all' ? formatFullNumber(tDocker) : '--'}</td>
-                    <td className="num">{tStars}</td>
-                    <td className="num strong">{formatFullNumber(tTotal)}</td>
-                  </tr>
-                );
-              })()}
-            </tfoot>
-          </table>
+        <div className="hero-sub">
+          Git clones + package installs + image pulls + model downloads across {totals.github.repos} repositories,
+          {' '}{(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages, {totals.docker?.images || 0} images and {totals.hf?.models || 0} models.
         </div>
       </div>
 
-      {/* Distribution charts - executive view */}
-      <div className="grid grid-2-lg">
-        {/* Channel Mix donut */}
-        {(() => {
-          const channelData = [
-            { name: 'npm', value: totals.npm?.allTimeDownloads || 0, color: C.red },
-            { name: 'Git Clones', value: totals.github?.totalClones || 0, color: C.blue },
-            { name: 'PyPI', value: totals.pypi?.allTimeDownloads || 0, color: C.amber },
-            { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.sky },
-          ].filter(d => d.value > 0);
-          const total = channelData.reduce((s, d) => s + d.value, 0);
-          return channelData.length > 0 && (
-            <ChartWrap title="Distribution Channel Mix" sub="All-time adoption by install channel">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={channelData} cx="50%" cy="50%" innerRadius={70} outerRadius={110}
-                    dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
-                    {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [formatFullNumber(value) + ` (${(value / total * 100).toFixed(1)}%)`, '']}
-                    {...ttProps} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartWrap>
-          );
-        })()}
-
-        {/* Growth momentum - cumulative trend */}
-        {trends?.series?.length > 1 && (() => {
-          let cumulative = 0;
-          const cumulativeData = trends.series.map(s => {
-            cumulative += s.totalDownloads || 0;
-            return { date: s.periodStart, cumulative };
-          });
-          return (
-            <ChartWrap title="Cumulative Adoption" sub="Running total of installs over time">
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={cumulativeData}>
-                  <defs>
-                    <linearGradient id="cumulativeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.teal} stopOpacity={0.25} />
-                      <stop offset="100%" stopColor={C.teal} stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} tickFormatter={formatNumber} />
-                  <Tooltip labelFormatter={formatDateLabel} formatter={(v) => [formatFullNumber(v), 'Total Installs']} {...ttProps} />
-                  <Area type="monotone" dataKey="cumulative" stroke={C.teal} fill="url(#cumulativeGrad)" strokeWidth={2.5} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartWrap>
-          );
-        })()}
-      </div>
-
-      {/* Granularity selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Trend Granularity</span>
-        <GranularitySelector value={trendsGranularity} onChange={setTrendsGranularity} />
-      </div>
-
-      {/* Trend charts */}
-      {trends?.series?.length > 1 && (
-        <div className="grid grid-2-lg">
-          <ChartWrap title="Combined Adoption Trend" sub="npm + PyPI + Docker across all tools">
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={trends.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="periodStart" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="npmDownloads" stroke={C.red} fill={C.redFill} name="npm" stackId="dl" />
-                <Area type="monotone" dataKey="pypiDownloads" stroke={C.amber} fill={C.amberFill} name="PyPI" stackId="dl" />
-                <Area type="monotone" dataKey="dockerPulls" stroke={C.sky} fill={C.skyFill} name="Docker" stackId="dl" />
-                <Line type="monotone" dataKey="totalDownloads" stroke={C.teal} strokeWidth={2} dot={false} name="Total" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
-
-          <ChartWrap title="GitHub Traffic Trend" sub="Views + clones across all repos">
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={trends.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="periodStart" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="views" stroke={C.blue} fill={C.blueFill} name="Views" />
-                <Line type="monotone" dataKey="clones" stroke={C.purple} strokeWidth={2} dot={false} name="Clones" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
+      {period === 'custom' && (
+        <div className="panel">
+          <div className="panel-head">
+            <div><div className="panel-title">Custom range</div><div className="panel-sub">Pick a window for views, clones and package installs.</div></div>
+            <div className="panel-tools daterange">
+              <input type="date" className="date-input" value={cStart} max={cEnd || today} onChange={e => setCStart(e.target.value)} />
+              <span style={{ color: 'var(--ink-4)', fontSize: '.72rem' }}>to</span>
+              <input type="date" className="date-input" value={cEnd} min={cStart} max={today} onChange={e => setCEnd(e.target.value)} />
+              <button className="btn" onClick={applyCustom} disabled={cLoading}>{cLoading ? 'Loading…' : 'Apply'}</button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Star growth chart */}
-      {trends?.starTimeline?.length > 1 && (
-        <ChartWrap title="Star Growth" sub="Total stars across all repositories over time">
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={trends.starTimeline}>
+      <div className="cards">
+        <Kpi icon={<Eye size={17} />} color={C.github} label={`Page Views`} value={fmtFull(pt.views)} sub={periodWord} />
+        <Kpi icon={<Star size={17} />} color={C.pypi} label="GitHub Stars" value={fmtFull(totals.github.totalStars)} sub="current total" />
+        <Kpi icon={<Download size={17} />} color={C.npm} label="npm Installs" value={fmtFull(pt.npm)} sub={`${periodWord} · ${totals.npm.packages} pkgs`} />
+        <Kpi icon={<Package size={17} />} color={C.pypi} label="PyPI Installs" value={fmtFull(pt.pypi)} sub={`${periodWord} · ${totals.pypi?.packages || 0} pkgs`} />
+        <Kpi icon={<Container size={17} />} color={C.docker} label="Docker Pulls" value={fmtFull(totals.docker?.totalPulls || 0)} sub={`all time · ${totals.docker?.images || 0} images`} />
+        <Kpi icon={<Brain size={17} />} color={C.hf} label="HF Downloads" value={fmtFull(totals.hf?.downloadsAllTime || 0)} sub={`all time · ${totals.hf?.downloads30d || 0} in 30d`} />
+      </div>
+
+      <Panel
+        title="Tool Adoption"
+        sub="Adoption = clones + npm + PyPI + Docker pulls + HF downloads. Views and stars are shown for context, not summed. Docker and HF report cumulative totals only, so they show only under the All-time window."
+        tools={<Filter value={filter} onChange={setFilter} placeholder="Filter tools…" />}
+        pad={false}>
+        {(period === 'custom' && !custom)
+          ? <div className="empty" style={{ border: 'none' }}><p>{cLoading ? 'Loading custom range…' : 'Pick a date range above and click Apply.'}</p></div>
+          : <AdoptionTable products={filtered} period={period} />}
+      </Panel>
+
+      <SecLabel>Distribution</SecLabel>
+      <div className="duo">
+        {channelData.length > 0 && (
+          <Chart title="Channel Mix" sub="All-time adoption by install channel">
+            <PieChart>
+              <Pie data={channelData} cx="50%" cy="50%" innerRadius={68} outerRadius={108} dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
+                {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Pie>
+              <Tooltip {...tt} formatter={v => [`${fmtFull(v)} (${(v / channelTotal * 100).toFixed(1)}%)`, '']} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
+          </Chart>
+        )}
+        {cumulative.length > 1 && (
+          <Chart title="Cumulative Adoption" sub="Running total of installs over time">
+            <AreaChart data={cumulative}>
+              <defs><linearGradient id="cum" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.accent} stopOpacity={0.28} /><stop offset="100%" stopColor={C.accent} stopOpacity={0.02} /></linearGradient></defs>
               <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis dataKey="date" {...xDateProps} />
-              <YAxis {...axProps} />
-              <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-              <Area type="monotone" dataKey="totalStars" stroke={C.amber} fill={C.amberFill} name="Total Stars" />
+              <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+              <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Total Installs']} />
+              <Area type="monotone" dataKey="cumulative" stroke={C.accent} fill="url(#cum)" strokeWidth={2.5} dot={false} />
             </AreaChart>
-          </ResponsiveContainer>
-        </ChartWrap>
-      )}
-
-      {/* Charts row */}
-      <div className="grid grid-2-lg">
-        {products.length > 0 && (
-          <ChartWrap title="Adoption by Tool">
-            <ResponsiveContainer width="100%" height={Math.max(250, products.length * 50)}>
-              <BarChart data={products} layout="vertical" margin={{ left: 100 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis type="number" {...axProps} />
-                <YAxis type="category" dataKey="name" {...axProps} width={100} />
-                <Tooltip {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="github.clones" fill={C.blue} name="Git Clones" stackId="a" />
-                <Bar dataKey="npm.allTimeDownloads" fill={C.red} name="npm" stackId="a" />
-                <Bar dataKey="pypi.allTimeDownloads" fill={C.amber} name="PyPI" stackId="a" />
-                <Bar dataKey="docker.totalPulls" fill={C.sky} name="Docker" stackId="a" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartWrap>
-        )}
-        {weeklyTrend.length > 1 && (
-          <ChartWrap title="Weekly Download Trend" sub="npm + PyPI combined">
-            <ResponsiveContainer width="100%" height={Math.max(250, products.length * 50)}>
-              <ComposedChart data={weeklyTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="week_start" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={v => `Week of ${formatDateLabel(v)}`} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="npm" fill="rgba(255,107,107,0.5)" name="npm" stackId="dl" />
-                <Bar dataKey="pypi" fill="rgba(245,158,11,0.5)" name="PyPI" stackId="dl" radius={[4, 4, 0, 0]} />
-                <Line type="monotone" dataKey="downloads" stroke={C.teal} strokeWidth={2} dot={false} name="Total" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
+          </Chart>
         )}
       </div>
 
-      {/* Ecosystem summary cards */}
-      <div className="grid grid-4">
-        <EcoCard name="GitHub" color={C.blue} icon={<Github size={14} color={C.blue} />} rows={[
-          { label: 'Repositories', value: totals.github.repos },
-          { label: 'Page views', value: totals.github.totalViews },
-          { label: 'Git clones', value: totals.github.totalClones },
-          { label: 'Stars', value: totals.github.totalStars },
-          { label: 'Forks', value: totals.github.totalForks },
-          { label: 'Contributors', value: totals.github.totalContributors || 0 },
-          { label: 'Release downloads', value: totals.github.totalReleaseDownloads || 0 },
+      <SecLabel>Trends</SecLabel>
+      <div className="sec-label" style={{ marginTop: -8 }}>
+        <Segmented items={GRANULARITIES} value={granularity} onChange={setGranularity} />
+        <div className="rule" />
+      </div>
+
+      {trends?.series?.length > 1 && (
+        <div className="duo">
+          <Chart title="Install Trend" sub="npm + PyPI + Docker + HuggingFace">
+            <ComposedChart data={trends.series}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+              <XAxis dataKey="periodStart" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+              <Tooltip {...tt} labelFormatter={fmtDate} /><Legend wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="npmDownloads" stackId="d" stroke={C.npm} fill={C.fill(C.npm)} name="npm" />
+              <Area type="monotone" dataKey="pypiDownloads" stackId="d" stroke={C.pypi} fill={C.fill(C.pypi)} name="PyPI" />
+              <Area type="monotone" dataKey="dockerPulls" stackId="d" stroke={C.docker} fill={C.fill(C.docker)} name="Docker" />
+              <Area type="monotone" dataKey="hfDownloads" stackId="d" stroke={C.hf} fill={C.fill(C.hf)} name="HuggingFace" />
+              <Line type="monotone" dataKey="totalDownloads" stroke={C.accent} strokeWidth={2} dot={false} name="Total" />
+            </ComposedChart>
+          </Chart>
+          <Chart title="GitHub Traffic Trend" sub="Views + clones across all repos">
+            <ComposedChart data={trends.series}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+              <XAxis dataKey="periodStart" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+              <Tooltip {...tt} labelFormatter={fmtDate} /><Legend wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="views" stroke={C.github} fill={C.fill(C.github)} name="Views" />
+              <Line type="monotone" dataKey="clones" stroke={C.violet} strokeWidth={2} dot={false} name="Clones" />
+            </ComposedChart>
+          </Chart>
+        </div>
+      )}
+
+      {trends?.starTimeline?.length > 1 && (
+        <Chart title="Star Growth" sub="Total stars across all repositories" height={240}>
+          <AreaChart data={trends.starTimeline}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+            <XAxis dataKey="date" {...axDate} /><YAxis {...ax} />
+            <Tooltip {...tt} labelFormatter={fmtDate} />
+            <Area type="monotone" dataKey="totalStars" stroke={C.pypi} fill={C.fill(C.pypi)} name="Total Stars" />
+          </AreaChart>
+        </Chart>
+      )}
+
+      <SecLabel>By source</SecLabel>
+      <div className="quad">
+        <Eco name="GitHub" color={C.github} icon={<Github size={15} color={C.github} />} rows={[
+          ['Repositories', totals.github.repos], ['Page views', totals.github.totalViews],
+          ['Git clones', totals.github.totalClones], ['Stars', totals.github.totalStars],
+          ['Forks', totals.github.totalForks], ['Contributors', totals.github.totalContributors || 0],
         ]} />
-        <EcoCard name="npm" color={C.red} icon={<Box size={14} color={C.red} />} rows={[
-          { label: 'Packages', value: totals.npm.packages },
-          { label: 'All-time downloads', value: totals.npm.allTimeDownloads },
-          { label: 'Last 30d', value: totals.npm.last30Downloads },
-          { label: 'Last 7d', value: totals.npm.last7Downloads },
+        <Eco name="npm" color={C.npm} icon={<Box size={15} color={C.npm} />} rows={[
+          ['Packages', totals.npm.packages], ['All-time installs', totals.npm.allTimeDownloads],
+          ['Last 30d', totals.npm.last30Downloads], ['Last 7d', totals.npm.last7Downloads],
         ]} />
-        <EcoCard name="PyPI" color={C.amber} icon={<Package size={14} color={C.amber} />} rows={[
-          { label: 'Packages', value: totals.pypi?.packages || 0 },
-          { label: 'All-time downloads', value: totals.pypi?.allTimeDownloads || 0 },
-          { label: 'Last 30d', value: totals.pypi?.last30Downloads || 0 },
-          { label: 'Last 7d', value: totals.pypi?.last7Downloads || 0 },
+        <Eco name="PyPI" color={C.pypi} icon={<Package size={15} color={C.pypi} />} rows={[
+          ['Packages', totals.pypi?.packages || 0], ['All-time installs', totals.pypi?.allTimeDownloads || 0],
+          ['Last 30d', totals.pypi?.last30Downloads || 0], ['Last 7d', totals.pypi?.last7Downloads || 0],
         ]} />
-        <EcoCard name="Docker" color={C.sky} icon={<Container size={14} color={C.sky} />} rows={[
-          { label: 'Images', value: totals.docker?.images || 0 },
-          { label: 'Total pulls', value: totals.docker?.totalPulls || 0 },
+        <Eco name="HuggingFace" color={C.hf} icon={<Brain size={15} color={C.hf} />} rows={[
+          ['Models', totals.hf?.models || 0], ['All-time downloads', totals.hf?.downloadsAllTime || 0],
+          ['Last 30d', totals.hf?.downloads30d || 0], ['Likes', totals.hf?.likes || 0],
         ]} />
       </div>
     </>
   );
 }
 
-/* ============================================
-   GitHub Tab
-   ============================================ */
-function GitHubTab({ repos, selectedRepo, setSelectedRepo, data, loading, getCombinedData, getWeeklyData }) {
+function Eco({ name, color, icon, rows }) {
+  return (
+    <div className="eco">
+      <div className="eco-head"><span className="chip"><i style={{ background: color }} />{name}</span><span className="ico">{icon}</span></div>
+      {rows.map(([k, v]) => <div className="eco-row" key={k}><span className="k">{k}</span><span className="v">{fmtFull(v)}</span></div>)}
+    </div>
+  );
+}
+
+function AdoptionTable({ products, period }) {
+  const cols = [
+    { key: 'name', label: 'Tool', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div><div className="cell-desc">{r.description}</div></div>) },
+    { key: 'views', label: 'Views', align: 'right', sortValue: r => periodPick(r.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews'), render: r => fmtFull(periodPick(r.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews')) },
+    { key: 'clones', label: 'Clones', align: 'right', sortValue: r => periodPick(r.github, 'clones', 'clones30d', 'clones7d', 'clones24h', period, 'customClones'), render: r => fmtFull(periodPick(r.github, 'clones', 'clones30d', 'clones7d', 'clones24h', period, 'customClones')) },
+    {
+      key: 'npm', label: 'npm', align: 'right', sortValue: r => periodPick(r.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads'),
+      render: r => (<>{fmtFull(periodPick(r.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads'))}{(period === '30d' || period === '7d') && <MiniDelta curr={r.npm?.last7Downloads} prev={r.npm?.prev7Downloads} />}</>),
+    },
+    {
+      key: 'pypi', label: 'PyPI', align: 'right', sortValue: r => periodPick(r.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads'),
+      render: r => (<>{fmtFull(periodPick(r.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads'))}{(period === '30d' || period === '7d') && <MiniDelta curr={r.pypi?.last7Downloads} prev={r.pypi?.prev7Downloads} />}</>),
+    },
+    { key: 'docker', label: 'Docker', align: 'right', sortValue: r => period === 'all' ? (r.docker?.totalPulls || 0) : -1, render: r => period === 'all' ? fmtFull(r.docker?.totalPulls || 0) : <span className="muted">—</span> },
+    { key: 'hf', label: 'HF', align: 'right', sortValue: r => hfPeriod(r.hf, period) ?? -1, render: r => { const v = hfPeriod(r.hf, period); return v == null ? <span className="muted">—</span> : fmtFull(v); } },
+    { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => fmtFull(r.github?.stars || 0) },
+    { key: 'adoption', label: 'Adoption', align: 'right', lead: true, sortValue: r => rowAdoption(r, period), render: r => fmtFull(rowAdoption(r, period)) },
+  ];
+  const t = products.reduce((a, p) => {
+    a.views += periodPick(p.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews');
+    a.clones += periodPick(p.github, 'clones', 'clones30d', 'clones7d', 'clones24h', period, 'customClones');
+    a.npm += periodPick(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+    a.pypi += periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
+    a.docker += period === 'all' ? (p.docker?.totalPulls || 0) : 0;
+    a.hf += hfPeriod(p.hf, period) || 0;
+    a.stars += p.github?.stars || 0;
+    a.adoption += rowAdoption(p, period);
+    return a;
+  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, stars: 0, adoption: 0 });
+  const footer = [
+    <td key="t">Total</td>,
+    <td key="v" className="num">{fmtFull(t.views)}</td>,
+    <td key="c" className="num">{fmtFull(t.clones)}</td>,
+    <td key="n" className="num">{fmtFull(t.npm)}</td>,
+    <td key="p" className="num">{fmtFull(t.pypi)}</td>,
+    <td key="d" className="num">{period === 'all' ? fmtFull(t.docker) : '—'}</td>,
+    <td key="h" className="num">{(period === 'all' || period === '30d') ? fmtFull(t.hf) : '—'}</td>,
+    <td key="s" className="num">{fmtFull(t.stars)}</td>,
+    <td key="a" className="num lead">{fmtFull(t.adoption)}</td>,
+  ];
+  return <DataTable columns={cols} rows={products} getKey={r => r.name} initialSort={{ key: 'adoption', dir: 'desc' }} footer={footer} />;
+}
+
+/* ============================================================
+   GitHub
+   ============================================================ */
+function GitHubTab({ repos, selRepo, setSelRepo, data, loading, combined, weekly }) {
+  const [filter, setFilter] = useState('');
+  const rows = filter ? repos.filter(r => (r.full_name || '').toLowerCase().includes(filter.toLowerCase())) : repos;
+  const cols = [
+    { key: 'full_name', label: 'Repository', sortValue: r => r.full_name, render: r => <span className="cell-name">{r.full_name}</span> },
+    { key: 'totalViews', label: 'Views', align: 'right', render: r => fmtFull(r.totalViews) },
+    { key: 'totalClones', label: 'Clones', align: 'right', render: r => fmtFull(r.totalClones) },
+    { key: 'stars', label: 'Stars', align: 'right', render: r => fmtFull(r.stars) },
+    { key: 'forks', label: 'Forks', align: 'right', lead: true, render: r => fmtFull(r.forks) },
+  ];
   return (
     <>
-      <Selector label="Repository" value={selectedRepo} onChange={setSelectedRepo}
-        items={repos} nameKey="full_name" />
+      <Panel title="Repositories" sub="Click a repository to see its traffic history. Sort any column." tools={<Filter value={filter} onChange={setFilter} placeholder="Filter repositories…" />} pad={false}>
+        <DataTable columns={cols} rows={rows} getKey={r => r.id} onRowClick={r => setSelRepo(r.id)} selectedKey={selRepo} initialSort={{ key: 'totalViews', dir: 'desc' }} />
+      </Panel>
 
       {loading ? <Loading /> : data ? (
         <>
-          <div className="grid grid-5">
-            <MetricCard icon={<Eye size={18} color={C.blue} />} iconBg="rgba(76,154,255,0.10)"
-              label="Total Views" value={formatFullNumber(data.summary.totalViews)} sub="All time" />
-            <MetricCard icon={<GitPullRequest size={18} color={C.teal} />} iconBg="rgba(0,212,170,0.10)"
-              label="Total Clones" value={formatFullNumber(data.summary.totalClones)} sub="All time" />
-            <MetricCard icon={<Users size={18} color={C.sky} />} iconBg="rgba(56,189,248,0.10)"
-              label="Unique Visitors" value={formatFullNumber(data.summary.recentUniqueVisitors)} sub="Last 14d (API)" />
-            <MetricCard icon={<Star size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
-              label="Stars" value={formatFullNumber(data.summary.latestStars)}
-              sub={data.summary.starsGrowth > 0 ? `+${data.summary.starsGrowth} this period` : 'Current'} />
-            <MetricCard icon={<GitFork size={18} color={C.purple} />} iconBg="rgba(167,139,250,0.10)"
-              label="Forks" value={formatFullNumber(data.summary.latestForks)}
-              sub={data.summary.forksGrowth > 0 ? `+${data.summary.forksGrowth} this period` : 'Current'} />
+          <SecLabel>{repos.find(r => r.id === selRepo)?.full_name || 'Detail'}</SecLabel>
+          <div className="cards">
+            <Kpi icon={<Eye size={17} />} color={C.github} label="Total Views" value={fmtFull(data.summary.totalViews)} sub="all time" />
+            <Kpi icon={<GitPullRequest size={17} />} color={C.accent} label="Total Clones" value={fmtFull(data.summary.totalClones)} sub="all time" />
+            <Kpi icon={<Users size={17} />} color={C.docker} label="Unique Visitors" value={fmtFull(data.summary.recentUniqueVisitors)} sub="last 14d (API)" />
+            <Kpi icon={<Star size={17} />} color={C.pypi} label="Stars" value={fmtFull(data.summary.latestStars)} sub={data.summary.starsGrowth > 0 ? `+${data.summary.starsGrowth} this period` : 'current'} />
+            <Kpi icon={<GitFork size={17} />} color={C.violet} label="Forks" value={fmtFull(data.summary.latestForks)} sub={data.summary.forksGrowth > 0 ? `+${data.summary.forksGrowth} this period` : 'current'} />
           </div>
 
-          <ChartWrap title="Daily Traffic">
-            <ResponsiveContainer width="100%" height={350}>
-              <ComposedChart data={getCombinedData()}>
+          <Chart title="Daily Traffic" height={340}>
+            <ComposedChart data={combined()}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+              <XAxis dataKey="date" {...axDate} /><YAxis {...ax} />
+              <Tooltip {...tt} labelFormatter={fmtDate} /><Legend wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="views" stroke={C.github} fill={C.fill(C.github)} name="Views" />
+              <Area type="monotone" dataKey="viewsUnique" stroke={C.accent} fill={C.fill(C.accent, 0.1)} name="Unique Visitors" />
+              <Line type="monotone" dataKey="clones" stroke={C.violet} strokeWidth={2} dot={false} name="Clones" />
+              <Line type="monotone" dataKey="clonesUnique" stroke={C.pink} strokeWidth={2} dot={false} name="Unique Cloners" />
+            </ComposedChart>
+          </Chart>
+
+          {weekly().length > 1 && (
+            <Chart title="Weekly Summary">
+              <BarChart data={weekly()}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="date" {...xDateProps} />
-                <YAxis {...axProps} />
-                <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="views" stroke={C.blue} fill={C.blueFill} name="Views" />
-                <Area type="monotone" dataKey="viewsUnique" stroke={C.teal} fill={C.tealFill} name="Unique Visitors" />
-                <Line type="monotone" dataKey="clones" stroke={C.purple} strokeWidth={2} dot={false} name="Clones" />
-                <Line type="monotone" dataKey="clonesUnique" stroke={C.pink} strokeWidth={2} dot={false} name="Unique Cloners" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrap>
-
-          {getWeeklyData().length > 1 && (
-            <ChartWrap title="Weekly Summary">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getWeeklyData()}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="week" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={v => `Week of ${formatDateLabel(v)}`} {...ttProps} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="views" fill={C.blue} name="Views" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="clones" fill={C.purple} name="Clones" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+                <XAxis dataKey="week" {...axDate} /><YAxis {...ax} />
+                <Tooltip {...tt} labelFormatter={v => `Week of ${fmtDate(v)}`} /><Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="views" fill={C.github} name="Views" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="clones" fill={C.violet} name="Clones" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </Chart>
           )}
-
-          <div className="grid grid-2-lg">
-            <ChartWrap title="Views Over Time">
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={data.views}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                  <Line type="monotone" dataKey="count" stroke={C.blue} strokeWidth={2} dot={{ r: 2, fill: C.blue }} name="Views" />
-                  <Line type="monotone" dataKey="uniques" stroke={C.teal} strokeWidth={2} dot={{ r: 2, fill: C.teal }} name="Unique" />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartWrap>
-            <ChartWrap title="Clones Over Time">
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={data.clones}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                  <Line type="monotone" dataKey="count" stroke={C.purple} strokeWidth={2} dot={{ r: 2, fill: C.purple }} name="Clones" />
-                  <Line type="monotone" dataKey="uniques" stroke={C.pink} strokeWidth={2} dot={{ r: 2, fill: C.pink }} name="Unique" />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartWrap>
-          </div>
 
           {data.referrers?.length > 0 && (
-            <ChartWrap title="Top Referrers" sub="Traffic sources (last 14 days)">
-              <ResponsiveContainer width="100%" height={Math.max(200, data.referrers.length * 40)}>
-                <BarChart data={data.referrers.slice(0, 10)} layout="vertical" margin={{ left: 80 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis type="number" {...axProps} />
-                  <YAxis type="category" dataKey="referrer" {...axProps} width={80} />
-                  <Tooltip {...ttProps} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="count" fill={C.blue} name="Views" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="uniques" fill={C.teal} name="Unique" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+            <BreakdownChart title="Top Referrers" sub="Traffic sources (last 14 days)" data={data.referrers} nameKey="referrer" valueKey="count" maxItems={10} color={C.github} valueLabel="Views" />
           )}
-
           {data.paths?.length > 0 && (
-            <ChartWrap title="Popular Content" sub="Most visited pages (last 14 days)">
-              <ResponsiveContainer width="100%" height={Math.max(200, data.paths.length * 40)}>
-                <BarChart data={data.paths.slice(0, 10)} layout="vertical" margin={{ left: 120 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis type="number" {...axProps} />
-                  <YAxis type="category" dataKey="path" {...axProps} width={120} />
-                  <Tooltip {...ttProps} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="count" fill={C.purple} name="Views" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="uniques" fill="rgba(167,139,250,0.5)" name="Unique" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+            <BreakdownChart title="Popular Content" sub="Most visited pages (last 14 days)" data={data.paths} nameKey="path" valueKey="count" maxItems={10} color={C.violet} valueLabel="Views" />
           )}
-
-          {/* Contributors */}
           {data.contributors?.length > 0 && (
-            <BreakdownChart
-              title="Top Contributors"
-              sub="Total commits per contributor"
-              data={data.contributors}
-              nameKey="login"
-              valueKey="contributions"
-              maxItems={15}
-              color={C.teal}
-            />
+            <BreakdownChart title="Top Contributors" sub="Total commits per contributor" data={data.contributors} nameKey="login" valueKey="contributions" maxItems={15} color={C.accent} valueLabel="Commits" />
           )}
-
-          {/* Release Downloads */}
           {data.releases?.length > 0 && (
-            <BreakdownTable
-              title="Release Downloads"
-              columns={[
-                { key: 'tag_name', label: 'Tag' },
-                { key: 'release_name', label: 'Release' },
-                { key: 'published_at', label: 'Published', format: v => v ? formatDateLabel(v.split('T')[0]) : '--' },
-                { key: 'total_downloads', label: 'Downloads', align: 'right', format: v => formatFullNumber(v) },
-              ]}
-              data={data.releases}
-            />
+            <Panel title="Release Downloads" pad={false}>
+              <DataTable
+                columns={[
+                  { key: 'tag_name', label: 'Tag', render: r => <span className="cell-name">{r.tag_name}</span> },
+                  { key: 'release_name', label: 'Release' },
+                  { key: 'published_at', label: 'Published', sortValue: r => r.published_at || '', render: r => r.published_at ? fmtDate(r.published_at.split('T')[0]) : '—' },
+                  { key: 'total_downloads', label: 'Downloads', align: 'right', lead: true, render: r => fmtFull(r.total_downloads) },
+                ]}
+                rows={data.releases} getKey={r => r.tag_name} initialSort={{ key: 'total_downloads', dir: 'desc' }} />
+            </Panel>
           )}
         </>
-      ) : (
-        <Empty message="No GitHub data available yet." command="npm run collect" />
-      )}
+      ) : <Empty message="No GitHub data yet." command="npm run collect" />}
     </>
   );
 }
 
-/* ============================================
-   Unified Package Tab (npm + PyPI)
-   ============================================ */
-const COUNTRY_NAMES = {
-  US: 'United States', DE: 'Germany', CN: 'China', GB: 'United Kingdom',
-  FR: 'France', IN: 'India', JP: 'Japan', KR: 'South Korea',
-  BR: 'Brazil', CA: 'Canada', AU: 'Australia', NL: 'Netherlands',
-  RU: 'Russia', SE: 'Sweden', SG: 'Singapore', PL: 'Poland',
-  ES: 'Spain', IT: 'Italy', CH: 'Switzerland', HK: 'Hong Kong',
-};
+/* ============================================================
+   npm + PyPI (shared)
+   ============================================================ */
+const COUNTRY_NAMES = { US: 'United States', DE: 'Germany', CN: 'China', GB: 'United Kingdom', FR: 'France', IN: 'India', JP: 'Japan', KR: 'South Korea', BR: 'Brazil', CA: 'Canada', AU: 'Australia', NL: 'Netherlands', RU: 'Russia', SE: 'Sweden', SG: 'Singapore', PL: 'Poland', ES: 'Spain', IT: 'Italy', CH: 'Switzerland', HK: 'Hong Kong' };
 
-function formatCountryName(code) {
-  return COUNTRY_NAMES[code] || code;
-}
+function PackageTab({ eco, color, packages, sel, setSel, data, loading, weekly, versionDownloads, pythonVersions, systemStats, countryDownloads }) {
+  const [filter, setFilter] = useState('');
+  const rows = filter ? packages.filter(p => p.name.toLowerCase().includes(filter.toLowerCase())) : packages;
+  const t = packages.reduce((a, p) => { a.d7 += p.last7Downloads || 0; a.d30 += p.last30Downloads || 0; a.all += p.allTimeDownloads || 0; return a; }, { d7: 0, d30: 0, all: 0 });
 
-function PackageTab({ ecosystem, color, fillColor, barColor, packages, selectedPackage, setSelectedPackage, pkgData, loading, getWeeklyData, versionDownloads, pythonVersions, systemStats, countryDownloads }) {
-  const [pkgFilter, setPkgFilter] = useState('');
-  const sorted = [...packages].sort((a, b) => b.allTimeDownloads - a.allTimeDownloads);
-  const filteredPkgs = pkgFilter
-    ? sorted.filter(p => p.name.toLowerCase().includes(pkgFilter.toLowerCase()))
-    : sorted;
-  const totals7 = packages.reduce((s, p) => s + (p.last7Downloads || 0), 0);
-  const totals30 = packages.reduce((s, p) => s + (p.last30Downloads || 0), 0);
-  const totalsAll = packages.reduce((s, p) => s + (p.allTimeDownloads || 0), 0);
+  const cols = [
+    { key: 'name', label: 'Package', sortValue: r => r.name, render: r => <span className="cell-name">{r.name}</span> },
+    { key: 'version', label: 'Version', sortable: false, render: r => <span className="tag">{r.version || '—'}</span> },
+    { key: 'last7Downloads', label: '7d', align: 'right', render: r => fmtFull(r.last7Downloads) },
+    { key: 'last30Downloads', label: '30d', align: 'right', render: r => fmtFull(r.last30Downloads) },
+    { key: 'allTimeDownloads', label: 'All Time', align: 'right', lead: true, render: r => fmtFull(r.allTimeDownloads) },
+  ];
+  const footer = [
+    <td key="t">Total</td>, <td key="v" />,
+    <td key="7" className="num">{fmtFull(t.d7)}</td>,
+    <td key="30" className="num">{fmtFull(t.d30)}</td>,
+    <td key="a" className="num lead">{fmtFull(t.all)}</td>,
+  ];
 
   return (
     <>
-      {/* Package overview table */}
       {packages.length > 0 && (
-        <div className="section-card">
-          <div className="section-header"><div className="section-title">All Packages</div></div>
-          <div style={{ padding: '12px 16px 0' }}>
-            <SearchInput value={pkgFilter} onChange={setPkgFilter} placeholder={`Filter ${ecosystem} packages...`} />
-          </div>
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Package</th>
-                  <th className="r">Version</th>
-                  <th className="r">7d</th>
-                  <th className="r">30d</th>
-                  <th className="r">All Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPkgs.map(pkg => (
-                  <tr key={pkg.id} className={`clickable ${selectedPackage === pkg.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedPackage(pkg.id)}>
-                    <td><span className="product-name">{pkg.name}</span></td>
-                    <td className="num" style={{ opacity: 0.5 }}>{pkg.version}</td>
-                    <td className="num">{formatFullNumber(pkg.last7Downloads)}</td>
-                    <td className="num">{formatFullNumber(pkg.last30Downloads)}</td>
-                    <td className="num strong">{formatFullNumber(pkg.allTimeDownloads)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td>Total</td>
-                  <td />
-                  <td className="num">{formatFullNumber(totals7)}</td>
-                  <td className="num">{formatFullNumber(totals30)}</td>
-                  <td className="num strong">{formatFullNumber(totalsAll)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <Panel title={`${eco} Packages`} sub="Click a package for its download history. Sort any column." tools={<Filter value={filter} onChange={setFilter} placeholder={`Filter ${eco} packages…`} />} pad={false}>
+          <DataTable columns={cols} rows={rows} getKey={r => r.id} onRowClick={r => setSel(r.id)} selectedKey={sel} initialSort={{ key: 'allTimeDownloads', dir: 'desc' }} footer={footer} />
+        </Panel>
       )}
 
-      {/* Selector */}
-      {packages.length > 0 && (
-        <Selector label="Package Detail" value={selectedPackage} onChange={setSelectedPackage} items={packages} />
-      )}
-
-      {loading ? <Loading /> : pkgData ? (
+      {loading ? <Loading /> : data ? (
         <>
-          <div className="grid grid-3">
-            <MetricCard icon={<Download size={18} color={color} />} iconBg={fillColor}
-              label="Period Downloads" value={formatFullNumber(pkgData.summary?.periodDownloads)} sub="Selected range" />
-            <MetricCard icon={<Package size={18} color={color} />} iconBg={fillColor}
-              label="All-Time Downloads" value={formatFullNumber(pkgData.summary?.allTimeDownloads)} sub="Since tracking began" />
-            <MetricCard icon={<Star size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
-              label="Version" value={pkgData.package?.version || '--'} sub={pkgData.package?.name || ''} />
+          <SecLabel>{data.package?.name || 'Detail'}</SecLabel>
+          <div className="cards">
+            <Kpi icon={<Download size={17} />} color={color} label="Period Downloads" value={fmtFull(data.summary?.periodDownloads)} sub="selected range" />
+            <Kpi icon={<Package size={17} />} color={color} label="All-Time Downloads" value={fmtFull(data.summary?.allTimeDownloads)} sub="since tracking began" />
+            <Kpi icon={<Star size={17} />} color={C.pypi} label="Version" value={data.package?.version || '—'} sub={data.package?.name || ''} />
           </div>
 
-          {pkgData.downloads?.length > 0 && (
-            <ChartWrap title="Daily Downloads">
-              <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={pkgData.downloads}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                  <Area type="monotone" dataKey="downloads" stroke={color} fill={fillColor} name="Downloads" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+          {data.downloads?.length > 0 && (
+            <Chart title="Daily Downloads" height={340}>
+              <AreaChart data={data.downloads}>
+                <defs><linearGradient id={`dl-${eco}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity={0.3} /><stop offset="100%" stopColor={color} stopOpacity={0.02} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Downloads']} />
+                <Area type="monotone" dataKey="downloads" stroke={color} fill={`url(#dl-${eco})`} strokeWidth={2} name="Downloads" />
+              </AreaChart>
+            </Chart>
           )}
 
-          {getWeeklyData().length > 1 && (
-            <ChartWrap title="Weekly Downloads">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getWeeklyData()}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="week" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={v => `Week of ${formatDateLabel(v)}`} {...ttProps} />
-                  <Bar dataKey="downloads" fill={barColor} name="Downloads" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+          {weekly().length > 1 && (
+            <Chart title="Weekly Downloads">
+              <BarChart data={weekly()}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="week" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={v => `Week of ${fmtDate(v)}`} formatter={v => [fmtFull(v), 'Downloads']} />
+                <Bar dataKey="downloads" fill={color} name="Downloads" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </Chart>
           )}
 
-          {/* Advanced metrics: version downloads, Python versions, OS breakdown */}
-          <div className="grid grid-2-lg">
-            {/* npm version downloads */}
-            {versionDownloads?.length > 0 && (
-              <BreakdownChart
-                title="Downloads by Version"
-                sub="Last week per-version breakdown"
-                data={versionDownloads}
-                nameKey="version"
-                valueKey="downloads"
-                maxItems={12}
-              />
-            )}
-
-            {/* PyPI Python version breakdown */}
-            {pythonVersions?.length > 0 && (
-              <BreakdownChart
-                title="Downloads by Python Version"
-                sub="Aggregated from recent data (mirrors excluded)"
-                data={pythonVersions}
-                nameKey="python_version"
-                valueKey="downloads"
-                maxItems={10}
-              />
-            )}
-
-            {/* PyPI OS breakdown */}
-            {systemStats?.length > 0 && (
-              <BreakdownChart
-                title="Downloads by Operating System"
-                sub="Aggregated from recent data (mirrors excluded)"
-                data={systemStats}
-                nameKey="os_name"
-                valueKey="downloads"
-                maxItems={8}
-              />
-            )}
+          <div className="duo">
+            {versionDownloads?.length > 0 && <BreakdownChart title="Downloads by Version" sub="Last week, per version" data={versionDownloads} nameKey="version" valueKey="downloads" maxItems={12} />}
+            {pythonVersions?.length > 0 && <BreakdownChart title="By Python Version" sub="Recent data (mirrors excluded)" data={pythonVersions} nameKey="python_version" valueKey="downloads" maxItems={10} />}
+            {systemStats?.length > 0 && <BreakdownChart title="By Operating System" sub="Recent data (mirrors excluded)" data={systemStats} nameKey="os_name" valueKey="downloads" maxItems={8} />}
           </div>
 
-          {/* Country downloads from BigQuery */}
           {countryDownloads?.length > 0 && (
-            <BreakdownChart
-              title="Downloads by Country"
-              sub="Last 30 days (source: BigQuery public dataset)"
-              data={countryDownloads.map(d => ({
-                country: formatCountryName(d.countryCode),
-                downloads: d.downloads,
-              }))}
-              nameKey="country"
-              valueKey="downloads"
-              maxItems={20}
-              color={C.amber}
-            />
+            <BreakdownChart title="Downloads by Country" sub="Last 30 days (BigQuery public dataset)" color={C.pypi} maxItems={20} nameKey="country" valueKey="downloads"
+              data={countryDownloads.map(d => ({ country: COUNTRY_NAMES[d.countryCode] || d.countryCode, downloads: d.downloads }))} />
           )}
         </>
-      ) : packages.length === 0 ? (
-        <Empty message={`No ${ecosystem} data available yet.`} command={`npm run collect-${ecosystem.toLowerCase()}`} />
-      ) : null}
+      ) : packages.length === 0 ? <Empty message={`No ${eco} data yet.`} command={`npm run collect-${eco.toLowerCase()}`} /> : null}
     </>
   );
 }
 
-/* ============================================
-   Docker Tab
-   ============================================ */
-function DockerTab({ images, selectedImage, setSelectedImage, dockerData, loading }) {
-  const [imgFilter, setImgFilter] = useState('');
-  const filteredImages = imgFilter
-    ? images.filter(img => (img.full_name || '').toLowerCase().includes(imgFilter.toLowerCase()))
-    : images;
-
+/* ============================================================
+   Docker
+   ============================================================ */
+function DockerTab({ images, sel, setSel, data, loading }) {
+  const [filter, setFilter] = useState('');
+  const rows = filter ? images.filter(i => (i.full_name || '').toLowerCase().includes(filter.toLowerCase())) : images;
+  const cols = [
+    { key: 'full_name', label: 'Image', sortValue: r => r.full_name, render: r => <span className="cell-name">{r.full_name}</span> },
+    { key: 'totalPulls', label: 'Total Pulls', align: 'right', lead: true, render: r => fmtFull(r.totalPulls) },
+    { key: 'stars', label: 'Stars', align: 'right', render: r => fmtFull(r.stars) },
+  ];
   return (
     <>
-      {/* Image table */}
       {images.length > 0 && (
-        <div className="section-card">
-          <div className="section-header"><div className="section-title">Docker Images</div></div>
-          {images.length > 3 && (
-            <div style={{ padding: '12px 16px 0' }}>
-              <SearchInput value={imgFilter} onChange={setImgFilter} placeholder="Filter Docker images..." />
-            </div>
-          )}
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th className="r">Total Pulls</th>
-                  <th className="r">Stars</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredImages.map(img => (
-                  <tr key={img.id} className={`clickable ${selectedImage === img.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedImage(img.id)}>
-                    <td><span className="product-name">{img.full_name}</span></td>
-                    <td className="num strong">{formatFullNumber(img.totalPulls)}</td>
-                    <td className="num">{img.stars || 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Panel title="Docker Images" sub="Click an image for its pull history." tools={<Filter value={filter} onChange={setFilter} placeholder="Filter images…" />} pad={false}>
+          <DataTable columns={cols} rows={rows} getKey={r => r.id} onRowClick={r => setSel(r.id)} selectedKey={sel} initialSort={{ key: 'totalPulls', dir: 'desc' }} />
+        </Panel>
       )}
-
-      {/* Selector */}
-      {images.length > 0 && (
-        <Selector label="Image Detail" value={selectedImage} onChange={setSelectedImage}
-          items={images} nameKey="full_name" />
-      )}
-
-      {loading ? <Loading /> : dockerData ? (
+      {loading ? <Loading /> : data ? (
         <>
-          <div className="grid grid-3">
-            <MetricCard icon={<Container size={18} color={C.sky} />} iconBg="rgba(56,189,248,0.10)"
-              label="Total Pulls" value={formatFullNumber(dockerData.summary?.totalPulls)} sub="All time" />
-            <MetricCard icon={<TrendingUp size={18} color={C.teal} />} iconBg="rgba(0,212,170,0.10)"
-              label="Pull Growth" value={`+${formatFullNumber(dockerData.summary?.pullGrowth)}`} sub="During tracked period" />
-            <MetricCard icon={<Star size={18} color={C.amber} />} iconBg="rgba(245,158,11,0.10)"
-              label="Docker Hub Stars" value={formatFullNumber(dockerData.summary?.stars)} sub={dockerData.image?.full_name || ''} />
+          <SecLabel>{data.image?.full_name || 'Detail'}</SecLabel>
+          <div className="cards">
+            <Kpi icon={<Container size={17} />} color={C.docker} label="Total Pulls" value={fmtFull(data.summary?.totalPulls)} sub="all time" />
+            <Kpi icon={<TrendingUp size={17} />} color={C.accent} label="Pull Growth" value={`+${fmtFull(data.summary?.pullGrowth)}`} sub="during tracked period" />
+            <Kpi icon={<Star size={17} />} color={C.pypi} label="Docker Hub Stars" value={fmtFull(data.summary?.stars)} sub={data.image?.full_name || ''} />
           </div>
-
-          {dockerData.pulls?.length > 1 && (
-            <ChartWrap title="Cumulative Pulls">
-              <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={dockerData.pulls}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                  <Area type="monotone" dataKey="totalPulls" stroke={C.sky} fill={C.skyFill} name="Total Pulls" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+          {data.pulls?.length > 1 && (
+            <Chart title="Cumulative Pulls" height={340}>
+              <AreaChart data={data.pulls}>
+                <defs><linearGradient id="dpull" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.docker} stopOpacity={0.3} /><stop offset="100%" stopColor={C.docker} stopOpacity={0.02} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Total Pulls']} />
+                <Area type="monotone" dataKey="totalPulls" stroke={C.docker} fill="url(#dpull)" strokeWidth={2} name="Total Pulls" />
+              </AreaChart>
+            </Chart>
           )}
-
-          {dockerData.pulls?.length > 2 && (
-            <ChartWrap title="Daily Pulls">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dockerData.pulls.slice(1)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                  <XAxis dataKey="date" {...xDateProps} />
-                  <YAxis {...axProps} />
-                  <Tooltip labelFormatter={formatDateLabel} {...ttProps} />
-                  <Bar dataKey="dailyPulls" fill={C.sky} name="Pulls" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartWrap>
+          {data.pulls?.length > 2 && (
+            <Chart title="Daily Pulls">
+              <BarChart data={data.pulls.slice(1)}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Pulls']} />
+                <Bar dataKey="dailyPulls" fill={C.docker} name="Pulls" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </Chart>
           )}
-
-          {/* Docker tag information */}
-          {dockerData.tags?.length > 0 && (
-            <BreakdownTable
-              title="Image Tags"
-              columns={[
-                { key: 'tag', label: 'Tag' },
-                { key: 'full_size', label: 'Size', align: 'right', format: v => formatBytes(v) },
-                { key: 'last_updated', label: 'Last Updated', format: v => v ? formatDateLabel(v.split('T')[0]) : '--' },
-              ]}
-              data={dockerData.tags}
-            />
+          {data.tags?.length > 0 && (
+            <Panel title="Image Tags" pad={false}>
+              <DataTable
+                columns={[
+                  { key: 'tag', label: 'Tag', render: r => <span className="cell-name">{r.tag}</span> },
+                  { key: 'full_size', label: 'Size', align: 'right', render: r => fmtBytes(r.full_size) },
+                  { key: 'last_updated', label: 'Last Updated', sortValue: r => r.last_updated || '', render: r => r.last_updated ? fmtDate(r.last_updated.split('T')[0]) : '—' },
+                ]}
+                rows={data.tags} getKey={r => r.tag} initialSort={{ key: 'last_updated', dir: 'desc' }} />
+            </Panel>
           )}
         </>
-      ) : images.length === 0 ? (
-        <Empty message="No Docker data available yet." command="npm run collect-docker" />
+      ) : images.length === 0 ? <Empty message="No Docker data yet." command="npm run collect-docker" /> : null}
+    </>
+  );
+}
+
+/* ============================================================
+   HuggingFace
+   ============================================================ */
+function HuggingFaceTab({ models, sel, setSel, data, loading }) {
+  const [filter, setFilter] = useState('');
+  const rows = filter ? models.filter(m => m.name.toLowerCase().includes(filter.toLowerCase())) : models;
+  const t = models.reduce((a, m) => { a.all += m.downloadsAllTime || 0; a.d30 += m.downloads30d || 0; a.likes += m.likes || 0; return a; }, { all: 0, d30: 0, likes: 0 });
+  const cols = [
+    { key: 'name', label: 'Model', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div>{r.pipeline_tag && <div className="cell-desc">{r.pipeline_tag}</div>}</div>) },
+    { key: 'downloads30d', label: '30d', align: 'right', render: r => fmtFull(r.downloads30d) },
+    { key: 'downloadsAllTime', label: 'All Time', align: 'right', lead: true, render: r => fmtFull(r.downloadsAllTime) },
+    { key: 'likes', label: 'Likes', align: 'right', render: r => fmtFull(r.likes) },
+  ];
+  const footer = [
+    <td key="t">Total</td>,
+    <td key="30" className="num">{fmtFull(t.d30)}</td>,
+    <td key="a" className="num lead">{fmtFull(t.all)}</td>,
+    <td key="l" className="num">{fmtFull(t.likes)}</td>,
+  ];
+  return (
+    <>
+      {models.length > 0 ? (
+        <Panel title="HuggingFace Models" sub="Auto-discovered from the OpenA2A org. HF reports cumulative all-time downloads and a rolling 30-day figure; the daily series below builds as snapshots accumulate." tools={<Filter value={filter} onChange={setFilter} placeholder="Filter models…" />} pad={false}>
+          <DataTable columns={cols} rows={rows} getKey={r => r.id} onRowClick={r => setSel(r.id)} selectedKey={sel} initialSort={{ key: 'downloadsAllTime', dir: 'desc' }} footer={footer} />
+        </Panel>
+      ) : <Empty message="No HuggingFace data yet." command="HF_AUTHOR=opena2a npm run collect-hf" />}
+
+      {loading ? <Loading /> : data ? (
+        <>
+          <SecLabel>{data.model?.model_id || 'Detail'}</SecLabel>
+          <div className="cards">
+            <Kpi icon={<Download size={17} />} color={C.hf} label="All-Time Downloads" value={fmtFull(data.summary?.downloadsAllTime)} sub="cumulative" />
+            <Kpi icon={<TrendingUp size={17} />} color={C.accent} label="Last 30 Days" value={fmtFull(data.summary?.downloads30d)} sub="rolling (HF API)" />
+            <Kpi icon={<Heart size={17} />} color={C.npm} label="Likes" value={fmtFull(data.summary?.likes)} sub={data.model?.pipeline_tag || ''} />
+          </div>
+          {data.series?.length > 1 ? (
+            <Chart title="Cumulative Downloads" sub="Built from daily snapshots of HF's all-time counter" height={320}>
+              <AreaChart data={data.series}>
+                <defs><linearGradient id="hf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.hf} stopOpacity={0.3} /><stop offset="100%" stopColor={C.hf} stopOpacity={0.02} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Downloads']} />
+                <Area type="monotone" dataKey="downloadsAllTime" stroke={C.hf} fill="url(#hf)" strokeWidth={2} name="All-Time Downloads" />
+              </AreaChart>
+            </Chart>
+          ) : (
+            <Empty message="The download trend chart fills in as daily snapshots accumulate — check back after a few days of collection." />
+          )}
+        </>
       ) : null}
     </>
   );

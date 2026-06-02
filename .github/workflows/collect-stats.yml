@@ -52,6 +52,11 @@ jobs:
           DOCKER_IMAGES: opena2a/dvaa,opena2a/aim-server,opena2a/aim-dashboard
         run: npm run collect-docker
 
+      - name: Collect HuggingFace stats
+        env:
+          HF_AUTHOR: opena2a
+        run: npm run collect-hf
+
       - name: Generate markdown files
         run: npm run generate-md
 
@@ -62,6 +67,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
+          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"

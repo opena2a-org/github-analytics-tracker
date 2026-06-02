@@ -18,6 +18,10 @@ out/
 *.pem
 *.p12
 *.pfx
+secrets.json
+secrets/
+credentials/
+*credentials*.json
 gcp-key.json
 service-account*.json
 
