@@ -33,15 +33,17 @@ This tracker runs once a day (via GitHub Actions), pulls the API, stores everyth
 | **PyPI** | Daily downloads, by Python version, by OS | Unlimited |
 | **PyPI** by country | Country-level downloads via BigQuery (optional) | Unlimited |
 | **Docker Hub** | Pull counts + tag history per image | Unlimited |
+| **HuggingFace** | Model downloads (all-time + rolling 30d) and likes per model | Unlimited |
 
 ## How it works
 
 ```
-GitHub API ─┐
-npm API ────┤
-PyPI API ───┼──► collect-*.js ──► SQLite (data/analytics.db) ──► Next.js dashboard
-Docker Hub ─┤                                                ╲
-BigQuery ───┘                                                 ╲──► static JSON (data/*.json)
+GitHub API ──┐
+npm API ─────┤
+PyPI API ────┤
+Docker Hub ──┼──► collect-*.js ──► SQLite (data/analytics.db) ──► Next.js dashboard
+HuggingFace ─┤                                                ╲
+BigQuery ────┘                                                 ╲──► static JSON (data/*.json)
                                                                     consumable by external sites
                                                                     via raw.githubusercontent.com
 ```
@@ -75,6 +77,9 @@ NPM_AUTHOR=ecolibria                                          # auto-discovers a
 NPM_PACKAGES=hackmyagent,opena2a-cli                          # optional extra packages
 PYPI_PACKAGES=cryptoserve,aim-sdk                             # comma-separated
 DOCKER_IMAGES=opena2a/aim-server,opena2a/dvaa                 # comma-separated
+HF_AUTHOR=opena2a                                             # auto-discovers all HuggingFace models by this org/user
+HF_MODELS=org/model,org/other                                 # optional extra models
+HF_TOKEN=hf_...                                               # optional, raises HF rate limits / private repos
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json          # optional for BigQuery country stats
 ```
 
@@ -118,6 +123,7 @@ GitHub's traffic API has subtleties worth knowing:
 | `npm_packages`, `npm_downloads`, `npm_version_downloads` | npm |
 | `pypi_packages`, `pypi_downloads`, `pypi_python_versions`, `pypi_system_stats`, `pypi_country_downloads` | PyPI |
 | `docker_images`, `docker_pulls`, `docker_tags` | Docker Hub |
+| `huggingface_models`, `huggingface_stats` | HuggingFace model downloads + likes (daily snapshots) |
 
 Run `sqlite3 data/analytics.db .schema` for the full DDL.
 
@@ -133,6 +139,7 @@ GET /api/trends?repo_id=1            # daily trend data for charts
 GET /api/npm-stats                   # npm package stats
 GET /api/pypi-stats                  # PyPI package stats
 GET /api/docker-stats                # Docker image stats
+GET /api/huggingface-stats           # HuggingFace model stats
 ```
 
 ## Comparison

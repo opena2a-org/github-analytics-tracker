@@ -299,6 +299,35 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_pypi_country_pkg_date ON pypi_country_downloads(package_id, date);
+
+  -- HuggingFace model tracking.
+  -- HF's API exposes only point-in-time counters (no per-day history), so we
+  -- snapshot daily like Docker pulls: downloads_all_time is cumulative, while
+  -- downloads_30d is HF's own rolling-30-day figure. Daily deltas are derived
+  -- from successive all-time snapshots at read time.
+  CREATE TABLE IF NOT EXISTS huggingface_models (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_id TEXT NOT NULL UNIQUE,           -- e.g. "opena2a/nanomind-security-analyst"
+    author TEXT NOT NULL,                    -- e.g. "opena2a"
+    pipeline_tag TEXT,                       -- e.g. "text-generation"
+    repo_type TEXT NOT NULL DEFAULT 'model', -- model | dataset (future-proofing)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS huggingface_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    downloads_30d INTEGER NOT NULL DEFAULT 0,
+    downloads_all_time INTEGER NOT NULL DEFAULT 0,
+    likes INTEGER NOT NULL DEFAULT 0,
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (model_id) REFERENCES huggingface_models(id),
+    UNIQUE(model_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hf_stats_model ON huggingface_stats(model_id);
+  CREATE INDEX IF NOT EXISTS idx_hf_stats_date ON huggingface_stats(date);
 `);
 
 console.log('Database setup complete: %s', dbPath);

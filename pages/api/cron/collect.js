@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     { name: 'npm', script: 'collect-npm-stats.js', needsToken: false },
     { name: 'pypi', script: 'collect-pypi-stats.js', needsToken: false },
     { name: 'docker', script: 'collect-docker-stats.js', needsToken: false },
+    { name: 'huggingface', script: 'collect-huggingface-stats.js', needsToken: false },
   ];
 
   for (const collector of collectors) {
