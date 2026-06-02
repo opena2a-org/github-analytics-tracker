@@ -10,6 +10,22 @@ export default async function handler(req, res) {
   const results = { timestamp: new Date().toISOString(), collectors: {} };
   const scriptsDir = path.join(process.cwd(), 'scripts');
 
+  // Pass only the variables the collectors actually need to the child processes,
+  // rather than spreading the entire environment (which would leak unrelated
+  // secrets into every subprocess). Add new collector config keys here.
+  const ALLOWED_ENV = [
+    'PATH', 'NODE_ENV', 'HOME',
+    'GITHUB_TOKEN', 'GITHUB_ORG', 'REPOS_TO_TRACK',
+    'NPM_AUTHOR', 'NPM_PACKAGES',
+    'PYPI_PACKAGES',
+    'DOCKER_IMAGES',
+    'HF_AUTHOR', 'HF_MODELS', 'HF_TOKEN',
+    'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_APPLICATION_CREDENTIALS_JSON',
+  ];
+  const childEnv = Object.fromEntries(
+    ALLOWED_ENV.filter(k => process.env[k] !== undefined).map(k => [k, process.env[k]])
+  );
+
   const collectors = [
     { name: 'github', script: 'collect-stats.js', needsToken: true },
     { name: 'npm', script: 'collect-npm-stats.js', needsToken: false },
@@ -27,7 +43,7 @@ export default async function handler(req, res) {
       execSync(`node ${path.join(scriptsDir, collector.script)}`, {
         encoding: 'utf-8',
         timeout: 120000,
-        env: { ...process.env },
+        env: childEnv,
         cwd: process.cwd(),
       });
       results.collectors[collector.name] = { status: 'success' };
