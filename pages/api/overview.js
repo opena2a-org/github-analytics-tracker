@@ -291,6 +291,12 @@ export default async function handler(req, res) {
         pypiPackages: ['cryptoserve', 'cryptoserve-core', 'cryptoserve-auto', 'cryptoserve-client'],
         description: 'Cryptographic scanning and PQC analysis',
       },
+      'AIComply': {
+        repos: ['aicomply'],
+        packages: ['@opena2a/aicomply'],
+        pypiPackages: [],
+        description: 'Dual-layer compliance classifier for AI agent communications',
+      },
       'ARP': {
         repos: ['arp'],
         // arp-guard is the current package; @opena2a/arp is the pre-rename name
