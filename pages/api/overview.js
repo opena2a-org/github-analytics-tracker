@@ -54,6 +54,15 @@ export default async function handler(req, res) {
     // --- GitHub Metrics ---
     const repos = db.prepare('SELECT * FROM repositories ORDER BY full_name').all();
 
+    // Anchor traffic windows to the latest COLLECTED date, not "now" — matching
+    // the npm/PyPI windowing in computeWindowedStats(). GitHub traffic collection
+    // lags real time by a day or two; windowing from "now" would leave the
+    // trailing window short and make the clones column measure a different period
+    // than the npm column on the same row. Per-table anchor (one collection job
+    // covers all repos, so MAX(date) is the shared "as of" date).
+    const viewsAnchor = `(SELECT MAX(date) FROM traffic_views)`;
+    const clonesAnchor = `(SELECT MAX(date) FROM traffic_clones)`;
+
     const repoStats = repos.map(repo => {
       const views = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
@@ -62,17 +71,17 @@ export default async function handler(req, res) {
 
       const views24h = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-1 day')
+        FROM traffic_views WHERE repo_id = ? AND date = ${viewsAnchor}
       `).get(repo.id);
 
       const views7d = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-7 days')
+        FROM traffic_views WHERE repo_id = ? AND date > date(${viewsAnchor}, '-7 days')
       `).get(repo.id);
 
       const views30d = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_views WHERE repo_id = ? AND date >= date('now', '-30 days')
+        FROM traffic_views WHERE repo_id = ? AND date > date(${viewsAnchor}, '-30 days')
       `).get(repo.id);
 
       const clones = db.prepare(`
@@ -82,17 +91,17 @@ export default async function handler(req, res) {
 
       const clones24h = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-1 day')
+        FROM traffic_clones WHERE repo_id = ? AND date = ${clonesAnchor}
       `).get(repo.id);
 
       const clones7d = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-7 days')
+        FROM traffic_clones WHERE repo_id = ? AND date > date(${clonesAnchor}, '-7 days')
       `).get(repo.id);
 
       const clones30d = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
-        FROM traffic_clones WHERE repo_id = ? AND date >= date('now', '-30 days')
+        FROM traffic_clones WHERE repo_id = ? AND date > date(${clonesAnchor}, '-30 days')
       `).get(repo.id);
 
       const summary = db.prepare(`
@@ -226,14 +235,22 @@ export default async function handler(req, res) {
     const productMap = {
       'DVAA': {
         repos: ['damn-vulnerable-ai-agent'],
-        packages: [],
+        packages: ['damn-vulnerable-ai-agent'],
         pypiPackages: [],
         dockerImages: ['opena2a/dvaa'],
         description: 'Vulnerable AI agent platform for security testing',
       },
       'OpenA2A CLI': {
         repos: ['opena2a'],
-        packages: ['opena2a-cli', 'opena2a', '@opena2a/shared'],
+        // Unified CLI + its shared toolchain libraries (consumed by the
+        // hackmyagent/opena2a-cli/ai-trust consolidation). These are shared
+        // deps with no single owning tool, so they live under the CLI umbrella
+        // rather than the catch-all "Other" bucket.
+        packages: [
+          'opena2a-cli', 'opena2a', '@opena2a/shared',
+          '@opena2a/cli-ui', '@opena2a/contribute', '@opena2a/telemetry',
+          '@opena2a/check-core', '@opena2a/registry-client', '@opena2a/credential-patterns',
+        ],
         pypiPackages: [],
         description: 'Unified security CLI',
       },
@@ -258,7 +275,7 @@ export default async function handler(req, res) {
       },
       'ai-trust': {
         repos: ['ai-trust'],
-        packages: ['ai-trust', '@opena2a/oa2a'],
+        packages: ['ai-trust', '@opena2a/oa2a', '@opena2a/ai-classifier'],
         pypiPackages: [],
         description: 'Trust verification for AI packages',
       },
@@ -274,9 +291,17 @@ export default async function handler(req, res) {
         pypiPackages: ['cryptoserve', 'cryptoserve-core', 'cryptoserve-auto', 'cryptoserve-client'],
         description: 'Cryptographic scanning and PQC analysis',
       },
+      'AIComply': {
+        repos: ['aicomply'],
+        packages: ['@opena2a/aicomply'],
+        pypiPackages: [],
+        description: 'Dual-layer compliance classifier for AI agent communications',
+      },
       'ARP': {
         repos: ['arp'],
-        packages: ['@opena2a/arp'],
+        // arp-guard is the current package; @opena2a/arp is the pre-rename name
+        // (frozen 2026-03-01) kept so historical downloads still count.
+        packages: ['arp-guard', '@opena2a/arp'],
         pypiPackages: [],
         description: 'Agent Runtime Protection',
       },
@@ -288,7 +313,7 @@ export default async function handler(req, res) {
       },
       'NanoMind': {
         repos: ['nanomind'],
-        packages: ['@nanomind/cli', '@nanomind/engine', '@nanomind/daemon', '@nanomind/guard', '@nanomind/router', '@nanomind/runtime-core', '@nanomind/atc', '@nanomind/hma-adapter', '@nanomind/opena2a-adapter'],
+        packages: ['@nanomind/cli', '@nanomind/engine', '@nanomind/daemon', '@nanomind/guard', '@nanomind/router', '@nanomind/runtime-core', '@nanomind/runtime', '@nanomind/atc', '@nanomind/hma-adapter', '@nanomind/opena2a-adapter', '@nanomind/secretless-adapter'],
         pypiPackages: [],
         hfModels: ['opena2a/nanomind-security-analyst', 'opena2a/nanomind-security-classifier'],
         description: 'Nano Language Models for inline security analysis',
