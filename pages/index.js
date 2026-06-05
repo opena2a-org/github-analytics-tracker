@@ -110,6 +110,17 @@ function periodPick(o, allKey, k30, k7, k24, period, kCustom) {
     default: return o[allKey] || 0;
   }
 }
+/* Star growth for the selected period. Stars are cumulative, so this is the
+   count gained within the window (not a percentage). */
+function starGrowthPick(g, period) {
+  switch (period) {
+    case '24h': return g?.starsGrowth24h;
+    case '7d': return g?.starsGrowth7d;
+    case '30d': return g?.starsGrowth30d;
+    case 'custom': return g?.starsGrowthCustom;
+    default: return g?.starsGrowthAll;
+  }
+}
 /* HuggingFace only reports all-time + rolling 30d, nothing finer */
 function hfPeriod(hf, period) {
   if (!hf) return null;
@@ -143,6 +154,12 @@ function MiniDelta({ curr, prev }) {
   const v = pctChange(curr, prev);
   if (v == null || v === 0) return null;
   return <span className={`delta-mini ${v > 0 ? 'up' : 'down'}`}>{v > 0 ? '+' : ''}{v}%</span>;
+}
+/* Absolute count gained in the period (e.g. +5). Stars are cumulative, so a
+   percentage would be noise; show the raw growth instead. */
+function StarGrowth({ value }) {
+  if (value == null || value === 0) return null;
+  return <span className={`delta-mini ${value > 0 ? 'up' : 'down'}`}>{value > 0 ? '+' : ''}{fmtFull(value)}</span>;
 }
 
 function Kpi({ icon, color, label, value, sub, delta }) {
@@ -666,7 +683,7 @@ function AdoptionTable({ products, period }) {
     },
     { key: 'docker', label: 'Docker', align: 'right', sortValue: r => period === 'all' ? (r.docker?.totalPulls || 0) : -1, render: r => period === 'all' ? fmtFull(r.docker?.totalPulls || 0) : <span className="muted">—</span> },
     { key: 'hf', label: 'HF', align: 'right', sortValue: r => hfPeriod(r.hf, period) ?? -1, render: r => { const v = hfPeriod(r.hf, period); return v == null ? <span className="muted">—</span> : fmtFull(v); } },
-    { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => fmtFull(r.github?.stars || 0) },
+    { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => (<>{fmtFull(r.github?.stars || 0)}<StarGrowth value={starGrowthPick(r.github, period)} /></>) },
     { key: 'adoption', label: 'Adoption', align: 'right', lead: true, sortValue: r => rowAdoption(r, period), render: r => fmtFull(rowAdoption(r, period)) },
   ];
   const t = products.reduce((a, p) => {
@@ -677,9 +694,10 @@ function AdoptionTable({ products, period }) {
     a.docker += period === 'all' ? (p.docker?.totalPulls || 0) : 0;
     a.hf += hfPeriod(p.hf, period) || 0;
     a.stars += p.github?.stars || 0;
+    a.starsGrowth += starGrowthPick(p.github, period) || 0;
     a.adoption += rowAdoption(p, period);
     return a;
-  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, stars: 0, adoption: 0 });
+  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, stars: 0, starsGrowth: 0, adoption: 0 });
   const footer = [
     <td key="t">Total</td>,
     <td key="v" className="num">{fmtFull(t.views)}</td>,
@@ -688,7 +706,7 @@ function AdoptionTable({ products, period }) {
     <td key="p" className="num">{fmtFull(t.pypi)}</td>,
     <td key="d" className="num">{period === 'all' ? fmtFull(t.docker) : '—'}</td>,
     <td key="h" className="num">{(period === 'all' || period === '30d') ? fmtFull(t.hf) : '—'}</td>,
-    <td key="s" className="num">{fmtFull(t.stars)}</td>,
+    <td key="s" className="num">{fmtFull(t.stars)}<StarGrowth value={t.starsGrowth} /></td>,
     <td key="a" className="num lead">{fmtFull(t.adoption)}</td>,
   ];
   return <DataTable columns={cols} rows={products} getKey={r => r.name} initialSort={{ key: 'adoption', dir: 'desc' }} footer={footer} />;

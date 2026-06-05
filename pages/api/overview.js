@@ -1,38 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-
-/**
- * Compute windowed download metrics for one package straight from SQLite.
- * Deterministic and fast — no external API calls. The daily collector keeps
- * the store at most ~1 day stale, which we treat as the honest source of
- * truth rather than racing 100+ live API calls on every page load.
- *
- * Returns { name, version, allTimeDownloads, last24hDownloads, last7Downloads,
- *           last30Downloads, prev7Downloads, customDownloads }.
- */
-function computeWindowedStats(db, table, fkColumn, fkId, { start, end, isCustomRange, name, version }) {
-  // Anchor rolling windows to the latest COLLECTED date, not "now". Collection
-  // lags real time by a day or two, so windowing from "now" leaves the trailing
-  // 7-day window short a couple of days and makes healthy adoption look like a
-  // drop (a phantom negative WoW). Anchoring to MAX(date) keeps the current and
-  // previous windows the same length and fairly comparable.
-  const anchor = `(SELECT MAX(date) FROM ${table})`;
-  const sum = (clause, ...params) => db.prepare(
-    `SELECT COALESCE(SUM(downloads), 0) AS total FROM ${table} WHERE ${fkColumn} = ?${clause ? ' AND ' + clause : ''}`
-  ).get(fkId, ...params).total;
-
-  return {
-    name,
-    version,
-    allTimeDownloads: sum(''),
-    last24hDownloads: sum(`date = ${anchor}`),
-    last7Downloads: sum(`date > date(${anchor}, '-7 days')`),
-    last30Downloads: sum(`date > date(${anchor}, '-30 days')`),
-    prev7Downloads: sum(`date > date(${anchor}, '-14 days') AND date <= date(${anchor}, '-7 days')`),
-    prev30Downloads: sum(`date > date(${anchor}, '-60 days') AND date <= date(${anchor}, '-30 days')`),
-    customDownloads: isCustomRange ? sum('date >= ? AND date <= ?', start, end) : 0,
-  };
-}
+const { computeWindowedStats, computeStarGrowth } = require('../../lib/windowing');
 
 /**
  * Overview API: Returns combined GitHub + npm metrics suitable for
@@ -110,11 +78,7 @@ export default async function handler(req, res) {
         ORDER BY date DESC LIMIT 1
       `).get(repo.id);
 
-      const stars = db.prepare(`
-        SELECT COALESCE(total_stars, 0) as stars
-        FROM stargazers WHERE repo_id = ?
-        ORDER BY date DESC LIMIT 1
-      `).get(repo.id);
+      const starGrowth = computeStarGrowth(db, repo.id, { start, end, isCustomRange });
 
       const forks = db.prepare(`
         SELECT COALESCE(total_forks, 0) as forks
@@ -152,7 +116,7 @@ export default async function handler(req, res) {
         customClones,
         recentUniqueVisitors: summary?.views_uniques || 0,
         recentUniqueCloners: summary?.clones_uniques || 0,
-        stars: stars?.stars || 0,
+        ...starGrowth,
         forks: forks?.forks || 0,
       };
     });
@@ -348,6 +312,11 @@ export default async function handler(req, res) {
           clones30d: matchedRepos.reduce((s, r) => s + r.clones30d, 0),
           customClones: matchedRepos.reduce((s, r) => s + (r.customClones || 0), 0),
           stars: matchedRepos.reduce((s, r) => s + r.stars, 0),
+          starsGrowth24h: matchedRepos.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
+          starsGrowth7d: matchedRepos.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
+          starsGrowth30d: matchedRepos.reduce((s, r) => s + (r.starsGrowth30d || 0), 0),
+          starsGrowthAll: matchedRepos.reduce((s, r) => s + (r.starsGrowthAll || 0), 0),
+          starsGrowthCustom: matchedRepos.reduce((s, r) => s + (r.starsGrowthCustom || 0), 0),
           forks: matchedRepos.reduce((s, r) => s + r.forks, 0),
           recentUniqueVisitors: matchedRepos.reduce((s, r) => s + r.recentUniqueVisitors, 0),
         },
@@ -418,6 +387,11 @@ export default async function handler(req, res) {
           clones30d: ungroupedRepos.reduce((s, r) => s + r.clones30d, 0),
           customClones: ungroupedRepos.reduce((s, r) => s + (r.customClones || 0), 0),
           stars: ungroupedRepos.reduce((s, r) => s + r.stars, 0),
+          starsGrowth24h: ungroupedRepos.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
+          starsGrowth7d: ungroupedRepos.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
+          starsGrowth30d: ungroupedRepos.reduce((s, r) => s + (r.starsGrowth30d || 0), 0),
+          starsGrowthAll: ungroupedRepos.reduce((s, r) => s + (r.starsGrowthAll || 0), 0),
+          starsGrowthCustom: ungroupedRepos.reduce((s, r) => s + (r.starsGrowthCustom || 0), 0),
           forks: ungroupedRepos.reduce((s, r) => s + r.forks, 0),
           recentUniqueVisitors: ungroupedRepos.reduce((s, r) => s + r.recentUniqueVisitors, 0),
         },
@@ -466,6 +440,10 @@ export default async function handler(req, res) {
         clones7d: repoStats.reduce((s, r) => s + r.clones7d, 0),
         clones30d: repoStats.reduce((s, r) => s + r.clones30d, 0),
         totalStars: repoStats.reduce((s, r) => s + r.stars, 0),
+        starsGrowth24h: repoStats.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
+        starsGrowth7d: repoStats.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
+        starsGrowth30d: repoStats.reduce((s, r) => s + (r.starsGrowth30d || 0), 0),
+        starsGrowthAll: repoStats.reduce((s, r) => s + (r.starsGrowthAll || 0), 0),
         totalForks: repoStats.reduce((s, r) => s + r.forks, 0),
       },
       npm: {
