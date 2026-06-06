@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-05T07:23:21.772Z",
+  "lastUpdated": "2026-06-06T07:00:30.241Z",
   "repository": "opena2a-org/trust-gate",
   "stats": {
     "allTime": {
@@ -9,8 +9,8 @@
     "recent14Days": {
       "views": 3,
       "viewsUnique": 2,
-      "clones": 39,
-      "clonesUnique": 32
+      "clones": 38,
+      "clonesUnique": 31
     },
     "stars": 2,
     "forks": 0
