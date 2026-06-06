@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const { computeWindowedStats, computeStarGrowth } = require('../../lib/windowing');
+const { groupStandards } = require('../../lib/standards');
 
 /**
  * Overview API: Returns combined GitHub + npm metrics suitable for
@@ -104,6 +105,7 @@ export default async function handler(req, res) {
       return {
         name: repo.full_name,
         repo: repo.repo,
+        owner: repo.owner,
         totalViews: views.total,
         views24h: views24h.total,
         views7d: views7d.total,
@@ -353,6 +355,13 @@ export default async function handler(req, res) {
       };
     });
 
+    // --- Standards (opena2a-standards org) ---
+    // Specs, protocols and conformance suites are organized separately from
+    // products: their adoption signal is stars/views/clones, not installs. The
+    // grouping (incl. transferred-repo merge) lives in lib/standards.js so it can
+    // be regression-tested. Standards repos are excluded from "Other" below.
+    const { standards, isStandardsRepo } = groupStandards(repoStats);
+
     // --- Catch ungrouped repos/packages so nothing is invisible ---
     const allGroupedRepos = new Set(Object.values(productMap).flatMap(c => c.repos || []));
     const allGroupedNpm = new Set(Object.values(productMap).flatMap(c => c.packages || []));
@@ -360,7 +369,9 @@ export default async function handler(req, res) {
     const allGroupedDocker = new Set(Object.values(productMap).flatMap(c => c.dockerImages || []));
     const allGroupedHf = new Set(Object.values(productMap).flatMap(c => c.hfModels || []));
 
-    const ungroupedRepos = repoStats.filter(r => !allGroupedRepos.has(r.repo));
+    // Standards have their own section — keep them (and stale transferred rows)
+    // out of "Other" so the same spec isn't counted twice.
+    const ungroupedRepos = repoStats.filter(r => !allGroupedRepos.has(r.repo) && !isStandardsRepo(r));
     const ungroupedNpm = npmStats.filter(p => !allGroupedNpm.has(p.name));
     const ungroupedPypi = pypiStats.filter(p => !allGroupedPypi.has(p.name));
     const ungroupedDocker = dockerStats.filter(d => !allGroupedDocker.has(d.fullName));
@@ -563,6 +574,16 @@ export default async function handler(req, res) {
     totals.github.totalContributors = totalContributors;
     totals.github.totalReleaseDownloads = totalReleaseDownloads;
 
+    // Standards summary (adoption signal = stars / views / clones, not installs).
+    totals.standards = {
+      repos: standards.reduce((s, f) => s + f.repoCount, 0),
+      families: standards.length,
+      stars: standards.reduce((s, f) => s + (f.github.stars || 0), 0),
+      views: standards.reduce((s, f) => s + (f.github.views || 0), 0),
+      clones: standards.reduce((s, f) => s + (f.github.clones || 0), 0),
+      forks: standards.reduce((s, f) => s + (f.github.forks || 0), 0),
+    };
+
     // --- Top Countries (from BigQuery PyPI country data) ---
     let topCountries = [];
     const countryTableExists = db.prepare(
@@ -583,6 +604,7 @@ export default async function handler(req, res) {
       lastUpdated: new Date().toISOString(),
       totals,
       products: products.sort((a, b) => b.totalAdoption - a.totalAdoption),
+      standards: standards.sort((a, b) => (b.github.stars || 0) - (a.github.stars || 0)),
       weeklyTrend,
       repositories: repoStats,
       npmPackages: npmStats,

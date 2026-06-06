@@ -8,7 +8,7 @@ import {
 import {
   GitFork, Star, Eye, GitPullRequest, Users, Download, Heart,
   Package, TrendingUp, TrendingDown, Container, Activity,
-  Github, Box, Brain, Menu, Search, ArrowUp, ArrowDown,
+  Github, Box, Brain, Menu, Search, ArrowUp, ArrowDown, FileText,
 } from 'lucide-react';
 
 /* ============================================================
@@ -17,12 +17,13 @@ import {
 const SOURCES = {
   overview:    { label: 'Overview',    icon: Activity,  color: 'var(--accent)' },
   github:      { label: 'GitHub',      icon: Github,    color: 'var(--c-github)' },
+  standards:   { label: 'Standards',   icon: FileText,  color: 'var(--c-standards)' },
   npm:         { label: 'npm',         icon: Box,       color: 'var(--c-npm)' },
   pypi:        { label: 'PyPI',        icon: Package,   color: 'var(--c-pypi)' },
   docker:      { label: 'Docker',      icon: Container, color: 'var(--c-docker)' },
   huggingface: { label: 'HuggingFace', icon: Brain,     color: 'var(--c-hf)' },
 };
-const TAB_ORDER = ['overview', 'github', 'npm', 'pypi', 'docker', 'huggingface'];
+const TAB_ORDER = ['overview', 'github', 'standards', 'npm', 'pypi', 'docker', 'huggingface'];
 
 /* Detail-tab time ranges (drive the `days` query param) */
 const TIME_RANGES = [
@@ -46,6 +47,7 @@ const GRANULARITIES = [
 const C = {
   accent: '#2dd4bf', github: '#6e9bff', npm: '#ff7a7a', pypi: '#f5b53c',
   docker: '#4cb8f5', hf: '#ffce4d', violet: '#a78bfa', pink: '#f472b6', green: '#34d399',
+  standards: '#34d399',
   grid: 'rgba(255,255,255,0.055)', axis: '#5f6c82',
   fill: (hex, a = 0.16) => hexA(hex, a),
 };
@@ -380,7 +382,8 @@ export default function Dashboard() {
   };
 
   const counts = {
-    github: overview?.totals?.github?.repos, npm: overview?.totals?.npm?.packages,
+    github: overview?.totals?.github?.repos, standards: overview?.totals?.standards?.repos,
+    npm: overview?.totals?.npm?.packages,
     pypi: overview?.totals?.pypi?.packages, docker: overview?.totals?.docker?.images,
     huggingface: overview?.totals?.hf?.models,
   };
@@ -436,6 +439,8 @@ export default function Dashboard() {
             <div className="topbar-r">
               {tab === 'overview'
                 ? <Segmented items={PERIODS} value={period} onChange={setPeriod} />
+                : tab === 'standards'
+                ? <Segmented items={PERIODS.filter(p => p.value !== 'custom')} value={period === 'custom' ? '30d' : period} onChange={setPeriod} />
                 : <Segmented items={TIME_RANGES} value={range} onChange={setRange} />}
             </div>
           </div>
@@ -443,6 +448,7 @@ export default function Dashboard() {
           <div className="content stack">
             {tab === 'overview' && <OverviewTab overview={overview} loading={ovLoading} trends={trends} granularity={granularity} setGranularity={setGranularity} period={period} />}
             {tab === 'github' && <GitHubTab repos={repos} selRepo={selRepo} setSelRepo={setSelRepo} data={ghData} loading={ghLoading} combined={ghCombined} weekly={ghWeekly} />}
+            {tab === 'standards' && <StandardsTab overview={overview} loading={ovLoading} period={period === 'custom' ? '30d' : period} />}
             {tab === 'npm' && <PackageTab eco="npm" color={C.npm} packages={npmPkgs} sel={selNpm} setSel={setSelNpm} data={npmData} loading={npmLoading} weekly={() => weeklyDownloads(npmData?.downloads)} versionDownloads={npmData?.versionDownloads} />}
             {tab === 'pypi' && <PackageTab eco="PyPI" color={C.pypi} packages={pypiPkgs} sel={selPypi} setSel={setSelPypi} data={pypiData} loading={pypiLoading} weekly={() => weeklyDownloads(pypiData?.downloads)} pythonVersions={pypiData?.pythonVersions} systemStats={pypiData?.systemStats} countryDownloads={pypiData?.countryDownloads} />}
             {tab === 'docker' && <DockerTab images={images} sel={selImg} setSel={setSelImg} data={dockerData} loading={dockerLoading} />}
@@ -710,6 +716,77 @@ function AdoptionTable({ products, period }) {
     <td key="a" className="num lead">{fmtFull(t.adoption)}</td>,
   ];
   return <DataTable columns={cols} rows={products} getKey={r => r.name} initialSort={{ key: 'adoption', dir: 'desc' }} footer={footer} />;
+}
+
+/* ============================================================
+   Standards — specs, protocols & conformance suites
+   These are specifications, not installable packages, so adoption
+   is read as stars / views / clones, not downloads.
+   ============================================================ */
+function StandardsTab({ overview, loading, period }) {
+  const [filter, setFilter] = useState('');
+  if (loading) return <Loading />;
+  const standards = overview?.standards || [];
+  if (!standards.length) return <Empty message="No standards tracked yet." command="GITHUB_ORG=opena2a-standards npm run collect" />;
+
+  const periodWord = PERIOD_LABEL[period];
+  const totals = overview?.totals?.standards || {};
+  const pickViews = g => periodPick(g, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews');
+  const pickClones = g => periodPick(g, 'clones', 'clones30d', 'clones7d', 'clones24h', period, 'customClones');
+
+  const agg = standards.reduce((a, f) => {
+    a.views += pickViews(f.github);
+    a.clones += pickClones(f.github);
+    a.stars += f.github?.stars || 0;
+    a.starsGrowth += starGrowthPick(f.github, period) || 0;
+    return a;
+  }, { views: 0, clones: 0, stars: 0, starsGrowth: 0 });
+
+  const starCell = g => (<>{fmtFull(g?.stars || 0)}<StarGrowth value={starGrowthPick(g, period)} /></>);
+  const famCols = [
+    { key: 'name', label: 'Family', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div><div className="cell-desc">{r.description}</div></div>) },
+    { key: 'repoCount', label: 'Specs', align: 'right', sortValue: r => r.repoCount, render: r => fmtFull(r.repoCount) },
+    { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => starCell(r.github) },
+    { key: 'views', label: 'Views', align: 'right', sortValue: r => pickViews(r.github), render: r => fmtFull(pickViews(r.github)) },
+    { key: 'clones', label: 'Clones', align: 'right', lead: true, sortValue: r => pickClones(r.github), render: r => fmtFull(pickClones(r.github)) },
+  ];
+  const famFooter = [
+    <td key="t">Total</td>,
+    <td key="r" className="num">{fmtFull(totals.repos || 0)}</td>,
+    <td key="s" className="num">{fmtFull(agg.stars)}<StarGrowth value={agg.starsGrowth} /></td>,
+    <td key="v" className="num">{fmtFull(agg.views)}</td>,
+    <td key="c" className="num lead">{fmtFull(agg.clones)}</td>,
+  ];
+
+  const allRepos = standards.flatMap(f => f.repos.map(r => ({ ...r, family: f.name })));
+  const shown = filter
+    ? allRepos.filter(r => r.name.toLowerCase().includes(filter.toLowerCase()) || r.family.toLowerCase().includes(filter.toLowerCase()))
+    : allRepos;
+  const repoCols = [
+    { key: 'name', label: 'Repository', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div><div className="cell-desc">{r.family}</div></div>) },
+    { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => starCell(r.github) },
+    { key: 'views', label: 'Views', align: 'right', sortValue: r => pickViews(r.github), render: r => fmtFull(pickViews(r.github)) },
+    { key: 'clones', label: 'Clones', align: 'right', lead: true, sortValue: r => pickClones(r.github), render: r => fmtFull(pickClones(r.github)) },
+  ];
+
+  return (
+    <>
+      <div className="cards">
+        <Kpi icon={<FileText size={17} />} color={C.standards} label="Specifications" value={fmtFull(totals.repos || 0)} sub={`${standards.length} families`} />
+        <Kpi icon={<Star size={17} />} color={C.pypi} label="Stars" value={fmtFull(agg.stars)} sub={agg.starsGrowth > 0 ? `+${fmtFull(agg.starsGrowth)} ${periodWord}` : 'current total'} />
+        <Kpi icon={<Eye size={17} />} color={C.github} label="Views" value={fmtFull(agg.views)} sub={periodWord} />
+        <Kpi icon={<GitPullRequest size={17} />} color={C.accent} label="Clones" value={fmtFull(agg.clones)} sub={periodWord} />
+      </div>
+
+      <Panel title="Standards by family" sub="Specs and protocols grouped by family. Adoption here is stars, views and clones — these are specifications, not installable packages." pad={false}>
+        <DataTable columns={famCols} rows={standards} getKey={r => r.name} initialSort={{ key: 'stars', dir: 'desc' }} footer={famFooter} />
+      </Panel>
+
+      <Panel title="All specifications" sub="Every tracked repo in the opena2a-standards org. Sort any column." tools={<Filter value={filter} onChange={setFilter} placeholder="Filter specs…" />} pad={false}>
+        <DataTable columns={repoCols} rows={shown} getKey={r => r.name} initialSort={{ key: 'stars', dir: 'desc' }} />
+      </Panel>
+    </>
+  );
 }
 
 /* ============================================================

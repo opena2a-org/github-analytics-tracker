@@ -38,7 +38,7 @@ jobs:
       - name: Collect GitHub stats
         env:
           GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
-          GITHUB_ORG: opena2a-org,ecolibria
+          GITHUB_ORG: opena2a-org,opena2a-standards,ecolibria
         run: npm run collect
 
       - name: Collect npm stats
