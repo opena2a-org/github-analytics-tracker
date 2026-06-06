@@ -40,6 +40,7 @@
   --c-pypi:   #f5b53c;
   --c-docker: #4cb8f5;
   --c-hf:     #ffce4d;   /* HuggingFace yellow */
+  --c-standards: #34d399; /* green — specs & protocols */
   --c-stars:  #f5b53c;
   --c-violet: #a78bfa;
 

@@ -71,7 +71,7 @@ In `.env`:
 
 ```bash
 GITHUB_TOKEN=ghp_...                                          # required for GitHub
-GITHUB_ORG=opena2a-org,ecolibria                              # auto-discovers all public repos
+GITHUB_ORG=opena2a-org,opena2a-standards,ecolibria           # auto-discovers all public repos
 REPOS_TO_TRACK=owner/repo,owner/repo                          # optional extra repos
 NPM_AUTHOR=ecolibria                                          # auto-discovers all packages by this user
 NPM_PACKAGES=hackmyagent,opena2a-cli                          # optional extra packages
