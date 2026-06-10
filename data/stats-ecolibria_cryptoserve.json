@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-06-09T08:58:29.010Z",
+  "lastUpdated": "2026-06-10T09:39:16.882Z",
   "repository": "ecolibria/cryptoserve",
   "stats": {
     "allTime": {
       "views": 759,
-      "clones": 3039
+      "clones": 3081
     },
     "recent14Days": {
-      "views": 58,
+      "views": 54,
       "viewsUnique": 15,
-      "clones": 15,
-      "clonesUnique": 9
+      "clones": 57,
+      "clonesUnique": 22
     },
     "stars": 3,
     "forks": 1
