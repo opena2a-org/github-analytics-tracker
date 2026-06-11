@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-06-10T09:39:13.628Z",
+  "lastUpdated": "2026-06-11T10:03:21.470Z",
   "package": "@opena2a/check-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "stats": {
-    "allTimeDownloads": 1644,
-    "last30Days": 1054
+    "allTimeDownloads": 1649,
+    "last30Days": 1012
   }
 }

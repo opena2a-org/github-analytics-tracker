@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-06-10T09:39:16.885Z",
+  "lastUpdated": "2026-06-11T10:03:24.559Z",
   "repository": "opena2a-org/dvaa-demo-captures",
   "stats": {
     "allTime": {
-      "views": 2,
-      "clones": 19
+      "views": 5,
+      "clones": 21
     },
     "recent14Days": {
-      "views": 2,
-      "viewsUnique": 1,
-      "clones": 19,
-      "clonesUnique": 13
+      "views": 5,
+      "viewsUnique": 2,
+      "clones": 21,
+      "clonesUnique": 15
     },
     "stars": 0,
     "forks": 0
