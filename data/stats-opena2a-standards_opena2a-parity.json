@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-06-12T09:55:37.004Z",
+  "lastUpdated": "2026-06-13T08:46:04.137Z",
   "repository": "opena2a-standards/opena2a-parity",
   "stats": {
     "allTime": {
-      "views": 31,
-      "clones": 359
+      "views": 32,
+      "clones": 396
     },
     "recent14Days": {
-      "views": 27,
+      "views": 24,
       "viewsUnique": 4,
-      "clones": 245,
-      "clonesUnique": 63
+      "clones": 221,
+      "clonesUnique": 50
     },
     "stars": 0,
     "forks": 0
