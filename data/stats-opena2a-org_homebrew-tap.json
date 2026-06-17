@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-06-16T10:52:24.100Z",
+  "lastUpdated": "2026-06-17T10:25:03.995Z",
   "repository": "opena2a-org/homebrew-tap",
   "stats": {
     "allTime": {
-      "views": 160,
-      "clones": 1527
+      "views": 161,
+      "clones": 1547
     },
     "recent14Days": {
-      "views": 19,
+      "views": 20,
       "viewsUnique": 4,
-      "clones": 189,
-      "clonesUnique": 94
+      "clones": 138,
+      "clonesUnique": 67
     },
     "stars": 1,
     "forks": 0
