@@ -260,6 +260,23 @@ async function main() {
     process.exit(1);
   }
 
+  // Enrich missing versions from the registry. Author-discovery supplies a
+  // version, but explicitly-listed packages (NPM_PACKAGES) and scoped
+  // @opena2a/* packages that author-discovery misses arrive with version ''.
+  for (const pkg of packages) {
+    if (pkg.version) continue;
+    try {
+      const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name).replace('%2F', '/')}/latest`);
+      if (res.ok) {
+        const meta = await res.json();
+        pkg.version = meta.version || '';
+        if (!pkg.description) pkg.description = meta.description || '';
+      }
+    } catch {
+      // Non-fatal: download stats do not depend on the version field.
+    }
+  }
+
   console.log('Tracking %d npm packages\n', packages.length);
 
   for (const pkg of packages) {

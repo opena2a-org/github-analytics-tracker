@@ -44,7 +44,9 @@ jobs:
       - name: Collect npm stats
         env:
           NPM_AUTHOR: ecolibria
-          NPM_PACKAGES: opena2a-cli
+          # Scoped @opena2a/* packages are pinned explicitly because npm
+          # author-discovery does not reliably return scoped packages.
+          NPM_PACKAGES: opena2a-cli,@opena2a/aicomply
         run: npm run collect-npm
 
       - name: Collect PyPI stats
