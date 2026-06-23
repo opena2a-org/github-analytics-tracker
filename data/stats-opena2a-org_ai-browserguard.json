@@ -1,18 +1,18 @@
 {
-  "lastUpdated": "2026-06-22T07:51:35.019Z",
+  "lastUpdated": "2026-06-23T07:09:35.572Z",
   "repository": "opena2a-org/ai-browserguard",
   "stats": {
     "allTime": {
-      "views": 780,
-      "clones": 1828
+      "views": 824,
+      "clones": 1833
     },
     "recent14Days": {
-      "views": 171,
+      "views": 183,
       "viewsUnique": 7,
-      "clones": 142,
-      "clonesUnique": 47
+      "clones": 128,
+      "clonesUnique": 45
     },
     "stars": 4,
-    "forks": 1
+    "forks": 2
   }
 }
