@@ -1,14 +1,14 @@
 {
-  "lastUpdated": "2026-06-23T07:09:35.570Z",
+  "lastUpdated": "2026-06-24T07:06:35.802Z",
   "repository": "opena2a-org/a2a-security-examples",
   "stats": {
     "allTime": {
-      "views": 64,
-      "clones": 90
+      "views": 71,
+      "clones": 91
     },
     "recent14Days": {
-      "views": 8,
-      "viewsUnique": 5,
+      "views": 13,
+      "viewsUnique": 6,
       "clones": 7,
       "clonesUnique": 7
     },
