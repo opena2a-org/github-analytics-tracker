@@ -180,6 +180,9 @@ db.exec(`
     name TEXT NOT NULL UNIQUE,
     description TEXT,
     version TEXT,
+    -- owner/repo this package was auto-discovered from, used to attribute the
+    -- package to a tool in the dashboard. NULL for explicit-list packages.
+    source_repo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 

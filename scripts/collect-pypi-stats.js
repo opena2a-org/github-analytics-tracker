@@ -32,6 +32,13 @@ function normalizeName(name) {
 const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
 const db = new Database(dbPath);
 
+// Migrate existing databases: add source_repo if an older schema lacks it.
+const hasSourceRepo = db.prepare('PRAGMA table_info(pypi_packages)').all()
+  .some(c => c.name === 'source_repo');
+if (!hasSourceRepo) {
+  db.prepare('ALTER TABLE pypi_packages ADD COLUMN source_repo TEXT').run();
+}
+
 const today = new Date().toISOString().split('T')[0];
 
 function httpGet(url) {
@@ -194,7 +201,7 @@ async function discoverPypiPackages(orgs) {
         }
 
         const canonical = info.name || name;
-        discovered.set(norm, canonical);
+        discovered.set(norm, { name: canonical, sourceRepo: `${org}/${repo.name}` });
         console.log('    discovered %s (%s/%s:%s)', canonical, org, repo.name, file.path);
       }
     }
@@ -203,19 +210,21 @@ async function discoverPypiPackages(orgs) {
   return [...discovered.values()];
 }
 
-function getOrCreatePackage(name, description, version) {
+function getOrCreatePackage(name, description, version, sourceRepo) {
   let pkg = db.prepare('SELECT * FROM pypi_packages WHERE name = ?').get(name);
 
   if (!pkg) {
     const result = db.prepare(
-      'INSERT INTO pypi_packages (name, description, version) VALUES (?, ?, ?)'
-    ).run(name, description, version);
+      'INSERT INTO pypi_packages (name, description, version, source_repo) VALUES (?, ?, ?, ?)'
+    ).run(name, description, version, sourceRepo || null);
     pkg = { id: result.lastInsertRowid, name, description, version };
     console.log('  Added new package: %s', name);
   } else {
+    // Keep a previously-recorded source_repo if this run didn't resolve one
+    // (e.g. the package is in the explicit list but discovery is disabled).
     db.prepare(
-      'UPDATE pypi_packages SET description = ?, version = ? WHERE id = ?'
-    ).run(description, version, pkg.id);
+      'UPDATE pypi_packages SET description = ?, version = ?, source_repo = COALESCE(?, source_repo) WHERE id = ?'
+    ).run(description, version, sourceRepo || null, pkg.id);
   }
 
   return pkg;
@@ -439,10 +448,14 @@ async function main() {
     }
   }
 
+  // owner/repo each discovered package came from, keyed by PEP 503 name.
+  const sourceRepoByNorm = new Map();
+  for (const d of discovered) sourceRepoByNorm.set(normalizeName(d.name), d.sourceRepo);
+
   // Merge explicit list with discovered packages, de-duplicated by PEP 503 name.
   const seen = new Set();
   const packages = [];
-  for (const name of [...PYPI_PACKAGES, ...discovered]) {
+  for (const name of [...PYPI_PACKAGES, ...discovered.map(d => d.name)]) {
     const norm = normalizeName(name);
     if (seen.has(norm)) continue;
     seen.add(norm);
@@ -454,8 +467,9 @@ async function main() {
   for (const name of packages) {
     console.log('\nCollecting stats for %s...', name);
 
+    const sourceRepo = sourceRepoByNorm.get(normalizeName(name)) || null;
     const metadata = await fetchPackageMetadata(name);
-    const pkgRecord = getOrCreatePackage(name, metadata.description, metadata.version);
+    const pkgRecord = getOrCreatePackage(name, metadata.description, metadata.version, sourceRepo);
     await collectDownloads(pkgRecord);
     await collectPythonVersionStats(pkgRecord);
     await collectSystemStats(pkgRecord);
