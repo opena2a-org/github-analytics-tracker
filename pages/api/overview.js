@@ -159,7 +159,7 @@ export default async function handler(req, res) {
     let pypiStats = [];
     if (pypiTableExists) {
       const pypiPackages = db.prepare('SELECT * FROM pypi_packages ORDER BY name').all();
-      pypiStats = pypiPackages.map(pkg => computeWindowedStats(db, 'pypi_downloads', 'package_id', pkg.id, { start, end, isCustomRange, name: pkg.name, version: pkg.version }));
+      pypiStats = pypiPackages.map(pkg => computeWindowedStats(db, 'pypi_downloads', 'package_id', pkg.id, { start, end, isCustomRange, name: pkg.name, version: pkg.version, sourceRepo: pkg.source_repo }));
     }
 
     // --- Docker Metrics ---
@@ -300,10 +300,19 @@ export default async function handler(req, res) {
       },
     };
 
+    // A PyPI package belongs to a tool if it's explicitly listed under the tool
+    // OR it was auto-discovered from one of the tool's repos (source_repo holds
+    // "owner/repo"). The repo match means new Python packages attribute
+    // themselves — no need to hand-edit pypiPackages for every new release.
+    const repoOf = sr => (sr ? sr.split('/').pop() : null);
+    const pypiMatchesTool = (pkg, config) =>
+      (config.pypiPackages || []).includes(pkg.name) ||
+      (config.repos || []).includes(repoOf(pkg.sourceRepo));
+
     const products = Object.entries(productMap).map(([name, config]) => {
       const matchedRepos = repoStats.filter(r => config.repos.some(rn => r.repo === rn));
       const matchedPackages = npmStats.filter(p => config.packages.includes(p.name));
-      const matchedPypi = pypiStats.filter(p => (config.pypiPackages || []).includes(p.name));
+      const matchedPypi = pypiStats.filter(p => pypiMatchesTool(p, config));
       const matchedDocker = dockerStats.filter(d => (config.dockerImages || []).includes(d.fullName));
       const matchedHf = hfStats.filter(m => (config.hfModels || []).includes(m.modelId));
 
@@ -387,7 +396,11 @@ export default async function handler(req, res) {
     // out of "Other" so the same spec isn't counted twice.
     const ungroupedRepos = repoStats.filter(r => !allGroupedRepos.has(r.repo) && !isStandardsRepo(r));
     const ungroupedNpm = npmStats.filter(p => !allGroupedNpm.has(p.name));
-    const ungroupedPypi = pypiStats.filter(p => !allGroupedPypi.has(p.name));
+    // Use the same name-OR-source-repo rule as the tools, so a package that was
+    // auto-attributed by repo doesn't also show up in "Other".
+    const ungroupedPypi = pypiStats.filter(p =>
+      !allGroupedPypi.has(p.name) &&
+      !Object.values(productMap).some(c => pypiMatchesTool(p, c)));
     const ungroupedDocker = dockerStats.filter(d => !allGroupedDocker.has(d.fullName));
     const ungroupedHf = hfStats.filter(m => !allGroupedHf.has(m.modelId));
 
