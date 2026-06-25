@@ -51,7 +51,9 @@ jobs:
 
       - name: Collect PyPI stats
         env:
-          PYPI_PACKAGES: cryptoserve,cryptoserve-core,cryptoserve-auto,cryptoserve-client,aim-sdk
+          # PyPI has no author-discovery API (profile pages are bot-gated), so
+          # every published package must be listed explicitly here.
+          PYPI_PACKAGES: cryptoserve,cryptoserve-core,cryptoserve-auto,cryptoserve-client,aim-sdk,aicomply
         run: npm run collect-pypi
 
       - name: Collect Docker stats
