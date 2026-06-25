@@ -22,6 +22,13 @@ db.exec(`
     owner TEXT NOT NULL,
     repo TEXT NOT NULL,
     full_name TEXT NOT NULL UNIQUE,
+    -- Canonical (current) owner/repo after any GitHub transfer or rename. For a
+    -- live repo this equals full_name; for a stale row left behind by a transfer
+    -- (opena2a-org -> opena2a-standards) or rename it points at the new path so
+    -- aggregations can collapse the twins. Maintained by collect-stats.js and
+    -- seeded by scripts/backfill-canonical.js. See lib/repos.js.
+    canonical_full_name TEXT,
+    archived INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(owner, repo)
   );
@@ -329,6 +336,19 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_hf_stats_model ON huggingface_stats(model_id);
   CREATE INDEX IF NOT EXISTS idx_hf_stats_date ON huggingface_stats(date);
 `);
+
+// --- Idempotent migrations for pre-existing databases ---
+// `CREATE TABLE IF NOT EXISTS` won't add columns to a table that already exists,
+// so add the canonical-repo columns here when an older DB is missing them.
+const repoCols = db.prepare("PRAGMA table_info(repositories)").all().map(c => c.name);
+if (!repoCols.includes('canonical_full_name')) {
+  db.exec('ALTER TABLE repositories ADD COLUMN canonical_full_name TEXT');
+  console.log('Migration: added repositories.canonical_full_name');
+}
+if (!repoCols.includes('archived')) {
+  db.exec('ALTER TABLE repositories ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
+  console.log('Migration: added repositories.archived');
+}
 
 console.log('Database setup complete: %s', dbPath);
 

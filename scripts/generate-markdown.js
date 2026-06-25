@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { groupByCanonical, pickCanonical } = require('../lib/repos');
 
 const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
 const db = new Database(dbPath, { readonly: true });
@@ -152,6 +153,49 @@ function getRepositoryStats() {
       releases,
     };
   });
+}
+
+/**
+ * Collapse stale transfer/rename twin rows into one logical repo so the report
+ * doesn't list (and double-count) the same spec twice. Additive traffic and
+ * days-tracked sum across the disjoint twin histories; snapshot metrics
+ * (stars/forks/14-day uniques) and per-repo snapshots (referrers/contributors/
+ * releases) come from the canonical row. Daily history is concatenated (the twin
+ * date ranges are disjoint). See lib/repos.js.
+ */
+function mergeRepoStats(repoStats) {
+  const out = [];
+  for (const [canon, group] of groupByCanonical(repoStats)) {
+    const c = pickCanonical(group, canon);
+    const slash = canon.indexOf('/');
+    const dailyStats = group
+      .flatMap(r => r.dailyStats || [])
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const dates = group.flatMap(r => [r.first_date, r.last_date]).filter(Boolean).sort();
+    out.push({
+      ...c,
+      full_name: canon,
+      owner: slash >= 0 ? canon.slice(0, slash) : c.owner,
+      repo: slash >= 0 ? canon.slice(slash + 1) : c.repo,
+      total_views: group.reduce((s, r) => s + (r.total_views || 0), 0),
+      total_clones: group.reduce((s, r) => s + (r.total_clones || 0), 0),
+      days_tracked: group.reduce((s, r) => s + (r.days_tracked || 0), 0),
+      first_date: dates[0] || c.first_date,
+      last_date: dates[dates.length - 1] || c.last_date,
+      // snapshots from the canonical (live) row
+      recent_unique_visitors: c.recent_unique_visitors || 0,
+      recent_unique_cloners: c.recent_unique_cloners || 0,
+      recent_views: c.recent_views || 0,
+      recent_clones: c.recent_clones || 0,
+      stars: c.stars || 0,
+      forks: c.forks || 0,
+      dailyStats,
+      referrers: c.referrers || [],
+      contributors: c.contributors || [],
+      releases: c.releases || [],
+    });
+  }
+  return out;
 }
 
 function generateAnalyticsMD(repoStats) {
@@ -799,7 +843,7 @@ function main() {
   console.log('Generating markdown and JSON files from database...');
 
   try {
-    const repoStats = getRepositoryStats();
+    const repoStats = mergeRepoStats(getRepositoryStats());
     const npmStats = getNpmStats();
     const pypiStats = getPypiStats();
 

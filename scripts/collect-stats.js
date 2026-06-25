@@ -266,6 +266,13 @@ async function collectStarsAndForks(owner, repo, repoId) {
     `);
     forksInsert.run(repoId, today, data.forks_count);
 
+    // Record the canonical path GitHub redirects this slug to (unchanged for a
+    // live repo; the new path for a transferred/renamed one) plus archived state,
+    // so aggregations can collapse stale twins. See lib/repos.js.
+    db.prepare(
+      'UPDATE repositories SET canonical_full_name = ?, archived = ? WHERE id = ?'
+    ).run(data.full_name, data.archived ? 1 : 0, repoId);
+
     console.log('  Stars: %d | Forks: %d', data.stargazers_count, data.forks_count);
   } catch (error) {
     console.error('  Stars/Forks: failed - %s', error.message);

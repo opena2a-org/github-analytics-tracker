@@ -8,6 +8,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { canonicalRepoTotals } = require('../lib/repos');
 
 const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
 const db = new Database(dbPath, { readonly: true });
@@ -56,15 +57,14 @@ try {
     SELECT COALESCE(SUM(count), 0) as total FROM traffic_views
   `).get();
 
-  // Stars
-  const starsTotal = db.prepare(`
-    SELECT COALESCE(SUM(total_stars), 0) as total
-    FROM stargazers
-    WHERE date = (SELECT MAX(date) FROM stargazers)
-  `).get();
-
-  // Repo count
-  const repoCount = db.prepare('SELECT COUNT(*) as count FROM repositories').get();
+  // Stars + repo count, deduplicated by canonical repo. Summing total_stars on
+  // the latest date would drop repos whose last snapshot predates it (e.g. an
+  // archived repo), and summing per-repo latest would double-count stale
+  // transfer/rename twins. canonicalRepoTotals collapses twins and counts each
+  // canonical repo's latest snapshot once. See lib/repos.js.
+  const canonTotals = canonicalRepoTotals(db);
+  const starsTotal = { total: canonTotals.stars };
+  const repoCount = { count: canonTotals.repoCount };
 
   // npm package count
   const npmPkgCount = db.prepare('SELECT COUNT(*) as count FROM npm_packages').get();

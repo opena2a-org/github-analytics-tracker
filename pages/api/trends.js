@@ -155,20 +155,44 @@ export default function handler(req, res) {
       }));
 
     // --- Star timeline ---
+    // Stars are a running TOTAL snapshot, not a per-day delta, so the right value
+    // for a bucket is "each repo's latest snapshot as of that bucket", summed
+    // across repos — NOT SUM(total_stars), which would add up every daily snapshot
+    // inside a weekly/monthly bucket (7x inflation) and double-count transfer/
+    // rename twins. We compute it in JS: per canonical repo, take the last
+    // snapshot seen in each bucket and carry it forward, then sum per bucket.
     const starBucket = granularity === 'daily'
       ? "date"
       : granularity === 'monthly'
         ? "strftime('%Y-%m-01', date)"
         : "date(date, 'weekday 0', '-6 days')";
 
-    const starTimeline = db.prepare(`
-      SELECT ${starBucket} AS date,
-             SUM(total_stars) AS totalStars
-      FROM stargazers
+    const starRows = db.prepare(`
+      SELECT ${starBucket} AS bucket, s.date AS date, s.total_stars AS stars,
+             COALESCE(r.canonical_full_name, r.full_name) AS canon
+      FROM stargazers s
+      JOIN repositories r ON r.id = s.repo_id
       WHERE 1=1 ${dateFilter}
-      GROUP BY ${starBucket}
-      ORDER BY date
+      ORDER BY s.date ASC
     `).all();
+
+    const buckets = [...new Set(starRows.map(r => r.bucket))].sort((a, b) => a.localeCompare(b));
+    // canon -> (bucket -> last observed star total in that bucket). Rows are date
+    // ascending, so for transfer/rename twins the canonical (live) row's newer
+    // snapshots overwrite the stale twin's frozen value.
+    const observed = new Map();
+    for (const row of starRows) {
+      if (!observed.has(row.canon)) observed.set(row.canon, new Map());
+      observed.get(row.canon).set(row.bucket, row.stars);
+    }
+    const starTimeline = buckets.map(b => ({ date: b, totalStars: 0 }));
+    for (const bmap of observed.values()) {
+      let last = 0; // contributes 0 until the repo's first snapshot, then carried
+      for (let i = 0; i < buckets.length; i++) {
+        if (bmap.has(buckets[i])) last = bmap.get(buckets[i]);
+        starTimeline[i].totalStars += last;
+      }
+    }
 
     // --- Growth calculations ---
     const growth = computeGrowth(series, granularity);

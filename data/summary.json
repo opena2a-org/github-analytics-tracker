@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-24T07:06:35.985Z",
+  "lastUpdated": "2026-06-25T01:31:29.882Z",
   "total": {
     "adoption": 228972,
     "adoptionExCrypto": 210104,
@@ -8,8 +8,8 @@
     "clones": 99318,
     "docker": 7066,
     "views": 24794,
-    "stars": 222,
-    "repos": 57,
+    "stars": 224,
+    "repos": 43,
     "npmPackages": 40
   },
   "excludingCrypto": {
