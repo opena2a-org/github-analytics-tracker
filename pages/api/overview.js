@@ -2,6 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const { computeWindowedStats, computeStarGrowth } = require('../../lib/windowing');
 const { groupStandards } = require('../../lib/standards');
+const { mergeByCanonical } = require('../../lib/repos');
 
 /**
  * Overview API: Returns combined GitHub + npm metrics suitable for
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
     const viewsAnchor = `(SELECT MAX(date) FROM traffic_views)`;
     const clonesAnchor = `(SELECT MAX(date) FROM traffic_clones)`;
 
-    const repoStats = repos.map(repo => {
+    const repoStatsRaw = repos.map(repo => {
       const views = db.prepare(`
         SELECT COALESCE(SUM(count), 0) as total
         FROM traffic_views WHERE repo_id = ?
@@ -120,8 +121,19 @@ export default async function handler(req, res) {
         recentUniqueCloners: summary?.clones_uniques || 0,
         ...starGrowth,
         forks: forks?.forks || 0,
+        canonicalFullName: repo.canonical_full_name || repo.full_name,
+        archived: !!repo.archived,
       };
     });
+
+    // Collapse stale transfer/rename twins into one logical repo before any
+    // aggregation: additive traffic sums across the disjoint twin histories,
+    // snapshot metrics (stars/forks) come from the canonical (live) row. Without
+    // this, transferred specs (e.g. opena2a-org + opena2a-standards rows for the
+    // same repo) and renamed repos (arp -> agent-runtime-protection) double-count
+    // their stars. Every downstream aggregation reads `repoStats`, so collapsing
+    // here fixes products, standards, "Other", and totals at once. See lib/repos.js.
+    const repoStats = mergeByCanonical(repoStatsRaw);
 
     // --- npm Metrics ---
     const npmTableExists = db.prepare(
@@ -264,7 +276,9 @@ export default async function handler(req, res) {
         description: 'Dual-layer compliance classifier for AI agent communications',
       },
       'ARP': {
-        repos: ['arp'],
+        // Canonical repo name after the arp -> agent-runtime-protection rename;
+        // the stale `arp` row is collapsed into this one by mergeByCanonical.
+        repos: ['agent-runtime-protection'],
         // arp-guard is the current package; @opena2a/arp is the pre-rename name
         // (frozen 2026-03-01) kept so historical downloads still count.
         packages: ['arp-guard', '@opena2a/arp'],
@@ -441,7 +455,8 @@ export default async function handler(req, res) {
     const totalHfDownloads = hfStats.reduce((s, m) => s + m.downloadsAllTime, 0);
     const totals = {
       github: {
-        repos: repos.length,
+        // Canonical repo count (stale transfer/rename twins collapsed).
+        repos: repoStats.length,
         totalViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
         views24h: repoStats.reduce((s, r) => s + r.views24h, 0),
         views7d: repoStats.reduce((s, r) => s + r.views7d, 0),

@@ -20,45 +20,63 @@ export default function handler(req, res) {
     startDate.setDate(startDate.getDate() - daysNum);
     const startDateStr = startDate.toISOString().split('T')[0];
 
-    // Get views
-    const views = db.prepare(`
-      SELECT date, count, uniques
-      FROM traffic_views
-      WHERE repo_id = ? AND date >= ?
-      ORDER BY date ASC
-    `).all(repoId, startDateStr);
+    // Resolve the canonical repo and all its twin rows (stale rows left behind by
+    // a transfer/rename). Traffic is summed across the twins so the chart shows
+    // the full history (the twin date ranges are disjoint), while snapshots
+    // (stars/forks/referrers/etc.) come from the canonical row. See lib/repos.js.
+    const self = db.prepare(
+      'SELECT id, full_name, canonical_full_name FROM repositories WHERE id = ?'
+    ).get(repoId);
+    const canon = self?.canonical_full_name || self?.full_name;
+    const twinIds = canon
+      ? db.prepare(
+          'SELECT id FROM repositories WHERE COALESCE(canonical_full_name, full_name) = ?'
+        ).all(canon).map(r => r.id)
+      : [repoId];
+    const canonId = (canon && db.prepare('SELECT id FROM repositories WHERE full_name = ?').get(canon)?.id) || repoId;
+    const twinPlaceholders = twinIds.map(() => '?').join(',');
 
-    // Get clones
-    const clones = db.prepare(`
-      SELECT date, count, uniques
-      FROM traffic_clones
-      WHERE repo_id = ? AND date >= ?
+    // Get views (summed across twins by date — disjoint histories combine)
+    const views = db.prepare(`
+      SELECT date, SUM(count) AS count, SUM(uniques) AS uniques
+      FROM traffic_views
+      WHERE repo_id IN (${twinPlaceholders}) AND date >= ?
+      GROUP BY date
       ORDER BY date ASC
-    `).all(repoId, startDateStr);
+    `).all(...twinIds, startDateStr);
+
+    // Get clones (summed across twins by date)
+    const clones = db.prepare(`
+      SELECT date, SUM(count) AS count, SUM(uniques) AS uniques
+      FROM traffic_clones
+      WHERE repo_id IN (${twinPlaceholders}) AND date >= ?
+      GROUP BY date
+      ORDER BY date ASC
+    `).all(...twinIds, startDateStr);
 
     // Get latest referrer snapshot (most recent date, not aggregated across dates)
     const latestReferrerDate = db.prepare(`
       SELECT MAX(date) as date FROM referrers WHERE repo_id = ? AND date >= ?
-    `).get(repoId, startDateStr);
+    `).get(canonId, startDateStr);
 
     const referrers = latestReferrerDate?.date ? db.prepare(`
       SELECT referrer, count, uniques
       FROM referrers
       WHERE repo_id = ? AND date = ?
       ORDER BY count DESC
-    `).all(repoId, latestReferrerDate.date) : [];
+    `).all(canonId, latestReferrerDate.date) : [];
 
     // Get latest popular paths snapshot (most recent date)
     const latestPathDate = db.prepare(`
       SELECT MAX(date) as date FROM popular_paths WHERE repo_id = ? AND date >= ?
-    `).get(repoId, startDateStr);
+    `).get(canonId, startDateStr);
 
     const paths = latestPathDate?.date ? db.prepare(`
       SELECT path, title, count, uniques
       FROM popular_paths
       WHERE repo_id = ? AND date = ?
       ORDER BY count DESC
-    `).all(repoId, latestPathDate.date) : [];
+    `).all(canonId, latestPathDate.date) : [];
 
     // Get latest stars and forks
     const latestStats = db.prepare(`
@@ -67,7 +85,7 @@ export default function handler(req, res) {
         (SELECT total_stars FROM stargazers WHERE repo_id = ? AND date >= ? ORDER BY date ASC LIMIT 1) as start_stars,
         (SELECT total_forks FROM forks WHERE repo_id = ? ORDER BY date DESC LIMIT 1) as latest_forks,
         (SELECT total_forks FROM forks WHERE repo_id = ? AND date >= ? ORDER BY date ASC LIMIT 1) as start_forks
-    `).get(repoId, repoId, startDateStr, repoId, repoId, startDateStr);
+    `).get(canonId, canonId, startDateStr, canonId, canonId, startDateStr);
 
     // Get most recent 14-day API summary (accurate unique counts)
     const recentSummary = db.prepare(`
@@ -76,7 +94,7 @@ export default function handler(req, res) {
       WHERE repo_id = ?
       ORDER BY date DESC
       LIMIT 1
-    `).get(repoId);
+    `).get(canonId);
 
     const summary = {
       totalViews: views.reduce((sum, v) => sum + v.count, 0),
@@ -98,7 +116,7 @@ export default function handler(req, res) {
     if (contribTableCheck) {
       const latestContribDate = db.prepare(
         'SELECT MAX(date) as date FROM github_contributors WHERE repo_id = ?'
-      ).get(repoId);
+      ).get(canonId);
 
       if (latestContribDate?.date) {
         contributors = db.prepare(`
@@ -106,7 +124,7 @@ export default function handler(req, res) {
           FROM github_contributors
           WHERE repo_id = ? AND date = ?
           ORDER BY contributions DESC
-        `).all(repoId, latestContribDate.date);
+        `).all(canonId, latestContribDate.date);
       }
     }
 
@@ -118,7 +136,7 @@ export default function handler(req, res) {
     if (relTableCheck) {
       const latestRelDate = db.prepare(
         'SELECT MAX(date) as date FROM github_releases WHERE repo_id = ?'
-      ).get(repoId);
+      ).get(canonId);
 
       if (latestRelDate?.date) {
         releases = db.prepare(`
@@ -126,7 +144,7 @@ export default function handler(req, res) {
           FROM github_releases
           WHERE repo_id = ? AND date = ?
           ORDER BY published_at DESC
-        `).all(repoId, latestRelDate.date);
+        `).all(canonId, latestRelDate.date);
       }
     }
 
