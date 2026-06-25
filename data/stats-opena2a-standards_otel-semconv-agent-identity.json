@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-25T01:31:29.824Z",
+  "lastUpdated": "2026-06-25T07:06:22.637Z",
   "repository": "opena2a-standards/otel-semconv-agent-identity",
   "stats": {
     "allTime": {
@@ -9,8 +9,8 @@
     "recent14Days": {
       "views": 4,
       "viewsUnique": 3,
-      "clones": 21,
-      "clonesUnique": 18
+      "clones": 20,
+      "clonesUnique": 17
     },
     "stars": 1,
     "forks": 0
