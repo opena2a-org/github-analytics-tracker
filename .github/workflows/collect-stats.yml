@@ -51,8 +51,13 @@ jobs:
 
       - name: Collect PyPI stats
         env:
-          # PyPI has no author-discovery API (profile pages are bot-gated), so
-          # every published package must be listed explicitly here.
+          # PyPI has no author-discovery API (profile pages are bot-gated).
+          # New packages are auto-discovered by scanning GITHUB_ORG repos for
+          # Python packaging files (see collect-pypi-stats.js). PYPI_PACKAGES
+          # remains a safety-net for packages whose repo lives outside these
+          # orgs or isn't discoverable.
+          GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
+          GITHUB_ORG: opena2a-org,opena2a-standards,ecolibria
           PYPI_PACKAGES: cryptoserve,cryptoserve-core,cryptoserve-auto,cryptoserve-client,aim-sdk,aicomply
         run: npm run collect-pypi
 

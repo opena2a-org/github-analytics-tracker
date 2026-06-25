@@ -4156,6 +4156,39 @@
 
 ---
 
+### nanomind-analyst v0.1.3
+
+> Installer for the NanoMind Analyst daemon: serves the Qwen3-1.7B security analyst NLM behind an input-classifier gate over a Unix socket.
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 81 |
+| Last 30 days | 687 |
+| Last 90 days | 1,419 |
+| All time | 1,419 |
+
+**Insights**
+- Average: ~25 downloads/day (last 28 days)
+- Peak: Jun 11, 2026 with 317 downloads
+
+**Downloads by Python Version**
+
+| Python Version | Downloads |
+|---------------|-----------|
+| 3.12 | 29 |
+| 3.11 | 17 |
+| 3.13 | 2 |
+
+**Downloads by Operating System**
+
+| OS | Downloads |
+|----|----------|
+| null | 395 |
+| Linux | 31 |
+| Darwin | 17 |
+
+---
+
 ### aicomply v0.2.0
 
 > Inline PII, credential, and regulated-data classifier for AI agent I/O. Dual-layer: deterministic regex + optional semantic Guard. Library + CLI. Python port of @opena2a/aicomply.
