@@ -4156,3 +4156,37 @@
 
 ---
 
+### aicomply v0.2.0
+
+> Inline PII, credential, and regulated-data classifier for AI agent I/O. Dual-layer: deterministic regex + optional semantic Guard. Library + CLI. Python port of @opena2a/aicomply.
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 725 |
+| Last 30 days | 725 |
+| Last 90 days | 725 |
+| All time | 725 |
+
+**Insights**
+- Average: ~104 downloads/day (last 7 days)
+- Peak: Jun 18, 2026 with 508 downloads
+
+**Downloads by Python Version**
+
+| Python Version | Downloads |
+|---------------|-----------|
+| 3.12 | 36 |
+| 3.11 | 10 |
+| 3.10 | 2 |
+| 3.14 | 2 |
+
+**Downloads by Operating System**
+
+| OS | Downloads |
+|----|----------|
+| null | 193 |
+| Linux | 40 |
+| Darwin | 10 |
+
+---
+

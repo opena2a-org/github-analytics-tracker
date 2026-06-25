@@ -166,12 +166,13 @@
 | [cryptoserve-core](https://pypi.org/project/cryptoserve-core) | 0.4.2 | 48 | 521 | 1,582 | 4,361 | 133 |
 | [cryptoserve-client](https://pypi.org/project/cryptoserve-client) | 0.3.0 | 29 | 351 | 1,095 | 2,739 | 129 |
 | [cryptoserve-auto](https://pypi.org/project/cryptoserve-auto) | 0.3.0 | 29 | 307 | 787 | 2,082 | 121 |
+| [aicomply](https://pypi.org/project/aicomply) | 0.2.0 | 725 | 725 | 725 | 725 | 7 |
 
 ### PyPI Totals
 
 | Metric | Value |
 |--------|-------|
-| Packages tracked | 5 |
-| All-time downloads | 22,431 |
-| Last 30 days | 3,976 |
+| Packages tracked | 6 |
+| All-time downloads | 23,156 |
+| Last 30 days | 4,701 |
 
