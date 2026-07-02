@@ -79,6 +79,15 @@ jobs:
           CHROME_EXTENSIONS: ojphpdmabflmcjhglfogmkdgchkncikf
         run: npm run collect-chrome
 
+      - name: Collect first-party CLI telemetry
+        env:
+          # Registry base URL exposing the coarse public adoption feed
+          # (GET /api/v1/telemetry/v1/adoption/public). Only coarse, anonymous
+          # active-user aggregates are collected here; fine-grained detail is
+          # never persisted. Unset -> the collector skips gracefully.
+          REGISTRY_URL: ${{ vars.REGISTRY_URL }}
+        run: npm run collect-telemetry
+
       - name: Generate markdown files
         run: npm run generate-md
 
@@ -89,6 +98,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
+          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/telemetry-badge.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"

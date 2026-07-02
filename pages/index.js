@@ -481,6 +481,14 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
   const [cLoading, setCLoading] = useState(false);
   const [cKey, setCKey] = useState('');
 
+  // First-party CLI telemetry (active users) — coarse, public. Fetched here so
+  // the overview can surface real usage alongside downloads. Fine-grained detail
+  // lives behind a password inside <TelemetrySection>.
+  const [tel, setTel] = useState(null);
+  useEffect(() => {
+    fetch('/api/telemetry').then(r => r.ok ? r.json() : null).then(d => { if (d?.available) setTel(d); }).catch(() => {});
+  }, []);
+
   const applyCustom = () => {
     if (!cStart || !cEnd) return;
     const key = `${cStart}_${cEnd}`;
@@ -570,6 +578,12 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
         <Kpi icon={<Brain size={17} />} color={C.hf} label="HF Downloads" value={fmtFull(totals.hf?.downloadsAllTime || 0)} sub={`all time · ${totals.hf?.downloads30d || 0} in 30d`} />
         {totals.chrome?.extensions > 0 && (
           <Kpi icon={<Chrome size={17} />} color={C.chrome} label="Chrome Users" value={fmtFull(totals.chrome?.users || 0)} sub={`weekly active · ${totals.chrome?.extensions} ext`} />
+        )}
+        {tel?.snapshot && (
+          <Kpi icon={<Users size={17} />} color={C.green} label="Active CLI Users"
+            value={fmtFull(tel.snapshot.mau)}
+            sub={`monthly active · ${fmtFull(tel.snapshot.wau)} weekly`}
+            delta={tel.snapshot.mauGrowth30d ? pctChange(tel.snapshot.mau, tel.snapshot.mau - tel.snapshot.mauGrowth30d) : null} />
         )}
       </div>
 
@@ -678,6 +692,129 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
           ]} />
         )}
       </div>
+
+      {tel?.snapshot && <TelemetrySection data={tel} />}
+    </>
+  );
+}
+
+/* ============================================================
+   First-party CLI telemetry (active users)
+   ============================================================ */
+function TelemetrySection({ data }) {
+  const s = data.snapshot;
+  const tools = data.tools || [];
+  const byCountry = data.byCountry || [];
+
+  // Gated fine-grained detail. Nothing loads until a password is submitted; the
+  // request carries it in a header and the server verifies against
+  // ANALYTICS_TRACKER_PASSWORD, then fetches the Registry's internal feed.
+  const [pw, setPw] = useState('');
+  const [detail, setDetail] = useState(null);
+  const [detailErr, setDetailErr] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const loadDetail = () => {
+    if (!pw) return;
+    setDetailLoading(true); setDetailErr(''); setDetail(null);
+    fetch('/api/telemetry-detail', { headers: { 'x-analytics-tracker-password': pw } })
+      .then(async r => {
+        if (r.status === 401) throw new Error('Incorrect password.');
+        if (r.status === 404) throw new Error('Detailed telemetry is not enabled on this deployment.');
+        if (r.status === 503) throw new Error('Detailed telemetry is not configured (Registry token missing).');
+        if (!r.ok) throw new Error('Could not load detailed telemetry.');
+        return r.json();
+      })
+      .then(setDetail)
+      .catch(e => setDetailErr(e.message))
+      .finally(() => setDetailLoading(false));
+  };
+
+  return (
+    <>
+      <SecLabel>First-party CLI usage</SecLabel>
+      <Panel
+        title="Active users, measured first-party"
+        sub={`Distinct installs of the CLIs, reported by the tools themselves — active users, not downloads (a download is not a user), so they are shown separately and never summed into adoption. WAU = ${s.wauWindowDays || 7}-day, MAU = ${s.mauWindowDays || 30}-day distinct installs. As of ${s.asOf}.`}>
+        <div className="cards" style={{ marginBottom: 16 }}>
+          <Kpi icon={<Users size={17} />} color={C.green} label="Monthly active users" value={fmtFull(s.mau)} sub={`${s.mauWindowDays || 30}-day distinct installs`} delta={s.mauGrowth30d ? pctChange(s.mau, s.mau - s.mauGrowth30d) : null} />
+          <Kpi icon={<Activity size={17} />} color={C.accent} label="Weekly active users" value={fmtFull(s.wau)} sub={`${s.wauWindowDays || 7}-day distinct installs`} delta={s.wauGrowth7d ? pctChange(s.wau, s.wau - s.wauGrowth7d) : null} />
+          <Kpi icon={<Download size={17} />} color={C.npm} label="Installs" value={fmtFull(s.totalInstalls)} sub={`distinct installs · last ${s.retentionDays || 90}d`} />
+        </div>
+
+        {tools.length > 0 && (
+          <table className="table">
+            <thead><tr><th>Tool</th><th className="num">Installs</th><th className="num">WAU</th><th className="num">MAU</th><th>Top version</th></tr></thead>
+            <tbody>
+              {tools.map(t => (
+                <tr key={t.tool}>
+                  <td><div className="cell-name">{t.product}</div>{t.product !== t.tool && <div className="cell-desc">{t.tool}</div>}</td>
+                  <td className="num">{fmtFull(t.totalInstalls)}</td>
+                  <td className="num">{fmtFull(t.wau)}</td>
+                  <td className="num">{fmtFull(t.mau)}</td>
+                  <td>{t.versions?.[0] ? <span className="muted">{t.versions[0].version} · {fmtFull(t.versions[0].installs)}</span> : <span className="muted">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {byCountry.length > 0 && (
+          <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {byCountry.slice(0, 12).map(c => (
+              <span key={c.countryCode} className="chip" style={{ fontSize: '.72rem' }}>
+                <i style={{ background: C.green }} />{c.countryCode} · {fmtFull(c.installs)}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Honest provenance, carried from the feed — these are self-reported over
+            anonymous telemetry, a best-effort signal, not a sybil-verified count. */}
+        <div className="panel-sub" style={{ marginTop: 14, fontStyle: 'italic' }}>
+          {s.provenance || 'Self-reported by the CLIs over anonymous telemetry — a best-effort adoption signal, not a sybil-verified count.'}
+        </div>
+      </Panel>
+
+      <Panel title="Detailed usage" sub="Command engagement, reliability and by-day activity. Password-protected — these fine-grained metrics are never committed to the public dashboard.">
+        <div className="daterange" style={{ marginBottom: 12 }}>
+          <input type="password" className="date-input" placeholder="Analytics tracker password" value={pw}
+            onChange={e => setPw(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') loadDetail(); }} />
+          <button className="btn" onClick={loadDetail} disabled={detailLoading || !pw}>{detailLoading ? 'Loading…' : 'Unlock'}</button>
+        </div>
+        {detailErr && <div className="empty" style={{ border: 'none' }}><p>{detailErr}</p></div>}
+        {detail && <TelemetryDetail detail={detail} />}
+      </Panel>
+    </>
+  );
+}
+
+function TelemetryDetail({ detail }) {
+  const cmds = (detail.byCommand || []).slice(0, 15);
+  const totalCmd = (detail.commandSuccess || 0) + (detail.commandFailure || 0);
+  const successRate = totalCmd > 0 ? ((detail.commandSuccess / totalCmd) * 100).toFixed(1) : null;
+  return (
+    <>
+      <div className="cards" style={{ marginBottom: 16 }}>
+        <Kpi icon={<Activity size={17} />} color={C.accent} label="Events" value={fmtFull(detail.totalEvents)} sub={detail.from && detail.to ? `${detail.from} → ${detail.to}` : 'window'} />
+        <Kpi icon={<Users size={17} />} color={C.green} label="Unique installs" value={fmtFull(detail.uniqueInstalls)} sub="in window" />
+        {successRate != null && <Kpi icon={<TrendingUp size={17} />} color={C.hf} label="Command success" value={`${successRate}%`} sub={`${fmtFull(detail.commandSuccess)} ok · ${fmtFull(detail.commandFailure)} failed`} />}
+      </div>
+      {cmds.length > 0 && (
+        <table className="table">
+          <thead><tr><th>Command</th><th className="num">Events</th><th className="num">Success</th><th className="num">Failure</th></tr></thead>
+          <tbody>
+            {cmds.map((c, i) => (
+              <tr key={`${c.tool}/${c.name}/${i}`}>
+                <td><div className="cell-name">{c.name}</div><div className="cell-desc">{c.tool}</div></td>
+                <td className="num">{fmtFull(c.eventCount)}</td>
+                <td className="num">{fmtFull(c.successes)}</td>
+                <td className="num">{fmtFull(c.failures)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   );
 }

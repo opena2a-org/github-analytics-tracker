@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     'DOCKER_IMAGES',
     'HF_AUTHOR', 'HF_MODELS', 'HF_TOKEN',
     'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_APPLICATION_CREDENTIALS_JSON',
+    'REGISTRY_URL',
   ];
   const childEnv = Object.fromEntries(
     ALLOWED_ENV.filter(k => process.env[k] !== undefined).map(k => [k, process.env[k]])
@@ -32,6 +33,7 @@ export default async function handler(req, res) {
     { name: 'pypi', script: 'collect-pypi-stats.js', needsToken: false },
     { name: 'docker', script: 'collect-docker-stats.js', needsToken: false },
     { name: 'huggingface', script: 'collect-huggingface-stats.js', needsToken: false },
+    { name: 'telemetry', script: 'collect-telemetry-stats.js', needsToken: false },
   ];
 
   for (const collector of collectors) {
