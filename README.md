@@ -34,6 +34,9 @@ This tracker runs once a day (via GitHub Actions), pulls the API, stores everyth
 | **PyPI** by country | Country-level downloads via BigQuery (optional) | Unlimited |
 | **Docker Hub** | Pull counts + tag history per image | Unlimited |
 | **HuggingFace** | Model downloads (all-time + rolling 30d) and likes per model | Unlimited |
+| **First-party CLI** | Active users (distinct installs → WAU/MAU), version + country splits, from the Registry's coarse public adoption feed | Daily snapshots |
+
+First-party CLI telemetry is **active users, not downloads** — a download is not a user — so it is shown distinctly and never summed into the download adoption total (same as Chrome weekly-active users).
 
 ## How it works
 
@@ -43,9 +46,9 @@ npm API ─────┤
 PyPI API ────┤
 Docker Hub ──┼──► collect-*.js ──► SQLite (data/analytics.db) ──► Next.js dashboard
 HuggingFace ─┤                                                ╲
-BigQuery ────┘                                                 ╲──► static JSON (data/*.json)
-                                                                    consumable by external sites
-                                                                    via raw.githubusercontent.com
+BigQuery ────┤                                                 ╲──► static JSON (data/*.json)
+Registry ────┘                                                      consumable by external sites
+(CLI telemetry)                                                     via raw.githubusercontent.com
 ```
 
 A daily GitHub Actions cron (`6:00 AM UTC`) runs the collectors, regenerates the SQLite DB, and commits the data plus per-source static JSON artifacts back to the repo. Your dashboard reads from the DB; external sites can read the JSON directly without spinning up the dashboard.
@@ -81,7 +84,15 @@ HF_AUTHOR=opena2a                                             # auto-discovers a
 HF_MODELS=org/model,org/other                                 # optional extra models
 HF_TOKEN=hf_...                                               # optional, raises HF rate limits / private repos
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json          # optional for BigQuery country stats
+REGISTRY_URL=https://registry.opena2a.org                     # optional; enables first-party CLI telemetry
+REGISTRY_TELEMETRY_TOKEN=...                                  # optional; SA token for the gated detail view (server-side only)
+ANALYTICS_TRACKER_PASSWORD=...                                # optional; gates the fine-grained telemetry view on THIS dashboard
 ```
+
+The collector persists only the coarse, anonymous adoption feed. The fine-grained
+view (command usage, reliability, by-day) is fetched live from the Registry's
+authenticated endpoint behind `ANALYTICS_TRACKER_PASSWORD` and is never written to
+the committed database.
 
 ## Automated daily collection
 
@@ -90,14 +101,15 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:0
 1. Settings → Secrets and variables → Actions → New secret.
 2. Add `GH_STATS_TOKEN` (a Personal Access Token with `repo` or `public_repo` scope).
 3. Optionally set `GOOGLE_APPLICATION_CREDENTIALS_JSON` for BigQuery country stats.
+4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection (the collector skips gracefully when unset).
 
 The workflow auto-discovers public repos in the orgs listed in `GITHUB_ORG`. Add a new repo to the org, the next run picks it up. No manual list maintenance.
 
 ## Architectural notes (so you can audit it)
 
 - **DB is SQLite.** No external database. The full DB ships with the repo as `data/analytics.db` (~7 MB for 30+ repos at one year of history).
-- **All API endpoints are unauthenticated** because the data is already public. If you self-host, that's by design.
-- **No tracking, no telemetry, no third-party scripts** in the dashboard.
+- **API endpoints are unauthenticated** because the data is already public — with one exception: `/api/telemetry-detail` (fine-grained CLI usage) is gated by `ANALYTICS_TRACKER_PASSWORD` and only served when that is set.
+- **No visitor tracking, no analytics scripts, no third-party scripts** in the dashboard itself. (The "First-party CLI" source is aggregate active-user data reported by the org's own CLIs — not tracking of this dashboard's viewers.)
 - **No PII.** GitHub's referrer + popular-paths APIs return only aggregate counts — no IPs, no user agents, no session data.
 - **Static JSON is the canonical export.** `data/summary.json` carries cross-source totals; `data/*-stats-*.json` carry per-source per-package details. Consume directly via raw.githubusercontent.com if you don't want to run the dashboard.
 
@@ -124,6 +136,7 @@ GitHub's traffic API has subtleties worth knowing:
 | `pypi_packages`, `pypi_downloads`, `pypi_python_versions`, `pypi_system_stats`, `pypi_country_downloads` | PyPI |
 | `docker_images`, `docker_pulls`, `docker_tags` | Docker Hub |
 | `huggingface_models`, `huggingface_stats` | HuggingFace model downloads + likes (daily snapshots) |
+| `telemetry_snapshots`, `telemetry_tool_snapshots`, `telemetry_version_snapshots`, `telemetry_country_snapshots` | First-party CLI active users (coarse daily snapshots) |
 
 Run `sqlite3 data/analytics.db .schema` for the full DDL.
 
@@ -140,6 +153,8 @@ GET /api/npm-stats                   # npm package stats
 GET /api/pypi-stats                  # PyPI package stats
 GET /api/docker-stats                # Docker image stats
 GET /api/huggingface-stats           # HuggingFace model stats
+GET /api/telemetry                   # first-party CLI active users (coarse, public)
+GET /api/telemetry-detail            # fine-grained CLI usage (gated by ANALYTICS_TRACKER_PASSWORD)
 ```
 
 ## Comparison

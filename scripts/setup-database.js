@@ -368,6 +368,67 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_chrome_stats_ext ON chrome_stats(extension_id);
   CREATE INDEX IF NOT EXISTS idx_chrome_stats_date ON chrome_stats(date);
+
+  -- First-party CLI telemetry — COARSE public projection.
+  -- Ingested from the Registry's GET /api/v1/telemetry/v1/adoption/public feed
+  -- (see scripts/collect-telemetry-stats.js). These are ACTIVE USERS: distinct
+  -- install_id counts over rolling windows (WAU 7d, MAU 30d) within the feed's
+  -- retention window. They are NOT downloads — a download is not a user — so
+  -- they are shown distinctly and NEVER summed into the download "adoption"
+  -- total (same rule as Chrome weekly-active users).
+  --
+  -- IMPORTANT: this database is committed to a public repo. Only the coarse
+  -- projection lands here. Fine-grained telemetry (command usage, retention
+  -- cohorts, error rates) is fetched live behind ANALYTICS_TRACKER_PASSWORD from the
+  -- Registry's authenticated internal endpoint and is never persisted.
+  -- Daily snapshots (one row per collection day), like Chrome and HuggingFace.
+  CREATE TABLE IF NOT EXISTS telemetry_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,                        -- collection day (UTC)
+    generated_at TEXT,                         -- feed's measured-at timestamp (RFC3339)
+    retention_days INTEGER NOT NULL DEFAULT 0, -- events retention backing the counts
+    wau_window_days INTEGER NOT NULL DEFAULT 0,
+    mau_window_days INTEGER NOT NULL DEFAULT 0,
+    total_installs INTEGER NOT NULL DEFAULT 0, -- fleet-wide distinct installs (retention window)
+    wau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide weekly active installs
+    mau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide monthly active installs
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date)
+  );
+
+  CREATE TABLE IF NOT EXISTS telemetry_tool_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    tool TEXT NOT NULL,                        -- Registry tool id (e.g. "hackmyagent")
+    total_installs INTEGER NOT NULL DEFAULT 0,
+    wau INTEGER NOT NULL DEFAULT 0,
+    mau INTEGER NOT NULL DEFAULT 0,
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date, tool)
+  );
+
+  CREATE TABLE IF NOT EXISTS telemetry_version_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    version TEXT NOT NULL,
+    installs INTEGER NOT NULL DEFAULT 0,       -- distinct installs active on this version (MAU window)
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date, tool, version)
+  );
+
+  CREATE TABLE IF NOT EXISTS telemetry_country_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    installs INTEGER NOT NULL DEFAULT 0,       -- distinct installs by country (retention window)
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date, country_code)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_telemetry_tool_date ON telemetry_tool_snapshots(date);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_version_date ON telemetry_version_snapshots(date);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_country_date ON telemetry_country_snapshots(date);
 `);
 
 // --- Idempotent migrations for pre-existing databases ---

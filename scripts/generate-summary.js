@@ -82,6 +82,37 @@ try {
     for (const e of exts) chromeUsers += latestUsers.get(e.id)?.users || 0;
   }
 
+  // First-party CLI telemetry — ACTIVE USERS (distinct installs over rolling
+  // windows), from the Registry's coarse public adoption feed. This is NOT a
+  // download count and is deliberately excluded from total adoption — surfaced
+  // separately as the crown-jewel "real people using the tools" signal. Latest
+  // snapshot only (point-in-time, like Chrome users), never summed across days.
+  const telemetryTableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='telemetry_snapshots'"
+  ).get();
+  let telemetry = null;
+  if (telemetryTableExists) {
+    const latest = db.prepare(
+      'SELECT date, total_installs, wau, mau FROM telemetry_snapshots ORDER BY date DESC LIMIT 1'
+    ).get();
+    if (latest) {
+      const toolCount = db.prepare(
+        'SELECT COUNT(*) as count FROM telemetry_tool_snapshots WHERE date = ?'
+      ).get(latest.date);
+      const countryCount = db.prepare(
+        'SELECT COUNT(*) as count FROM telemetry_country_snapshots WHERE date = ?'
+      ).get(latest.date);
+      telemetry = {
+        asOf: latest.date,
+        totalInstalls: latest.total_installs,
+        wau: latest.wau,
+        mau: latest.mau,
+        tools: toolCount?.count || 0,
+        countries: countryCount?.count || 0,
+      };
+    }
+  }
+
   // npm package count
   const npmPkgCount = db.prepare('SELECT COUNT(*) as count FROM npm_packages').get();
 
@@ -105,6 +136,9 @@ try {
       // Context only — weekly-active users, not installs; not in `adoption`.
       chromeUsers,
       chromeExtensions: chromeExtCount,
+      // First-party CLI active users (distinct installs), not downloads; not in
+      // `adoption`. null until the telemetry feed has been collected.
+      telemetry,
     },
     excludingCrypto: {
       npm: npmExCrypto.total,
