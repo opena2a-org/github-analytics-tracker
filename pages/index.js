@@ -768,6 +768,12 @@ function TelemetrySection({ data }) {
             ))}
           </div>
         )}
+
+        {/* Honest provenance, carried from the feed — these are self-reported over
+            anonymous telemetry, a best-effort signal, not a sybil-verified count. */}
+        <div className="panel-sub" style={{ marginTop: 14, fontStyle: 'italic' }}>
+          {s.provenance || 'Self-reported by the CLIs over anonymous telemetry — a best-effort adoption signal, not a sybil-verified count.'}
+        </div>
       </Panel>
 
       <Panel title="Detailed usage" sub="Command engagement, reliability and by-day activity. Password-protected — these fine-grained metrics are never committed to the public dashboard.">

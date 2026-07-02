@@ -386,6 +386,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,                        -- collection day (UTC)
     generated_at TEXT,                         -- feed's measured-at timestamp (RFC3339)
+    provenance TEXT,                           -- honest basis + limits, carried from the feed (best-effort, not sybil-verified)
     retention_days INTEGER NOT NULL DEFAULT 0, -- events retention backing the counts
     wau_window_days INTEGER NOT NULL DEFAULT 0,
     mau_window_days INTEGER NOT NULL DEFAULT 0,
@@ -442,6 +443,18 @@ if (!repoCols.includes('canonical_full_name')) {
 if (!repoCols.includes('archived')) {
   db.exec('ALTER TABLE repositories ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
   console.log('Migration: added repositories.archived');
+}
+
+// telemetry_snapshots.provenance was added after the table first shipped.
+const telSnapExists = db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='telemetry_snapshots'"
+).get();
+if (telSnapExists) {
+  const telCols = db.prepare('PRAGMA table_info(telemetry_snapshots)').all().map(c => c.name);
+  if (!telCols.includes('provenance')) {
+    db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN provenance TEXT');
+    console.log('Migration: added telemetry_snapshots.provenance');
+  }
 }
 
 console.log('Database setup complete: %s', dbPath);

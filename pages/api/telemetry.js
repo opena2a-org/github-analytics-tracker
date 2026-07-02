@@ -72,6 +72,7 @@ export default async function handler(req, res) {
       snapshot: {
         asOf: latest.date,
         generatedAt: latest.generated_at,
+        provenance: latest.provenance || '',
         retentionDays: latest.retention_days,
         wauWindowDays: latest.wau_window_days,
         mauWindowDays: latest.mau_window_days,

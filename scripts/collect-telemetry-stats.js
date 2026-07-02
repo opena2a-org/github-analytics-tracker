@@ -76,10 +76,11 @@ function httpGetJson(rawUrl) {
 function persist(db, feed) {
   const upsertSnapshot = db.prepare(`
     INSERT INTO telemetry_snapshots
-      (date, generated_at, retention_days, wau_window_days, mau_window_days, total_installs, wau, mau)
-    VALUES (@date, @generatedAt, @retentionDays, @wauWindowDays, @mauWindowDays, @totalInstalls, @wau, @mau)
+      (date, generated_at, provenance, retention_days, wau_window_days, mau_window_days, total_installs, wau, mau)
+    VALUES (@date, @generatedAt, @provenance, @retentionDays, @wauWindowDays, @mauWindowDays, @totalInstalls, @wau, @mau)
     ON CONFLICT(date) DO UPDATE SET
       generated_at = excluded.generated_at,
+      provenance = excluded.provenance,
       retention_days = excluded.retention_days,
       wau_window_days = excluded.wau_window_days,
       mau_window_days = excluded.mau_window_days,

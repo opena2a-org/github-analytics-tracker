@@ -4,6 +4,7 @@ const { normalizeAdoptionFeed, toolDisplayName, toCount } = require('../lib/tele
 
 const validFeed = () => ({
   generatedAt: '2026-07-02T12:00:00Z',
+  provenance: 'anonymous first-party CLI telemetry; best-effort, not a sybil-verified count',
   retentionDays: 90,
   wauWindowDays: 7,
   mauWindowDays: 30,
@@ -53,6 +54,13 @@ test('normalizeAdoptionFeed passes a valid feed through', () => {
   assert.equal(n.tools[0].tool, 'hackmyagent');
   assert.equal(n.tools[0].versions.length, 2);
   assert.equal(n.byCountry.length, 2);
+  // Provenance is carried verbatim so the dashboard can show it.
+  assert.match(n.provenance, /not a sybil-verified count/);
+});
+
+test('normalizeAdoptionFeed defaults provenance to empty when absent (never fabricated)', () => {
+  const n = normalizeAdoptionFeed({ totalInstalls: 10, wau: 5, mau: 8 });
+  assert.equal(n.provenance, '');
 });
 
 test('normalizeAdoptionFeed throws on a non-object or missing fleet totals', () => {
