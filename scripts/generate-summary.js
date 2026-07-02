@@ -66,6 +66,22 @@ try {
   const starsTotal = { total: canonTotals.stars };
   const repoCount = { count: canonTotals.repoCount };
 
+  // Chrome Web Store weekly-active users (latest snapshot per extension,
+  // summed across extensions). This is NOT a download count and is deliberately
+  // excluded from total adoption — surfaced separately for context.
+  const chromeTableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='chrome_extensions'"
+  ).get();
+  let chromeUsers = 0, chromeExtCount = 0;
+  if (chromeTableExists) {
+    const exts = db.prepare('SELECT id FROM chrome_extensions').all();
+    chromeExtCount = exts.length;
+    const latestUsers = db.prepare(
+      'SELECT users FROM chrome_stats WHERE extension_id = ? ORDER BY date DESC LIMIT 1'
+    );
+    for (const e of exts) chromeUsers += latestUsers.get(e.id)?.users || 0;
+  }
+
   // npm package count
   const npmPkgCount = db.prepare('SELECT COUNT(*) as count FROM npm_packages').get();
 
@@ -86,6 +102,9 @@ try {
       stars: starsTotal.total,
       repos: repoCount.count,
       npmPackages: npmPkgCount.count,
+      // Context only — weekly-active users, not installs; not in `adoption`.
+      chromeUsers,
+      chromeExtensions: chromeExtCount,
     },
     excludingCrypto: {
       npm: npmExCrypto.total,

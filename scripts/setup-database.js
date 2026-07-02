@@ -338,6 +338,36 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_hf_stats_model ON huggingface_stats(model_id);
   CREATE INDEX IF NOT EXISTS idx_hf_stats_date ON huggingface_stats(date);
+
+  -- Chrome Web Store extension tracking.
+  -- Google exposes no install/download API. The only public number is the
+  -- listing page's user count, which is a ROUNDED WEEKLY-ACTIVE-USER figure
+  -- (a snapshot, like GitHub stars), scraped daily. It is NOT a cumulative
+  -- download total and must not be summed into the adoption metric.
+  CREATE TABLE IF NOT EXISTS chrome_extensions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    extension_id TEXT NOT NULL UNIQUE,       -- 32-char Chrome Web Store id
+    name TEXT,
+    slug TEXT,                               -- URL slug, e.g. "ai-browser-guard"
+    version TEXT,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS chrome_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    extension_id INTEGER NOT NULL,           -- FK to chrome_extensions.id
+    date TEXT NOT NULL,
+    users INTEGER NOT NULL DEFAULT 0,        -- rounded weekly-active users (snapshot)
+    rating REAL,                             -- average rating, null when no ratings
+    rating_count INTEGER,                    -- number of ratings, null when unknown
+    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (extension_id) REFERENCES chrome_extensions(id),
+    UNIQUE(extension_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_chrome_stats_ext ON chrome_stats(extension_id);
+  CREATE INDEX IF NOT EXISTS idx_chrome_stats_date ON chrome_stats(date);
 `);
 
 // --- Idempotent migrations for pre-existing databases ---

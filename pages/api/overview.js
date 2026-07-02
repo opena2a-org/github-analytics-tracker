@@ -208,6 +208,41 @@ export default async function handler(req, res) {
       });
     }
 
+    // --- Chrome Web Store Metrics ---
+    // `users` is Google's rounded weekly-active-user count (a snapshot, like
+    // stars) — NOT a cumulative download total, so it is never summed into
+    // adoption. We surface the latest value plus growth over rolling windows.
+    const chromeTableExists = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='chrome_extensions'"
+    ).get();
+
+    let chromeStats = [];
+    if (chromeTableExists) {
+      const extensions = db.prepare('SELECT * FROM chrome_extensions ORDER BY name').all();
+      chromeStats = extensions.map(ext => {
+        const latest = db.prepare(
+          'SELECT users, rating, rating_count FROM chrome_stats WHERE extension_id = ? ORDER BY date DESC LIMIT 1'
+        ).get(ext.id);
+        const at = (cond) => db.prepare(
+          `SELECT users FROM chrome_stats WHERE extension_id = ?${cond ? ' AND ' + cond : ''} ORDER BY date DESC LIMIT 1`
+        ).get(ext.id)?.users;
+        const now = latest?.users || 0;
+        const w = at("date <= date('now', '-7 days')");
+        const m = at("date <= date('now', '-30 days')");
+        return {
+          extensionId: ext.extension_id,
+          name: ext.name,
+          slug: ext.slug,
+          repo: ext.slug, // used only for display; attribution is by chromeExtensions id
+          users: now,
+          rating: latest?.rating ?? null,
+          ratingCount: latest?.rating_count ?? null,
+          usersGrowth7d: (w != null) ? now - w : 0,
+          usersGrowth30d: (m != null) ? now - m : 0,
+        };
+      });
+    }
+
     // --- Product-Level Aggregation ---
     // Map repos and packages to products for combined metrics
     const productMap = {
@@ -298,6 +333,15 @@ export default async function handler(req, res) {
         hfModels: ['opena2a/nanomind-security-analyst', 'opena2a/nanomind-security-classifier'],
         description: 'Nano Language Models for inline security analysis',
       },
+      'BrowserGuard': {
+        repos: ['ai-browserguard'],
+        packages: [],
+        pypiPackages: [],
+        // Chrome Web Store extension. `chromeUsers` is a rounded weekly-active
+        // snapshot shown for context — never added to adoption.
+        chromeExtensions: ['ojphpdmabflmcjhglfogmkdgchkncikf'],
+        description: 'Browser extension that detects AI agents controlling the page',
+      },
     };
 
     // A PyPI package belongs to a tool if it's explicitly listed under the tool
@@ -315,6 +359,7 @@ export default async function handler(req, res) {
       const matchedPypi = pypiStats.filter(p => pypiMatchesTool(p, config));
       const matchedDocker = dockerStats.filter(d => (config.dockerImages || []).includes(d.fullName));
       const matchedHf = hfStats.filter(m => (config.hfModels || []).includes(m.modelId));
+      const matchedChrome = chromeStats.filter(c => (config.chromeExtensions || []).includes(c.extensionId));
 
       const githubClones = matchedRepos.reduce((s, r) => s + r.totalClones, 0);
       const npmDownloads = matchedPackages.reduce((s, p) => s + p.allTimeDownloads, 0);
@@ -373,7 +418,19 @@ export default async function handler(req, res) {
           likes: matchedHf.reduce((s, m) => s + m.likes, 0),
           modelCount: matchedHf.length,
         },
-        // Combined adoption: clones + npm + pypi + docker pulls + HF model downloads
+        // Chrome Web Store weekly-active users — a context snapshot, NOT summed
+        // into adoption (it is not a download count).
+        chrome: {
+          users: matchedChrome.reduce((s, c) => s + (c.users || 0), 0),
+          usersGrowth7d: matchedChrome.reduce((s, c) => s + (c.usersGrowth7d || 0), 0),
+          usersGrowth30d: matchedChrome.reduce((s, c) => s + (c.usersGrowth30d || 0), 0),
+          // Rating only makes sense per-extension; expose the first matched one.
+          rating: matchedChrome[0]?.rating ?? null,
+          ratingCount: matchedChrome[0]?.ratingCount ?? null,
+          extensionCount: matchedChrome.length,
+        },
+        // Combined adoption: clones + npm + pypi + docker pulls + HF model downloads.
+        // Chrome weekly-active users are intentionally excluded (snapshot, not installs).
         totalAdoption: githubClones + npmDownloads + pypiDownloads + dockerPulls + hfDownloads,
       };
     });
@@ -403,6 +460,8 @@ export default async function handler(req, res) {
       !Object.values(productMap).some(c => pypiMatchesTool(p, c)));
     const ungroupedDocker = dockerStats.filter(d => !allGroupedDocker.has(d.fullName));
     const ungroupedHf = hfStats.filter(m => !allGroupedHf.has(m.modelId));
+    const allGroupedChrome = new Set(Object.values(productMap).flatMap(c => c.chromeExtensions || []));
+    const ungroupedChrome = chromeStats.filter(c => !allGroupedChrome.has(c.extensionId));
 
     if (ungroupedRepos.length > 0 || ungroupedNpm.length > 0 || ungroupedPypi.length > 0 || ungroupedDocker.length > 0 || ungroupedHf.length > 0) {
       const ugClones = ungroupedRepos.reduce((s, r) => s + r.totalClones, 0);
@@ -458,6 +517,11 @@ export default async function handler(req, res) {
           likes: ungroupedHf.reduce((s, m) => s + m.likes, 0),
           modelCount: ungroupedHf.length,
         },
+        chrome: {
+          users: ungroupedChrome.reduce((s, c) => s + (c.users || 0), 0),
+          usersGrowth7d: 0, usersGrowth30d: 0, rating: null, ratingCount: null,
+          extensionCount: ungroupedChrome.length,
+        },
         totalAdoption: ugClones + ugNpm + ugPypi + ugDocker + ugHf,
       });
     }
@@ -512,6 +576,11 @@ export default async function handler(req, res) {
         downloadsAllTime: totalHfDownloads,
         downloads30d: hfStats.reduce((s, m) => s + m.downloads30d, 0),
         likes: hfStats.reduce((s, m) => s + m.likes, 0),
+      },
+      chrome: {
+        extensions: chromeStats.length,
+        users: chromeStats.reduce((s, c) => s + (c.users || 0), 0),
+        usersGrowth30d: chromeStats.reduce((s, c) => s + (c.usersGrowth30d || 0), 0),
       },
       combined: {
         totalAdoption: repoStats.reduce((s, r) => s + r.totalClones, 0) +
@@ -639,6 +708,7 @@ export default async function handler(req, res) {
       pypiPackages: pypiStats,
       dockerImages: dockerStats,
       hfModels: hfStats,
+      chromeExtensions: chromeStats,
       topCountries,
     });
   } catch (error) {
