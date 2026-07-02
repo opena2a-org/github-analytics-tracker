@@ -71,6 +71,14 @@ jobs:
           HF_AUTHOR: opena2a
         run: npm run collect-hf
 
+      - name: Collect Chrome Web Store stats
+        env:
+          # Chrome Web Store extension ids (no install/download API exists; the
+          # collector scrapes the public listing's rounded weekly-active-user
+          # count, a snapshot shown for context and never summed into adoption).
+          CHROME_EXTENSIONS: ojphpdmabflmcjhglfogmkdgchkncikf
+        run: npm run collect-chrome
+
       - name: Generate markdown files
         run: npm run generate-md
 
@@ -81,6 +89,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
+          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"

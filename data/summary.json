@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-07-02T07:03:55.473Z",
+  "lastUpdated": "2026-07-02T17:12:25.313Z",
   "total": {
     "adoption": 236772,
     "adoptionExCrypto": 217541,
@@ -10,7 +10,9 @@
     "views": 26372,
     "stars": 228,
     "repos": 43,
-    "npmPackages": 40
+    "npmPackages": 40,
+    "chromeUsers": 2,
+    "chromeExtensions": 1
   },
   "excludingCrypto": {
     "npm": 101224,

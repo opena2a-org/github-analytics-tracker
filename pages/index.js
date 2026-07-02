@@ -8,7 +8,7 @@ import {
 import {
   GitFork, Star, Eye, GitPullRequest, Users, Download, Heart,
   Package, TrendingUp, TrendingDown, Container, Activity,
-  Github, Box, Brain, Menu, Search, ArrowUp, ArrowDown, FileText,
+  Github, Box, Brain, Menu, Search, ArrowUp, ArrowDown, FileText, Chrome,
 } from 'lucide-react';
 
 /* ============================================================
@@ -22,8 +22,9 @@ const SOURCES = {
   pypi:        { label: 'PyPI',        icon: Package,   color: 'var(--c-pypi)' },
   docker:      { label: 'Docker',      icon: Container, color: 'var(--c-docker)' },
   huggingface: { label: 'HuggingFace', icon: Brain,     color: 'var(--c-hf)' },
+  chrome:      { label: 'Chrome',      icon: Chrome,    color: '#4285F4' },
 };
-const TAB_ORDER = ['overview', 'github', 'standards', 'npm', 'pypi', 'docker', 'huggingface'];
+const TAB_ORDER = ['overview', 'github', 'standards', 'npm', 'pypi', 'docker', 'huggingface', 'chrome'];
 
 /* Detail-tab time ranges (drive the `days` query param) */
 const TIME_RANGES = [
@@ -46,7 +47,7 @@ const GRANULARITIES = [
 /* Hex palette for recharts (CSS vars can't be read by SVG fills) */
 const C = {
   accent: '#2dd4bf', github: '#6e9bff', npm: '#ff7a7a', pypi: '#f5b53c',
-  docker: '#4cb8f5', hf: '#ffce4d', violet: '#a78bfa', pink: '#f472b6', green: '#34d399',
+  docker: '#4cb8f5', hf: '#ffce4d', chrome: '#4285F4', violet: '#a78bfa', pink: '#f472b6', green: '#34d399',
   standards: '#34d399',
   grid: 'rgba(255,255,255,0.055)', axis: '#5f6c82',
   fill: (hex, a = 0.16) => hexA(hex, a),
@@ -341,6 +342,9 @@ export default function Dashboard() {
   const [hfModels, setHfModels] = useState([]); const [selHf, setSelHf] = useState(null);
   const [hfData, setHfData] = useState(null); const [hfLoading, setHfLoading] = useState(false);
 
+  const [chromeExts, setChromeExts] = useState([]); const [selChrome, setSelChrome] = useState(null);
+  const [chromeData, setChromeData] = useState(null); const [chromeLoading, setChromeLoading] = useState(false);
+
   const [overview, setOverview] = useState(null); const [ovLoading, setOvLoading] = useState(true);
   const [trends, setTrends] = useState(null);
   const [granularity, setGranularity] = useState('weekly');
@@ -353,6 +357,7 @@ export default function Dashboard() {
     fetch('/api/pypi-stats').then(r => r.ok ? r.json() : {}).then(d => { setPypiPkgs(d.packages || []); if (d.packages?.length) setSelPypi(d.packages[0].id); }).catch(() => {});
     fetch('/api/docker-stats').then(r => r.ok ? r.json() : {}).then(d => { setImages(d.images || []); if (d.images?.length) setSelImg(d.images[0].id); }).catch(() => {});
     fetch('/api/huggingface-stats').then(r => r.ok ? r.json() : {}).then(d => { setHfModels(d.models || []); if (d.models?.length) setSelHf(d.models[0].id); }).catch(() => {});
+    fetch('/api/chrome-stats').then(r => r.ok ? r.json() : {}).then(d => { setChromeExts(d.extensions || []); if (d.extensions?.length) setSelChrome(d.extensions[0].id); }).catch(() => {});
     fetch('/api/overview?days=all').then(r => r.ok ? r.json() : null).then(d => { if (d?.totals) setOverview(d); }).catch(() => {}).finally(() => setOvLoading(false));
   }, []);
 
@@ -366,6 +371,7 @@ export default function Dashboard() {
   useEffect(() => { if (selPypi) detail(`/api/pypi-stats?package_id=${selPypi}&days=${range}`, setPypiData, setPypiLoading); }, [selPypi, range]);
   useEffect(() => { if (selImg) detail(`/api/docker-stats?image_id=${selImg}&days=${range}`, setDockerData, setDockerLoading); }, [selImg, range]);
   useEffect(() => { if (selHf) detail(`/api/huggingface-stats?model_id=${selHf}&days=${range}`, setHfData, setHfLoading); }, [selHf, range]);
+  useEffect(() => { if (selChrome) detail(`/api/chrome-stats?extension_id=${selChrome}&days=${range}`, setChromeData, setChromeLoading); }, [selChrome, range]);
 
   const ghCombined = () => {
     if (!ghData) return [];
@@ -386,6 +392,7 @@ export default function Dashboard() {
     npm: overview?.totals?.npm?.packages,
     pypi: overview?.totals?.pypi?.packages, docker: overview?.totals?.docker?.images,
     huggingface: overview?.totals?.hf?.models,
+    chrome: overview?.totals?.chrome?.extensions,
   };
   const meta = SOURCES[tab];
 
@@ -453,6 +460,7 @@ export default function Dashboard() {
             {tab === 'pypi' && <PackageTab eco="PyPI" color={C.pypi} packages={pypiPkgs} sel={selPypi} setSel={setSelPypi} data={pypiData} loading={pypiLoading} weekly={() => weeklyDownloads(pypiData?.downloads)} pythonVersions={pypiData?.pythonVersions} systemStats={pypiData?.systemStats} countryDownloads={pypiData?.countryDownloads} />}
             {tab === 'docker' && <DockerTab images={images} sel={selImg} setSel={setSelImg} data={dockerData} loading={dockerLoading} />}
             {tab === 'huggingface' && <HuggingFaceTab models={hfModels} sel={selHf} setSel={setSelHf} data={hfData} loading={hfLoading} />}
+            {tab === 'chrome' && <ChromeTab extensions={chromeExts} sel={selChrome} setSel={setSelChrome} data={chromeData} loading={chromeLoading} />}
           </div>
         </div>
       </div>
@@ -560,11 +568,14 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
         <Kpi icon={<Package size={17} />} color={C.pypi} label="PyPI Installs" value={fmtFull(pt.pypi)} sub={`${periodWord} · ${totals.pypi?.packages || 0} pkgs`} />
         <Kpi icon={<Container size={17} />} color={C.docker} label="Docker Pulls" value={fmtFull(totals.docker?.totalPulls || 0)} sub={`all time · ${totals.docker?.images || 0} images`} />
         <Kpi icon={<Brain size={17} />} color={C.hf} label="HF Downloads" value={fmtFull(totals.hf?.downloadsAllTime || 0)} sub={`all time · ${totals.hf?.downloads30d || 0} in 30d`} />
+        {totals.chrome?.extensions > 0 && (
+          <Kpi icon={<Chrome size={17} />} color={C.chrome} label="Chrome Users" value={fmtFull(totals.chrome?.users || 0)} sub={`weekly active · ${totals.chrome?.extensions} ext`} />
+        )}
       </div>
 
       <Panel
         title="Tool Adoption"
-        sub="Adoption = clones + npm + PyPI + Docker pulls + HF downloads. Views and stars are shown for context, not summed. Docker and HF report cumulative totals only, so they show only under the All-time window."
+        sub="Adoption = clones + npm + PyPI + Docker pulls + HF downloads. Views, stars, and Chrome users are shown for context, not summed. Docker and HF report cumulative totals only, so they show only under the All-time window. Chrome is Google's rounded weekly-active-user count, not installs."
         tools={<Filter value={filter} onChange={setFilter} placeholder="Filter tools…" />}
         pad={false}>
         {(period === 'custom' && !custom)
@@ -660,6 +671,12 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
           ['Models', totals.hf?.models || 0], ['All-time downloads', totals.hf?.downloadsAllTime || 0],
           ['Last 30d', totals.hf?.downloads30d || 0], ['Likes', totals.hf?.likes || 0],
         ]} />
+        {totals.chrome?.extensions > 0 && (
+          <Eco name="Chrome Web Store" color={C.chrome} icon={<Chrome size={15} color={C.chrome} />} rows={[
+            ['Extensions', totals.chrome?.extensions || 0], ['Weekly users', totals.chrome?.users || 0],
+            ['30d growth', totals.chrome?.usersGrowth30d || 0],
+          ]} />
+        )}
       </div>
     </>
   );
@@ -689,6 +706,9 @@ function AdoptionTable({ products, period }) {
     },
     { key: 'docker', label: 'Docker', align: 'right', sortValue: r => period === 'all' ? (r.docker?.totalPulls || 0) : -1, render: r => period === 'all' ? fmtFull(r.docker?.totalPulls || 0) : <span className="muted">—</span> },
     { key: 'hf', label: 'HF', align: 'right', sortValue: r => hfPeriod(r.hf, period) ?? -1, render: r => { const v = hfPeriod(r.hf, period); return v == null ? <span className="muted">—</span> : fmtFull(v); } },
+    // Chrome Web Store weekly-active users — a snapshot shown for context (like
+    // Stars), never folded into Adoption.
+    { key: 'chrome', label: 'Chrome', align: 'right', sortValue: r => r.chrome?.extensionCount ? (r.chrome?.users || 0) : -1, render: r => r.chrome?.extensionCount ? (<>{fmtFull(r.chrome?.users || 0)}<StarGrowth value={period === '30d' ? (r.chrome?.usersGrowth30d || 0) : period === '7d' ? (r.chrome?.usersGrowth7d || 0) : 0} /></>) : <span className="muted">—</span> },
     { key: 'stars', label: 'Stars', align: 'right', sortValue: r => r.github?.stars || 0, render: r => (<>{fmtFull(r.github?.stars || 0)}<StarGrowth value={starGrowthPick(r.github, period)} /></>) },
     { key: 'adoption', label: 'Adoption', align: 'right', lead: true, sortValue: r => rowAdoption(r, period), render: r => fmtFull(rowAdoption(r, period)) },
   ];
@@ -699,11 +719,12 @@ function AdoptionTable({ products, period }) {
     a.pypi += periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
     a.docker += period === 'all' ? (p.docker?.totalPulls || 0) : 0;
     a.hf += hfPeriod(p.hf, period) || 0;
+    a.chrome += p.chrome?.users || 0;
     a.stars += p.github?.stars || 0;
     a.starsGrowth += starGrowthPick(p.github, period) || 0;
     a.adoption += rowAdoption(p, period);
     return a;
-  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, stars: 0, starsGrowth: 0, adoption: 0 });
+  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, chrome: 0, stars: 0, starsGrowth: 0, adoption: 0 });
   const footer = [
     <td key="t">Total</td>,
     <td key="v" className="num">{fmtFull(t.views)}</td>,
@@ -712,6 +733,7 @@ function AdoptionTable({ products, period }) {
     <td key="p" className="num">{fmtFull(t.pypi)}</td>,
     <td key="d" className="num">{period === 'all' ? fmtFull(t.docker) : '—'}</td>,
     <td key="h" className="num">{(period === 'all' || period === '30d') ? fmtFull(t.hf) : '—'}</td>,
+    <td key="ch" className="num">{fmtFull(t.chrome)}</td>,
     <td key="s" className="num">{fmtFull(t.stars)}<StarGrowth value={t.starsGrowth} /></td>,
     <td key="a" className="num lead">{fmtFull(t.adoption)}</td>,
   ];
@@ -1061,6 +1083,52 @@ function HuggingFaceTab({ models, sel, setSel, data, loading }) {
             </Chart>
           ) : (
             <Empty message="The download trend chart fills in as daily snapshots accumulate — check back after a few days of collection." />
+          )}
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/* ============================================================
+   Chrome Web Store
+   ============================================================ */
+function ChromeTab({ extensions, sel, setSel, data, loading }) {
+  const [filter, setFilter] = useState('');
+  const rows = filter ? extensions.filter(e => (e.name || e.extension_id || '').toLowerCase().includes(filter.toLowerCase())) : extensions;
+  const cols = [
+    { key: 'name', label: 'Extension', sortValue: r => r.name || r.extension_id, render: r => (<div><div className="cell-name">{r.name || r.extension_id}</div>{r.version && <div className="cell-desc">v{r.version}</div>}</div>) },
+    { key: 'users', label: 'Weekly Users', align: 'right', lead: true, render: r => fmtFull(r.users) },
+    { key: 'rating', label: 'Rating', align: 'right', render: r => r.rating != null ? `${r.rating.toFixed(1)} (${fmtFull(r.ratingCount || 0)})` : <span className="muted">—</span> },
+  ];
+  return (
+    <>
+      {extensions.length > 0 ? (
+        <Panel title="Chrome Web Store Extensions" sub="Google exposes no install/download API — the only public number is the listing's rounded weekly-active-user count (a snapshot, like GitHub stars), scraped daily. It is not a cumulative install total. The trend below builds as snapshots accumulate." tools={<Filter value={filter} onChange={setFilter} placeholder="Filter extensions…" />} pad={false}>
+          <DataTable columns={cols} rows={rows} getKey={r => r.id} onRowClick={r => setSel(r.id)} selectedKey={sel} initialSort={{ key: 'users', dir: 'desc' }} />
+        </Panel>
+      ) : <Empty message="No Chrome Web Store data yet." command="CHROME_EXTENSIONS=<extensionId> npm run collect-chrome" />}
+
+      {loading ? <Loading /> : data ? (
+        <>
+          <SecLabel>{data.extension?.name || data.extension?.extension_id || 'Detail'}</SecLabel>
+          <div className="cards">
+            <Kpi icon={<Users size={17} />} color={C.chrome} label="Weekly Users" value={fmtFull(data.summary?.users)} sub="rounded, weekly active" />
+            <Kpi icon={<TrendingUp size={17} />} color={C.accent} label="Growth" value={`${data.summary?.usersGrowth >= 0 ? '+' : ''}${fmtFull(data.summary?.usersGrowth)}`} sub="during tracked period" />
+            <Kpi icon={<Star size={17} />} color={C.pypi} label="Rating" value={data.summary?.rating != null ? data.summary.rating.toFixed(1) : '—'} sub={data.summary?.ratingCount != null ? `${fmtFull(data.summary.ratingCount)} ratings` : 'no ratings yet'} />
+          </div>
+          {data.history?.length > 1 ? (
+            <Chart title="Weekly Users" sub="Snapshot of the store's weekly-active-user count, one point per collection day" height={320}>
+              <AreaChart data={data.history}>
+                <defs><linearGradient id="chr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.chrome} stopOpacity={0.3} /><stop offset="100%" stopColor={C.chrome} stopOpacity={0.02} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Weekly Users']} />
+                <Area type="monotone" dataKey="users" stroke={C.chrome} fill="url(#chr)" strokeWidth={2} name="Weekly Users" />
+              </AreaChart>
+            </Chart>
+          ) : (
+            <Empty message="The weekly-users trend fills in as daily snapshots accumulate — check back after a few days of collection." />
           )}
         </>
       ) : null}
