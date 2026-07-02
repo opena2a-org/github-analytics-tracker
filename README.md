@@ -84,7 +84,7 @@ HF_AUTHOR=opena2a                                             # auto-discovers a
 HF_MODELS=org/model,org/other                                 # optional extra models
 HF_TOKEN=hf_...                                               # optional, raises HF rate limits / private repos
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json          # optional for BigQuery country stats
-REGISTRY_URL=https://registry.opena2a.org                     # optional; enables first-party CLI telemetry
+REGISTRY_URL=https://api.oa2a.org                     # optional; enables first-party CLI telemetry
 REGISTRY_TELEMETRY_TOKEN=...                                  # optional; SA token for the gated detail view (server-side only)
 ANALYTICS_TRACKER_PASSWORD=...                                # optional; gates the fine-grained telemetry view on THIS dashboard
 ```

@@ -27,7 +27,7 @@ const { normalizeAdoptionFeed } = require('../lib/telemetry');
  * dashboard and is never persisted here.
  *
  * Config (env):
- *   REGISTRY_URL=https://registry.opena2a.org   # Registry base URL (required)
+ *   REGISTRY_URL=https://api.oa2a.org   # Registry base URL (required)
  *
  * If REGISTRY_URL is unset the collector skips gracefully (exit 0), so the
  * daily workflow doesn't fail before the Registry endpoint is provisioned.
