@@ -581,9 +581,9 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
         )}
         {tel?.snapshot && (
           <Kpi icon={<Users size={17} />} color={C.green} label="Active CLI Users"
-            value={fmtFull(tel.snapshot.mau)}
-            sub={`monthly active · ${fmtFull(tel.snapshot.wau)} weekly`}
-            delta={tel.snapshot.mauGrowth30d ? pctChange(tel.snapshot.mau, tel.snapshot.mau - tel.snapshot.mauGrowth30d) : null} />
+            value={fmtFull(tel.snapshot.engagedMau)}
+            sub={`engaged monthly · ${fmtFull(tel.snapshot.mau)} reported`}
+            delta={tel.snapshot.engagedGrowth30d ? pctChange(tel.snapshot.engagedMau, tel.snapshot.engagedMau - tel.snapshot.engagedGrowth30d) : null} />
         )}
       </div>
 
@@ -735,23 +735,24 @@ function TelemetrySection({ data }) {
       <SecLabel>First-party CLI usage</SecLabel>
       <Panel
         title="Active users, measured first-party"
-        sub={`Distinct installs of the CLIs, reported by the tools themselves — active users, not downloads (a download is not a user), so they are shown separately and never summed into adoption. WAU = ${s.wauWindowDays || 7}-day, MAU = ${s.mauWindowDays || 30}-day distinct installs. As of ${s.asOf}.`}>
+        sub={`Distinct installs of the CLIs, reported by the tools themselves — active users, not downloads (a download is not a user), so they are shown separately and never summed into adoption. "Engaged" is the honest headline: installs active on ≥${s.engagedMinDays || 2} distinct days with real usage — a sybil-dampened floor that a burst of fabricated installs can't inflate. "Reported" WAU/MAU come from anonymous, unauthenticated telemetry and are best-effort/forgeable. As of ${s.asOf}.`}>
         <div className="cards" style={{ marginBottom: 16 }}>
-          <Kpi icon={<Users size={17} />} color={C.green} label="Monthly active users" value={fmtFull(s.mau)} sub={`${s.mauWindowDays || 30}-day distinct installs`} delta={s.mauGrowth30d ? pctChange(s.mau, s.mau - s.mauGrowth30d) : null} />
-          <Kpi icon={<Activity size={17} />} color={C.accent} label="Weekly active users" value={fmtFull(s.wau)} sub={`${s.wauWindowDays || 7}-day distinct installs`} delta={s.wauGrowth7d ? pctChange(s.wau, s.wau - s.wauGrowth7d) : null} />
-          <Kpi icon={<Download size={17} />} color={C.npm} label="Installs" value={fmtFull(s.totalInstalls)} sub={`distinct installs · last ${s.retentionDays || 90}d`} />
+          <Kpi icon={<Users size={17} />} color={C.green} label="Engaged monthly users" value={fmtFull(s.engagedMau)} sub={`≥${s.engagedMinDays || 2}-day footprint · sybil-dampened floor`} delta={s.engagedGrowth30d ? pctChange(s.engagedMau, s.engagedMau - s.engagedGrowth30d) : null} />
+          <Kpi icon={<Activity size={17} />} color={C.accent} label="Reported MAU" value={fmtFull(s.mau)} sub={`${s.mauWindowDays || 30}-day distinct · best-effort`} delta={s.mauGrowth30d ? pctChange(s.mau, s.mau - s.mauGrowth30d) : null} />
+          <Kpi icon={<Download size={17} />} color={C.npm} label="Reported WAU" value={fmtFull(s.wau)} sub={`${s.wauWindowDays || 7}-day distinct · best-effort`} delta={s.wauGrowth7d ? pctChange(s.wau, s.wau - s.wauGrowth7d) : null} />
         </div>
 
         {tools.length > 0 && (
           <table className="table">
-            <thead><tr><th>Tool</th><th className="num">Installs</th><th className="num">WAU</th><th className="num">MAU</th><th>Top version</th></tr></thead>
+            <thead><tr><th>Tool</th><th className="num">Installs</th><th className="num">Engaged</th><th className="num">MAU</th><th className="num">WAU</th><th>Top version</th></tr></thead>
             <tbody>
               {tools.map(t => (
                 <tr key={t.tool}>
                   <td><div className="cell-name">{t.product}</div>{t.product !== t.tool && <div className="cell-desc">{t.tool}</div>}</td>
                   <td className="num">{fmtFull(t.totalInstalls)}</td>
-                  <td className="num">{fmtFull(t.wau)}</td>
+                  <td className="num">{fmtFull(t.engagedMau)}</td>
                   <td className="num">{fmtFull(t.mau)}</td>
+                  <td className="num">{fmtFull(t.wau)}</td>
                   <td>{t.versions?.[0] ? <span className="muted">{t.versions[0].version} · {fmtFull(t.versions[0].installs)}</span> : <span className="muted">—</span>}</td>
                 </tr>
               ))}

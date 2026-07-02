@@ -393,6 +393,8 @@ db.exec(`
     total_installs INTEGER NOT NULL DEFAULT 0, -- fleet-wide distinct installs (retention window)
     wau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide weekly active installs
     mau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide monthly active installs
+    engaged_mau INTEGER NOT NULL DEFAULT 0,    -- sybil-dampened floor (>=2 active days + a command); <= mau
+    engaged_min_days INTEGER NOT NULL DEFAULT 0, -- active-days threshold behind engaged_mau
     collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(date)
   );
@@ -404,6 +406,7 @@ db.exec(`
     total_installs INTEGER NOT NULL DEFAULT 0,
     wau INTEGER NOT NULL DEFAULT 0,
     mau INTEGER NOT NULL DEFAULT 0,
+    engaged_mau INTEGER NOT NULL DEFAULT 0,    -- sybil-dampened floor for this tool; <= mau
     collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(date, tool)
   );
@@ -454,6 +457,26 @@ if (telSnapExists) {
   if (!telCols.includes('provenance')) {
     db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN provenance TEXT');
     console.log('Migration: added telemetry_snapshots.provenance');
+  }
+  // engagedMau (sybil-dampened floor) was added after the table first shipped.
+  if (!telCols.includes('engaged_mau')) {
+    db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN engaged_mau INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration: added telemetry_snapshots.engaged_mau');
+  }
+  if (!telCols.includes('engaged_min_days')) {
+    db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN engaged_min_days INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration: added telemetry_snapshots.engaged_min_days');
+  }
+}
+
+const telToolExists = db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='telemetry_tool_snapshots'"
+).get();
+if (telToolExists) {
+  const cols = db.prepare('PRAGMA table_info(telemetry_tool_snapshots)').all().map(c => c.name);
+  if (!cols.includes('engaged_mau')) {
+    db.exec('ALTER TABLE telemetry_tool_snapshots ADD COLUMN engaged_mau INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration: added telemetry_tool_snapshots.engaged_mau');
   }
 }
 
