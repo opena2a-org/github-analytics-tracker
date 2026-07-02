@@ -37,13 +37,13 @@ export default async function handler(req, res) {
     // Growth vs the snapshot on-or-before (latest - N days). Point-in-time
     // deltas of active-user counts, never a sum across days.
     const priorOnOrBefore = (days) => db.prepare(
-      "SELECT wau, mau FROM telemetry_snapshots WHERE date <= date(?, ?) ORDER BY date DESC LIMIT 1"
+      "SELECT wau, mau, engaged_mau FROM telemetry_snapshots WHERE date <= date(?, ?) ORDER BY date DESC LIMIT 1"
     ).get(latest.date, `-${days} days`);
     const prior7 = priorOnOrBefore(7);
     const prior30 = priorOnOrBefore(30);
 
     const toolRows = db.prepare(
-      'SELECT tool, total_installs, wau, mau FROM telemetry_tool_snapshots WHERE date = ? ORDER BY mau DESC, tool'
+      'SELECT tool, total_installs, wau, mau, engaged_mau FROM telemetry_tool_snapshots WHERE date = ? ORDER BY mau DESC, tool'
     ).all(latest.date);
 
     const versionRows = db.prepare(
@@ -60,6 +60,7 @@ export default async function handler(req, res) {
       totalInstalls: t.total_installs,
       wau: t.wau,
       mau: t.mau,
+      engagedMau: t.engaged_mau ?? 0,
       versions: versionsByTool[t.tool] || [],
     }));
 
@@ -79,8 +80,11 @@ export default async function handler(req, res) {
         totalInstalls: latest.total_installs,
         wau: latest.wau,
         mau: latest.mau,
+        engagedMau: latest.engaged_mau ?? 0,
+        engagedMinDays: latest.engaged_min_days ?? 0,
         wauGrowth7d: prior7 ? latest.wau - prior7.wau : 0,
         mauGrowth30d: prior30 ? latest.mau - prior30.mau : 0,
+        engagedGrowth30d: prior30 && prior30.engaged_mau != null ? (latest.engaged_mau ?? 0) - prior30.engaged_mau : 0,
       },
       tools,
       byCountry,

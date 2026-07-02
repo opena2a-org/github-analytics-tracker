@@ -76,8 +76,8 @@ function httpGetJson(rawUrl) {
 function persist(db, feed) {
   const upsertSnapshot = db.prepare(`
     INSERT INTO telemetry_snapshots
-      (date, generated_at, provenance, retention_days, wau_window_days, mau_window_days, total_installs, wau, mau)
-    VALUES (@date, @generatedAt, @provenance, @retentionDays, @wauWindowDays, @mauWindowDays, @totalInstalls, @wau, @mau)
+      (date, generated_at, provenance, retention_days, wau_window_days, mau_window_days, total_installs, wau, mau, engaged_mau, engaged_min_days)
+    VALUES (@date, @generatedAt, @provenance, @retentionDays, @wauWindowDays, @mauWindowDays, @totalInstalls, @wau, @mau, @engagedMau, @engagedMinDays)
     ON CONFLICT(date) DO UPDATE SET
       generated_at = excluded.generated_at,
       provenance = excluded.provenance,
@@ -87,14 +87,17 @@ function persist(db, feed) {
       total_installs = excluded.total_installs,
       wau = excluded.wau,
       mau = excluded.mau,
+      engaged_mau = excluded.engaged_mau,
+      engaged_min_days = excluded.engaged_min_days,
       collected_at = CURRENT_TIMESTAMP
   `);
 
   const upsertTool = db.prepare(`
-    INSERT INTO telemetry_tool_snapshots (date, tool, total_installs, wau, mau)
-    VALUES (@date, @tool, @totalInstalls, @wau, @mau)
+    INSERT INTO telemetry_tool_snapshots (date, tool, total_installs, wau, mau, engaged_mau)
+    VALUES (@date, @tool, @totalInstalls, @wau, @mau, @engagedMau)
     ON CONFLICT(date, tool) DO UPDATE SET
       total_installs = excluded.total_installs, wau = excluded.wau, mau = excluded.mau,
+      engaged_mau = excluded.engaged_mau,
       collected_at = CURRENT_TIMESTAMP
   `);
 
@@ -126,7 +129,7 @@ function persist(db, feed) {
     clearVersions.run(today);
     clearCountries.run(today);
     for (const t of feed.tools) {
-      upsertTool.run({ date: today, tool: t.tool, totalInstalls: t.totalInstalls, wau: t.wau, mau: t.mau });
+      upsertTool.run({ date: today, tool: t.tool, totalInstalls: t.totalInstalls, wau: t.wau, mau: t.mau, engagedMau: t.engagedMau });
       for (const v of t.versions) {
         upsertVersion.run({ date: today, tool: t.tool, version: v.version, installs: v.installs });
       }
@@ -186,8 +189,8 @@ async function main() {
   }
 
   console.log(
-    '  Installs: %d | WAU: %d | MAU: %d | tools: %d | countries: %d',
-    feed.totalInstalls, feed.wau, feed.mau, feed.tools.length, feed.byCountry.length
+    '  Installs: %d | WAU: %d | MAU: %d | engaged(MAU): %d | tools: %d | countries: %d',
+    feed.totalInstalls, feed.wau, feed.mau, feed.engagedMau, feed.tools.length, feed.byCountry.length
   );
   console.log('First-party telemetry collection complete.');
 }

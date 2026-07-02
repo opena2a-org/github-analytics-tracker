@@ -93,7 +93,7 @@ try {
   let telemetry = null;
   if (telemetryTableExists) {
     const latest = db.prepare(
-      'SELECT date, total_installs, wau, mau, provenance FROM telemetry_snapshots ORDER BY date DESC LIMIT 1'
+      'SELECT date, total_installs, wau, mau, engaged_mau, provenance FROM telemetry_snapshots ORDER BY date DESC LIMIT 1'
     ).get();
     if (latest) {
       const toolCount = db.prepare(
@@ -107,6 +107,8 @@ try {
         totalInstalls: latest.total_installs,
         wau: latest.wau,
         mau: latest.mau,
+        // Sybil-dampened floor — the honest headline; mau/wau are best-effort.
+        engagedMau: latest.engaged_mau ?? 0,
         tools: toolCount?.count || 0,
         countries: countryCount?.count || 0,
         // Honest basis + limits travel into the committed public JSON too.

@@ -11,12 +11,14 @@ const validFeed = () => ({
   totalInstalls: 1200,
   wau: 300,
   mau: 800,
+  engagedMau: 210,
+  engagedMinDays: 2,
   tools: [
     {
-      tool: 'hackmyagent', totalInstalls: 700, wau: 180, mau: 500,
+      tool: 'hackmyagent', totalInstalls: 700, wau: 180, mau: 500, engagedMau: 140,
       versions: [{ version: '0.22.0', installs: 400 }, { version: '0.21.0', installs: 100 }],
     },
-    { tool: 'opena2a', totalInstalls: 500, wau: 120, mau: 300, versions: [] },
+    { tool: 'opena2a', totalInstalls: 500, wau: 120, mau: 300, engagedMau: 90, versions: [] },
   ],
   byCountry: [{ countryCode: 'US', installs: 500 }, { countryCode: 'DE', installs: 120 }],
 });
@@ -56,11 +58,18 @@ test('normalizeAdoptionFeed passes a valid feed through', () => {
   assert.equal(n.byCountry.length, 2);
   // Provenance is carried verbatim so the dashboard can show it.
   assert.match(n.provenance, /not a sybil-verified count/);
+  // Sybil-dampened floor carried through; per-tool too.
+  assert.equal(n.engagedMau, 210);
+  assert.equal(n.engagedMinDays, 2);
+  assert.equal(n.tools[0].engagedMau, 140);
+  assert.ok(n.engagedMau <= n.mau, 'engaged floor must be <= mau');
 });
 
-test('normalizeAdoptionFeed defaults provenance to empty when absent (never fabricated)', () => {
+test('normalizeAdoptionFeed defaults provenance + engagedMau when absent (never fabricated)', () => {
   const n = normalizeAdoptionFeed({ totalInstalls: 10, wau: 5, mau: 8 });
   assert.equal(n.provenance, '');
+  assert.equal(n.engagedMau, 0); // absent → 0, not invented
+  assert.equal(n.tools.length, 0);
 });
 
 test('normalizeAdoptionFeed throws on a non-object or missing fleet totals', () => {
