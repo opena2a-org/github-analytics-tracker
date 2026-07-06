@@ -1,15 +1,16 @@
 {
-  "lastUpdated": "2026-07-06T07:25:45.976Z",
-  "repository": "opena2a-org/atx-spec",
+  "lastUpdated": "2026-07-06T07:26:39.854Z",
+  "repository": "opena2a-standards/aap-conformance",
   "stats": {
+    "allTime": {
+      "views": 0,
+      "clones": 0
+    },
     "recent14Days": {
       "views": 0,
       "viewsUnique": 0,
       "clones": 0,
       "clonesUnique": 0
-    },
-    "allTime": {
-      "clones": 0
     },
     "stars": 0,
     "forks": 0
