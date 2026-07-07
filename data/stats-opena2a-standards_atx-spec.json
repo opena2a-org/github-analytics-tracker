@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-07-06T07:26:39.852Z",
+  "lastUpdated": "2026-07-07T07:07:50.266Z",
   "repository": "opena2a-standards/atx-spec",
   "stats": {
     "allTime": {
       "views": 69,
-      "clones": 249
+      "clones": 264
     },
     "recent14Days": {
-      "views": 22,
-      "viewsUnique": 5,
-      "clones": 59,
-      "clonesUnique": 33
+      "views": 17,
+      "viewsUnique": 4,
+      "clones": 73,
+      "clonesUnique": 42
     },
     "stars": 1,
     "forks": 0
