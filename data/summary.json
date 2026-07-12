@@ -1,23 +1,23 @@
 {
-  "lastUpdated": "2026-07-11T06:43:52.613Z",
+  "lastUpdated": "2026-07-12T06:53:39.773Z",
   "total": {
-    "adoption": 254439,
-    "adoptionExCrypto": 234599,
-    "npm": 108269,
-    "pypi": 27181,
-    "clones": 111327,
-    "docker": 7662,
-    "views": 27346,
-    "stars": 234,
+    "adoption": 257170,
+    "adoptionExCrypto": 237270,
+    "npm": 108700,
+    "pypi": 27323,
+    "clones": 113474,
+    "docker": 7673,
+    "views": 27395,
+    "stars": 237,
     "repos": 45,
     "npmPackages": 41,
-    "chromeUsers": 3,
+    "chromeUsers": 2,
     "chromeExtensions": 1,
     "telemetry": {
-      "asOf": "2026-07-11",
+      "asOf": "2026-07-12",
       "totalInstalls": 0,
-      "wau": 68,
-      "mau": 175,
+      "wau": 55,
+      "mau": 174,
       "engagedMau": 11,
       "tools": 5,
       "countries": 0,
@@ -25,9 +25,9 @@
     }
   },
   "excludingCrypto": {
-    "npm": 106819,
-    "pypi": 11996,
-    "clones": 108122,
-    "docker": 7662
+    "npm": 107249,
+    "pypi": 12081,
+    "clones": 110267,
+    "docker": 7673
   }
 }
