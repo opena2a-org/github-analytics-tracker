@@ -7,7 +7,7 @@ const fs = require('fs');
 
 require('dotenv').config();
 
-const { normalizeAdoptionFeed } = require('../lib/telemetry');
+const { normalizeAdoptionFeed, classifyCollectionSkip, DEFAULT_STALE_AFTER_DAYS } = require('../lib/telemetry');
 
 /*
  * First-party CLI telemetry collector.
@@ -27,21 +27,81 @@ const { normalizeAdoptionFeed } = require('../lib/telemetry');
  * dashboard and is never persisted here.
  *
  * Config (env):
- *   REGISTRY_URL=https://api.oa2a.org   # Registry base URL (required)
+ *   REGISTRY_URL=https://api.oa2a.org       # Registry base URL (required)
+ *   TELEMETRY_STALE_AFTER_DAYS=2            # optional; consecutive failure days
+ *                                           # tolerated before this exits 1
  *
- * If REGISTRY_URL is unset the collector skips gracefully (exit 0), so the
- * daily workflow doesn't fail before the Registry endpoint is provisioned.
+ * Failure policy: a single failed run warns and exits 0 (a transient feed blip
+ * must not fail the daily workflow, and must never write zeros over a good
+ * snapshot). A SUSTAINED failure exits 1 — see classifyCollectionSkip in
+ * lib/telemetry.js for the full rule and the incident that motivated it.
+ *
+ * The workflow marks this step continue-on-error, so a non-zero exit surfaces
+ * the failure without dropping the other collectors' data for the day (this
+ * step runs before generate-md and the commit step).
  */
 const REGISTRY_URL = (process.env.REGISTRY_URL || '').trim().replace(/\/+$/, '');
-
-if (!REGISTRY_URL) {
-  console.log('REGISTRY_URL not set — skipping first-party telemetry collection.');
-  process.exit(0);
-}
+const STALE_AFTER_DAYS = Number.isFinite(Number(process.env.TELEMETRY_STALE_AFTER_DAYS))
+  ? Number(process.env.TELEMETRY_STALE_AFTER_DAYS)
+  : DEFAULT_STALE_AFTER_DAYS;
 
 const FEED_PATH = '/api/v1/telemetry/v1/adoption/public';
 const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
 const today = new Date().toISOString().split('T')[0];
+
+/**
+ * Emit a GitHub Actions annotation so a failure is visible in the run summary
+ * and the PR/commit UI, not just buried in step output nobody opens. No-op
+ * locally.
+ */
+function annotate(level, message) {
+  if (process.env.GITHUB_ACTIONS) {
+    // Annotations are single-line; collapse any newlines.
+    console.log(`::${level}::${String(message).replace(/\r?\n/g, ' ')}`);
+  }
+}
+
+/**
+ * Newest stored snapshot date, or null if the collector has never persisted one
+ * (including when the telemetry tables don't exist yet, or the db is missing).
+ * Read-only and never throws — this runs on the failure path, where a second
+ * error would just mask the first.
+ */
+function lastSuccessDate() {
+  let db;
+  try {
+    if (!fs.existsSync(dbPath)) return null;
+    db = new Database(dbPath, { readonly: true });
+    const row = db.prepare('SELECT MAX(date) AS d FROM telemetry_snapshots').get();
+    return row && row.d ? row.d : null;
+  } catch {
+    return null;
+  } finally {
+    try { if (db) db.close(); } catch { /* already closed */ }
+  }
+}
+
+/**
+ * Report a skipped/failed collection at the right volume and exit.
+ * Never writes data — a bad run must not overwrite a good snapshot with zeros.
+ */
+function reportSkipAndExit(reason) {
+  const { level, exitCode, message } = classifyCollectionSkip({
+    reason,
+    registryUrlSet: Boolean(REGISTRY_URL),
+    lastSuccessDate: lastSuccessDate(),
+    today,
+    staleAfterDays: STALE_AFTER_DAYS,
+  });
+  annotate(level, message);
+  if (level === 'error') console.error('  %s', message);
+  else console.warn('  %s', message);
+  process.exit(exitCode);
+}
+
+if (!REGISTRY_URL) {
+  reportSkipAndExit('REGISTRY_URL is not set');
+}
 
 function httpGetJson(rawUrl) {
   return new Promise((resolve, reject) => {
@@ -166,18 +226,17 @@ async function main() {
   try {
     raw = await httpGetJson(REGISTRY_URL + FEED_PATH);
   } catch (err) {
-    // A transient/unavailable feed must not fail the whole daily workflow, and
-    // must not write zeros over yesterday's real snapshot. Skip this run.
-    console.error('  Feed fetch failed: %s — skipping (no data written).', err.message);
-    process.exit(0);
+    // A transient feed must not fail the workflow or write zeros over a good
+    // snapshot — but a sustained one is an outage, so let the classifier decide
+    // rather than swallowing every failure the same way.
+    reportSkipAndExit(`feed fetch failed: ${err.message}`);
   }
 
   let feed;
   try {
     feed = normalizeAdoptionFeed(raw);
   } catch (err) {
-    console.error('  Feed failed validation: %s — skipping (no data written).', err.message);
-    process.exit(0);
+    reportSkipAndExit(`feed failed validation: ${err.message}`);
   }
 
   const db = new Database(dbPath);

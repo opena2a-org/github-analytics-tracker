@@ -1,6 +1,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { normalizeAdoptionFeed, toolDisplayName, toCount } = require('../lib/telemetry');
+const {
+  normalizeAdoptionFeed,
+  toolDisplayName,
+  toCount,
+  classifyCollectionSkip,
+  daysBetween,
+} = require('../lib/telemetry');
 
 const validFeed = () => ({
   generatedAt: '2026-07-02T12:00:00Z',
@@ -100,4 +106,110 @@ test('normalizeAdoptionFeed tolerates missing optional arrays', () => {
   assert.deepEqual(n.tools, []);
   assert.deepEqual(n.byCountry, []);
   assert.equal(n.generatedAt, '');
+});
+
+// --- classifyCollectionSkip ------------------------------------------------
+//
+// Regression guard for the incident this logic exists to prevent: the collector
+// had three separate silent `exit 0` paths, so registry #283 dropped live CLI
+// telemetry for ~7 days (2026-06-26 -> 2026-07-03) with nothing in the logs
+// saying so. Silence is not success.
+
+const skip = (o) => classifyCollectionSkip({ reason: 'feed fetch failed: HTTP 404', today: '2026-07-16', ...o });
+
+test('unconfigured and never collected: warns, does not fail the workflow', () => {
+  const r = skip({ registryUrlSet: false, lastSuccessDate: null });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+  assert.match(r.message, /not configured/i);
+  assert.match(r.message, /REGISTRY_URL/);
+});
+
+test('variable removed after it once worked: errors immediately', () => {
+  // Config being deleted is not a transient blip — no staleness grace.
+  const r = skip({ registryUrlSet: false, lastSuccessDate: '2026-07-15' });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /2026-07-15/);
+});
+
+test('configured but never succeeded: errors (broken feed, not unprovisioned)', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: null });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /NEVER succeeded/i);
+});
+
+test('a single failed run is transient: warns, keeps yesterday data', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-15' });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+  assert.match(r.message, /1d ago/);
+});
+
+test('at the staleness threshold: still tolerated', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-14', staleAfterDays: 2 });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+});
+
+test('past the staleness threshold: errors as an outage', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-13', staleAfterDays: 2 });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /3 days/);
+  assert.match(r.message, /outage/i);
+});
+
+test('the #283 shape: a 7-day gap fails loudly instead of exiting 0', () => {
+  // 2026-06-26 -> 2026-07-03 went unnoticed. It must not be possible again.
+  const r = classifyCollectionSkip({
+    reason: 'feed fetch failed: HTTP 404',
+    registryUrlSet: true,
+    lastSuccessDate: '2026-06-26',
+    today: '2026-07-03',
+  });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /7 days/);
+});
+
+test('the reason is always carried into the message', () => {
+  const r = classifyCollectionSkip({
+    reason: 'feed failed validation: totalInstalls is not a number',
+    registryUrlSet: true,
+    lastSuccessDate: '2026-07-01',
+    today: '2026-07-16',
+  });
+  assert.match(r.message, /totalInstalls is not a number/);
+});
+
+test('an unparseable last-success date errors rather than passing silently', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: 'not-a-date' });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+});
+
+test('every classification returns a usable exit code and a non-empty message', () => {
+  const cases = [
+    { registryUrlSet: false, lastSuccessDate: null },
+    { registryUrlSet: false, lastSuccessDate: '2026-07-15' },
+    { registryUrlSet: true, lastSuccessDate: null },
+    { registryUrlSet: true, lastSuccessDate: '2026-07-15' },
+    { registryUrlSet: true, lastSuccessDate: '2026-06-01' },
+  ];
+  for (const c of cases) {
+    const r = skip(c);
+    assert.ok(r.exitCode === 0 || r.exitCode === 1, JSON.stringify(c));
+    assert.ok(r.level === 'warning' || r.level === 'error', JSON.stringify(c));
+    assert.ok(r.message.length > 0, JSON.stringify(c));
+    // An error must never exit 0: that is the bug this whole change is about.
+    if (r.level === 'error') assert.equal(r.exitCode, 1, JSON.stringify(c));
+  }
+});
+
+test('daysBetween handles ordinary and malformed input', () => {
+  assert.equal(daysBetween('2026-07-01', '2026-07-16'), 15);
+  assert.equal(daysBetween('2026-07-16', '2026-07-16'), 0);
+  assert.equal(daysBetween('garbage', '2026-07-16'), null);
 });
