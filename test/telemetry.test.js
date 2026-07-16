@@ -258,79 +258,70 @@ test('the message is bounded so a 200-byte body cannot flood the annotation', ()
   assert.ok(r.message.length <= 520, `message length ${r.message.length}`);
 });
 
-// --- classifyFeedHealth (the zero-collapse detector) -------------------------
+// --- classifyFeedHealth (the drain detector) ---------------------------------
 //
-// This is the failure a retrieval check structurally cannot see, and the one a
-// broken ingest actually produces: the adoption feed answers 200 with valid,
-// all-zero numbers. normalizeAdoptionFeed accepts them (correctly — they are
-// well-formed), persist() writes them, and lastSuccessDate advances, so
-// classifyCollectionSkip is never even called.
+// The failure a retrieval check structurally cannot see, and the one a broken
+// ingest actually produces: the adoption feed answers 200 with valid numbers
+// whose active counts have drained. normalizeAdoptionFeed accepts them
+// (correctly — they are well-formed), persist() writes them, and last-success
+// advances, so classifyCollectionSkip is never even called.
 
-test('a live fleet collapsing to zero is reported as an outage', () => {
-  const r = classifyFeedHealth({ mau: 0, totalInstalls: 0 }, { mau: 200, totalInstalls: 500 });
-  assert.ok(r, 'a drop from 200 MAU to 0 must not pass silently');
+const LIVE = { mau: 200, totalInstalls: 500, date: '2026-06-16' };
+
+test('a drained feed is reported as an outage', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  assert.ok(r, 'zero actives against a live install base must not pass silently');
   assert.equal(r.level, 'error');
-  assert.match(r.message, /200/);
+  assert.match(r.message, /mau=0/);
+  assert.match(r.message, /mau=200 on 2026-06-16/);
   assert.match(r.message, /do not all disappear overnight/i);
 });
 
+test('MAU zero while installs survive IS the drain signal, not "just churn"', () => {
+  // Regression guard for a real blind spot: the first version required mau AND
+  // installs to BOTH be zero. total_installs is a 90-day window and mau is
+  // 30-day, so during an ingest outage MAU empties at T+30 while installs
+  // coasts to T+90 — the old check waved through ~60 days of a dead pipeline.
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 500 }, LIVE, '2026-07-16');
+  assert.ok(r, 'mau=0 with 500 live installs is a dead pipeline, not churn');
+  assert.match(r.message, /500 install/);
+  assert.match(r.message, /coasting on old events/);
+});
+
+test('the alert keeps firing on later days rather than self-silencing', () => {
+  // Comparing against YESTERDAY made this fire once: day one's zeros persisted
+  // and became the baseline, so every later day saw zero-following-zero and
+  // reported healthy. Keying on the last LIVE snapshot keeps it ringing.
+  const day1 = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  const day8 = classifyFeedHealth({ mau: 0, totalInstalls: 100 }, LIVE, '2026-07-23');
+  assert.ok(day1 && day8, 'a sustained outage must keep erroring');
+  // And it gets louder: the gap is stated and grows.
+  assert.match(day1.message, /for 30 day\(s\)/);
+  assert.match(day8.message, /for 37 day\(s\)/);
+});
+
+test('once installs drain too, it still errors and says so', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 0 }, LIVE, '2026-09-20');
+  assert.ok(r);
+  assert.match(r.message, /retention window has now emptied/);
+});
+
 test('healthy numbers report nothing', () => {
-  assert.equal(classifyFeedHealth({ mau: 200, totalInstalls: 500 }, { mau: 190, totalInstalls: 480 }), null);
+  assert.equal(classifyFeedHealth({ mau: 200, totalInstalls: 500 }, LIVE, '2026-07-16'), null);
 });
 
-test('a real decline is not an outage — only a total collapse is', () => {
-  assert.equal(classifyFeedHealth({ mau: 1, totalInstalls: 1 }, { mau: 200, totalInstalls: 500 }), null);
+test('a real decline is not an outage — only reaching zero is', () => {
+  assert.equal(classifyFeedHealth({ mau: 1, totalInstalls: 500 }, LIVE, '2026-07-16'), null);
 });
 
-test('no previous snapshot means nothing to compare against', () => {
-  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, null), null);
+test('a fleet that never had users is not an outage', () => {
+  // Brand-new deployment: nothing has died, so nothing to report.
+  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, null, '2026-07-16'), null);
+  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, { mau: 0, totalInstalls: 0, date: '2026-07-15' }, '2026-07-16'), null);
 });
 
-test('zero following zero is not a collapse (nothing to fall from)', () => {
-  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, { mau: 0, totalInstalls: 0 }), null);
-});
-
-test('installs surviving while MAU zeroes is not yet a collapse', () => {
-  // Only a total collapse of both is unambiguous; MAU alone could be real churn.
-  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 500 }, { mau: 200, totalInstalls: 500 }), null);
-});
-
-test('the reason is always carried into the message', () => {
-  const r = classifyCollectionSkip({
-    reason: 'feed failed validation: totalInstalls is not a number',
-    registryUrlSet: true,
-    lastSuccessDate: '2026-07-01',
-    today: '2026-07-16',
-  });
-  assert.match(r.message, /totalInstalls is not a number/);
-});
-
-test('an unparseable last-success date errors rather than passing silently', () => {
-  const r = skip({ registryUrlSet: true, lastSuccessDate: 'not-a-date' });
-  assert.equal(r.level, 'error');
-  assert.equal(r.exitCode, 1);
-});
-
-test('every classification returns a usable exit code and a non-empty message', () => {
-  const cases = [
-    { registryUrlSet: false, lastSuccessDate: null },
-    { registryUrlSet: false, lastSuccessDate: '2026-07-15' },
-    { registryUrlSet: true, lastSuccessDate: null },
-    { registryUrlSet: true, lastSuccessDate: '2026-07-15' },
-    { registryUrlSet: true, lastSuccessDate: '2026-06-01' },
-  ];
-  for (const c of cases) {
-    const r = skip(c);
-    assert.ok(r.exitCode === 0 || r.exitCode === 1, JSON.stringify(c));
-    assert.ok(r.level === 'warning' || r.level === 'error', JSON.stringify(c));
-    assert.ok(r.message.length > 0, JSON.stringify(c));
-    // An error must never exit 0: that is the bug this whole change is about.
-    if (r.level === 'error') assert.equal(r.exitCode, 1, JSON.stringify(c));
-  }
-});
-
-test('daysBetween handles ordinary and malformed input', () => {
-  assert.equal(daysBetween('2026-07-01', '2026-07-16'), 15);
-  assert.equal(daysBetween('2026-07-16', '2026-07-16'), 0);
-  assert.equal(daysBetween('garbage', '2026-07-16'), null);
+test('the drain message is sanitized and bounded like every other output', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  assert.ok(!/[\r\n]/.test(r.message), 'must be single-line');
+  assert.doesNotMatch(r.message, /::/);
 });

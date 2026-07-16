@@ -53,7 +53,13 @@ const REGISTRY_URL = (process.env.REGISTRY_URL || '').trim().replace(/\/+$/, '')
 const STALE_AFTER_DAYS = process.env.TELEMETRY_STALE_AFTER_DAYS;
 
 const FEED_PATH = '/api/v1/telemetry/v1/adoption/public';
-const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
+const FEED_TIMEOUT_MS = Number(process.env.TELEMETRY_FEED_TIMEOUT_MS) || 30000;
+// TELEMETRY_DB_PATH exists so the tests can drive the real script against
+// fixture databases (corrupt, empty, no-table, drained). Every bug the reviews
+// found in this collector lived in the db/annotation glue rather than in the
+// pure classifiers, and that glue was untestable while this was hardcoded.
+// Unset in production, where it resolves to the committed database.
+const dbPath = process.env.TELEMETRY_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
 const today = new Date().toISOString().split('T')[0];
 
 /**
@@ -104,14 +110,24 @@ function readLastSuccess() {
   }
 }
 
-/** Newest stored fleet totals, for the zero-collapse check. Null if unavailable. */
-function readPreviousTotals() {
+/**
+ * Newest stored snapshot that had ANY active users, for the drain check.
+ *
+ * Deliberately not "yesterday": comparing against yesterday makes the alert
+ * self-silencing, because the first zero day persists and becomes the baseline
+ * every later day is measured against. Keying on the last LIVE snapshot keeps
+ * the alarm ringing until someone fixes it.
+ */
+function readLastLiveTotals() {
   let db;
   try {
     if (!fs.existsSync(dbPath)) return null;
     db = new Database(dbPath, { readonly: true });
     const row = db
-      .prepare('SELECT mau, total_installs AS totalInstalls FROM telemetry_snapshots WHERE date < ? ORDER BY date DESC LIMIT 1')
+      .prepare(
+        'SELECT date, mau, total_installs AS totalInstalls FROM telemetry_snapshots ' +
+          'WHERE date < ? AND mau > 0 ORDER BY date DESC LIMIT 1'
+      )
       .get(today);
     return row || null;
   } catch {
@@ -155,7 +171,7 @@ function httpGetJson(rawUrl) {
     }
     const client = url.protocol === 'http:' ? http : https;
     const headers = { 'User-Agent': 'github-analytics-tracker', Accept: 'application/json' };
-    client.get(url, { headers }, (res) => {
+    const req = client.get(url, { headers }, (res) => {
       let data = '';
       res.on('data', chunk => (data += chunk));
       res.on('end', () => {
@@ -170,7 +186,15 @@ function httpGetJson(rawUrl) {
         }
       });
       res.on('error', reject);
-    }).on('error', reject);
+    });
+    // Without this a registry that accepts the connection and never answers
+    // hangs the daily workflow until the job's own limit kills it — a silent
+    // failure of a different shape, and one that also takes the other
+    // collectors' commit down with it.
+    req.setTimeout(FEED_TIMEOUT_MS, () => {
+      req.destroy(new Error(`feed request timed out after ${FEED_TIMEOUT_MS}ms`));
+    });
+    req.on('error', reject);
   });
 }
 
@@ -280,9 +304,8 @@ async function main() {
     reportSkipAndExit(`feed failed validation: ${err.message}`);
   }
 
-  // Compare against yesterday BEFORE writing, so today's row can't be the thing
-  // we compare to.
-  const previous = readPreviousTotals();
+  // Read BEFORE writing, so today's row can't become the thing we compare to.
+  const lastLive = readLastLiveTotals();
 
   const db = new Database(dbPath);
   try {
@@ -297,11 +320,12 @@ async function main() {
     feed.totalInstalls, feed.wau, feed.mau, feed.engagedMau, feed.tools.length, feed.byCountry.length
   );
 
-  // A retrieval check cannot see a feed that answers 200 with collapsed numbers,
+  // A retrieval check cannot see a feed that answers 200 with drained numbers,
   // which is exactly what a broken ingest looks like from here. The zeros are
   // recorded as reported — we don't suppress what the feed said — but a live
-  // fleet does not drop to zero overnight, so say so loudly.
-  const health = classifyFeedHealth(feed, previous);
+  // fleet does not drop to zero overnight, so say so loudly, every day, until
+  // it is fixed.
+  const health = classifyFeedHealth(feed, lastLive, today);
   if (health) {
     annotate(health.level, health.message);
     console.error('  %s', health.message);
@@ -320,7 +344,9 @@ if (require.main === module) {
   });
 }
 
-// Exported for unit tests. Mirrors collect-chrome-stats.js, which exports
-// parseListing for test/chrome.test.js — the impure glue is where the real bugs
-// live, so it needs to be reachable from a test.
-module.exports = { annotate, readLastSuccess, readPreviousTotals };
+// Exported for test/telemetry-collector.test.js, which drives the real script as
+// a subprocess against fixture databases. Mirrors collect-chrome-stats.js
+// exporting parseListing for test/chrome.test.js. The db readers are bound to
+// the module-level dbPath, so the tests exercise them through the CLI rather
+// than by calling them directly.
+module.exports = { annotate, readLastSuccess, readLastLiveTotals };
