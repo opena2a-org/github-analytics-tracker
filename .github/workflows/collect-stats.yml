@@ -80,13 +80,17 @@ jobs:
         run: npm run collect-chrome
 
       - name: Collect first-party CLI telemetry
-        # A sustained collection failure exits 1 so it is visible here and in the
-        # run summary as an annotation. continue-on-error keeps that from
-        # dropping the other collectors' data: this step runs before
-        # generate-md/generate-summary and the commit step below, so a hard
-        # failure would silently cost a full day of npm/pypi/docker/hf/chrome
-        # numbers. A transient blip warns and exits 0 — see
-        # classifyCollectionSkip in lib/telemetry.js.
+        id: telemetry
+        # continue-on-error keeps a telemetry outage from dropping the other
+        # collectors' data: this step runs before generate-md/generate-summary
+        # and the commit step, so a hard failure here would silently cost a full
+        # day of npm/pypi/docker/hf/chrome numbers.
+        #
+        # But continue-on-error alone would ALSO swallow the failure — the job
+        # would go green and a scheduled run that nobody watches would notify
+        # nobody, which is the exact silence this is meant to end. The
+        # "Surface telemetry outage" step at the end re-raises it once the data
+        # is safely committed.
         continue-on-error: true
         env:
           # Registry base URL exposing the coarse public adoption feed
@@ -110,3 +114,14 @@ jobs:
           git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/telemetry-badge.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           git push || echo "No changes to push"
+
+      # Re-raise a telemetry outage AFTER the day's data is safely committed, so
+      # the run goes red and the scheduled-workflow failure notification fires.
+      # Without this the telemetry step's continue-on-error would leave the job
+      # green and nobody would ever learn that collection stopped — which is the
+      # failure mode this whole thing exists to prevent.
+      - name: Surface telemetry outage
+        if: steps.telemetry.outcome == 'failure'
+        run: |
+          echo "::error::First-party telemetry collection failed — see the 'Collect first-party CLI telemetry' step above. Other collectors' data for today was committed successfully."
+          exit 1

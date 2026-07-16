@@ -7,7 +7,12 @@ const fs = require('fs');
 
 require('dotenv').config();
 
-const { normalizeAdoptionFeed, classifyCollectionSkip, DEFAULT_STALE_AFTER_DAYS } = require('../lib/telemetry');
+const {
+  normalizeAdoptionFeed,
+  classifyCollectionSkip,
+  classifyFeedHealth,
+  sanitizeForLog,
+} = require('../lib/telemetry');
 
 /*
  * First-party CLI telemetry collector.
@@ -41,9 +46,11 @@ const { normalizeAdoptionFeed, classifyCollectionSkip, DEFAULT_STALE_AFTER_DAYS 
  * step runs before generate-md and the commit step).
  */
 const REGISTRY_URL = (process.env.REGISTRY_URL || '').trim().replace(/\/+$/, '');
-const STALE_AFTER_DAYS = Number.isFinite(Number(process.env.TELEMETRY_STALE_AFTER_DAYS))
-  ? Number(process.env.TELEMETRY_STALE_AFTER_DAYS)
-  : DEFAULT_STALE_AFTER_DAYS;
+// Left unvalidated here on purpose: normalizeStaleAfterDays inside
+// classifyCollectionSkip rejects anything that is not a non-negative integer and
+// falls back to the default. Number('') === 0 would otherwise set the tolerance
+// to zero for the standard `${{ vars.UNSET }}` Actions pattern.
+const STALE_AFTER_DAYS = process.env.TELEMETRY_STALE_AFTER_DAYS;
 
 const FEED_PATH = '/api/v1/telemetry/v1/adoption/public';
 const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
@@ -54,26 +61,59 @@ const today = new Date().toISOString().split('T')[0];
  * and the PR/commit UI, not just buried in step output nobody opens. No-op
  * locally.
  */
+/**
+ * Emit a GitHub Actions annotation so a failure surfaces in the run summary and
+ * the commit UI, not only in step output nobody opens.
+ *
+ * The runner scans stdout AND stderr for `::command::` lines, so `message` must
+ * already be sanitized by the caller — sanitizing only here would leave the
+ * console.* sinks below as an open injection path. Sanitizing again is cheap
+ * and keeps this safe if a future caller forgets.
+ */
 function annotate(level, message) {
   if (process.env.GITHUB_ACTIONS) {
-    // Annotations are single-line; collapse any newlines.
-    console.log(`::${level}::${String(message).replace(/\r?\n/g, ' ')}`);
+    console.log(`::${level}::${sanitizeForLog(message, 500)}`);
   }
 }
 
 /**
- * Newest stored snapshot date, or null if the collector has never persisted one
- * (including when the telemetry tables don't exist yet, or the db is missing).
- * Read-only and never throws — this runs on the failure path, where a second
- * error would just mask the first.
+ * Newest stored snapshot, three-valued.
+ *
+ *   { state: 'known', date }  — a snapshot exists
+ *   { state: 'never' }        — the store is readable and holds nothing
+ *   { state: 'unknown', ... } — the store could not be read
+ *
+ * The distinction matters: collapsing 'unknown' into 'never' makes the
+ * collector assert "has never succeeded" when the truth is "the database is
+ * corrupt and 60 days of data may be sitting in it" — a confident, wrong
+ * diagnosis pointing the operator at the wrong system.
  */
-function lastSuccessDate() {
+function readLastSuccess() {
+  let db;
+  try {
+    if (!fs.existsSync(dbPath)) return { state: 'never' };
+    db = new Database(dbPath, { readonly: true });
+    const row = db.prepare('SELECT MAX(date) AS d FROM telemetry_snapshots').get();
+    return row && row.d ? { state: 'known', date: row.d } : { state: 'never' };
+  } catch (err) {
+    // A missing table means the schema predates telemetry: readable, empty.
+    if (/no such table/i.test(err.message || '')) return { state: 'never' };
+    return { state: 'unknown', detail: err.message };
+  } finally {
+    try { if (db) db.close(); } catch { /* already closed */ }
+  }
+}
+
+/** Newest stored fleet totals, for the zero-collapse check. Null if unavailable. */
+function readPreviousTotals() {
   let db;
   try {
     if (!fs.existsSync(dbPath)) return null;
     db = new Database(dbPath, { readonly: true });
-    const row = db.prepare('SELECT MAX(date) AS d FROM telemetry_snapshots').get();
-    return row && row.d ? row.d : null;
+    const row = db
+      .prepare('SELECT mau, total_installs AS totalInstalls FROM telemetry_snapshots WHERE date < ? ORDER BY date DESC LIMIT 1')
+      .get(today);
+    return row || null;
   } catch {
     return null;
   } finally {
@@ -89,17 +129,18 @@ function reportSkipAndExit(reason) {
   const { level, exitCode, message } = classifyCollectionSkip({
     reason,
     registryUrlSet: Boolean(REGISTRY_URL),
-    lastSuccessDate: lastSuccessDate(),
+    lastSuccess: readLastSuccess(),
     today,
     staleAfterDays: STALE_AFTER_DAYS,
   });
+  // `message` is sanitized by the classifier, so both sinks are safe.
   annotate(level, message);
   if (level === 'error') console.error('  %s', message);
   else console.warn('  %s', message);
   process.exit(exitCode);
 }
 
-if (!REGISTRY_URL) {
+if (require.main === module && !REGISTRY_URL) {
   reportSkipAndExit('REGISTRY_URL is not set');
 }
 
@@ -239,6 +280,10 @@ async function main() {
     reportSkipAndExit(`feed failed validation: ${err.message}`);
   }
 
+  // Compare against yesterday BEFORE writing, so today's row can't be the thing
+  // we compare to.
+  const previous = readPreviousTotals();
+
   const db = new Database(dbPath);
   try {
     persist(db, feed);
@@ -251,10 +296,31 @@ async function main() {
     '  Installs: %d | WAU: %d | MAU: %d | engaged(MAU): %d | tools: %d | countries: %d',
     feed.totalInstalls, feed.wau, feed.mau, feed.engagedMau, feed.tools.length, feed.byCountry.length
   );
+
+  // A retrieval check cannot see a feed that answers 200 with collapsed numbers,
+  // which is exactly what a broken ingest looks like from here. The zeros are
+  // recorded as reported — we don't suppress what the feed said — but a live
+  // fleet does not drop to zero overnight, so say so loudly.
+  const health = classifyFeedHealth(feed, previous);
+  if (health) {
+    annotate(health.level, health.message);
+    console.error('  %s', health.message);
+    process.exit(1);
+  }
+
   console.log('First-party telemetry collection complete.');
 }
 
-main().catch(error => {
-  console.error('Fatal error: %s', error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(error => {
+    const msg = sanitizeForLog(error && error.message);
+    annotate('error', `Telemetry collector crashed: ${msg}`);
+    console.error('Fatal error: %s', msg);
+    process.exit(1);
+  });
+}
+
+// Exported for unit tests. Mirrors collect-chrome-stats.js, which exports
+// parseListing for test/chrome.test.js — the impure glue is where the real bugs
+// live, so it needs to be reachable from a test.
+module.exports = { annotate, readLastSuccess, readPreviousTotals };
