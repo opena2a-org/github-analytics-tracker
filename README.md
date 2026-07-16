@@ -106,9 +106,10 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:0
 
 ### When telemetry collection stops
 
-A collector that fails quietly is worse than one that fails: in June 2026 a Registry
-route change dropped live CLI telemetry for seven days and nothing in the logs said
-so. The telemetry collector therefore distinguishes a blip from an outage:
+A collector that fails quietly is worse than one that fails outright. Two different
+failures are checked, because they look nothing alike.
+
+**The feed can't be retrieved.** A blip is tolerated; an outage is not:
 
 | Situation | Result |
 |---|---|
@@ -118,10 +119,24 @@ so. The telemetry collector therefore distinguishes a blip from an outage:
 | Failing for ≤ `TELEMETRY_STALE_AFTER_DAYS` (default 2) | warning, exit 0 — transient |
 | Failing for longer | **error, exit 1** — the dashboard is serving stale numbers |
 
-Failures emit GitHub Actions annotations so they surface in the run summary. The step
-is marked `continue-on-error`, so a telemetry outage is loud but never costs the other
-collectors their data for the day. A failed run never writes: zeros must not overwrite
+**The feed responds fine but the numbers collapsed.** This is the shape a broken
+ingest path actually takes: the adoption feed keeps answering `200` with a
+structurally valid payload while every count reads zero. A retrieval check sees a
+healthy response and happily persists the zeros. So the collector also compares
+against the previous snapshot and errors when a live fleet reports `mau=0` **and**
+`installs=0` — real users do not all vanish overnight. The zeros are still recorded
+as reported (we don't suppress what the feed said); the point is to raise the alarm.
+A decline, or MAU-only churn, is not treated as an outage.
+
+Failures emit GitHub Actions annotations so they surface in the run summary, and a
+final step re-raises the failure **after** the day's data is committed — so the run
+goes red and the scheduled-run notification fires, without a telemetry outage costing
+the other collectors their data. A failed run never writes: zeros must not overwrite
 a good snapshot.
+
+Untrusted feed text (HTTP error bodies) is sanitized before it reaches any log line —
+the Actions runner parses `::command::` lines on both stdout and stderr, so an
+unsanitized response body could otherwise forge or suppress these very annotations.
 
 The workflow auto-discovers public repos in the orgs listed in `GITHUB_ORG`. Add a new repo to the org, the next run picks it up. No manual list maintenance.
 
