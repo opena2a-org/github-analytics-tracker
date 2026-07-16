@@ -84,9 +84,10 @@ HF_AUTHOR=opena2a                                             # auto-discovers a
 HF_MODELS=org/model,org/other                                 # optional extra models
 HF_TOKEN=hf_...                                               # optional, raises HF rate limits / private repos
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json          # optional for BigQuery country stats
-REGISTRY_URL=https://api.oa2a.org                     # optional; enables first-party CLI telemetry
+REGISTRY_URL=https://api.oa2a.org                             # optional; enables first-party CLI telemetry
 REGISTRY_TELEMETRY_TOKEN=...                                  # optional; SA token for the gated detail view (server-side only)
 ANALYTICS_TRACKER_PASSWORD=...                                # optional; gates the fine-grained telemetry view on THIS dashboard
+TELEMETRY_STALE_AFTER_DAYS=2                                  # optional; consecutive failure days tolerated before the collector exits 1
 ```
 
 The collector persists only the coarse, anonymous adoption feed. The fine-grained
@@ -101,7 +102,26 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:0
 1. Settings → Secrets and variables → Actions → New secret.
 2. Add `GH_STATS_TOKEN` (a Personal Access Token with `repo` or `public_repo` scope).
 3. Optionally set `GOOGLE_APPLICATION_CREDENTIALS_JSON` for BigQuery country stats.
-4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection (the collector skips gracefully when unset).
+4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection. Unset, the collector warns and skips.
+
+### When telemetry collection stops
+
+A collector that fails quietly is worse than one that fails: in June 2026 a Registry
+route change dropped live CLI telemetry for seven days and nothing in the logs said
+so. The telemetry collector therefore distinguishes a blip from an outage:
+
+| Situation | Result |
+|---|---|
+| `REGISTRY_URL` unset, nothing ever collected | warning, exit 0 — legitimately not provisioned |
+| `REGISTRY_URL` unset, but telemetry *was* collected before | **error, exit 1** — the variable was removed |
+| `REGISTRY_URL` set, nothing ever collected | **error, exit 1** — broken feed or wrong URL |
+| Failing for ≤ `TELEMETRY_STALE_AFTER_DAYS` (default 2) | warning, exit 0 — transient |
+| Failing for longer | **error, exit 1** — the dashboard is serving stale numbers |
+
+Failures emit GitHub Actions annotations so they surface in the run summary. The step
+is marked `continue-on-error`, so a telemetry outage is loud but never costs the other
+collectors their data for the day. A failed run never writes: zeros must not overwrite
+a good snapshot.
 
 The workflow auto-discovers public repos in the orgs listed in `GITHUB_ORG`. Add a new repo to the org, the next run picks it up. No manual list maintenance.
 
