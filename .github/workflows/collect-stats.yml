@@ -113,7 +113,16 @@ jobs:
           git config user.email "actions@github.com"
           git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/telemetry-badge.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
-          git push || echo "No changes to push"
+          # `git push || echo "No changes to push"` used to swallow EVERY push
+          # failure — a non-fast-forward, a rejected hook, an auth error — and
+          # report the run green with the day's data never pushed. Distinguish
+          # "nothing to push" (fine) from "the push failed" (not fine): the
+          # Surface step below relies on the data actually being committed.
+          if git diff --quiet HEAD@{upstream} HEAD 2>/dev/null; then
+            echo "No changes to push."
+          else
+            git push
+          fi
 
       # Re-raise a telemetry outage AFTER the day's data is safely committed, so
       # the run goes red and the scheduled-workflow failure notification fires.

@@ -119,14 +119,28 @@ failures are checked, because they look nothing alike.
 | Failing for ≤ `TELEMETRY_STALE_AFTER_DAYS` (default 2) | warning, exit 0 — transient |
 | Failing for longer | **error, exit 1** — the dashboard is serving stale numbers |
 
-**The feed responds fine but the numbers collapsed.** This is the shape a broken
+**The feed responds fine but the numbers drained.** This is the shape a broken
 ingest path actually takes: the adoption feed keeps answering `200` with a
-structurally valid payload while every count reads zero. A retrieval check sees a
-healthy response and happily persists the zeros. So the collector also compares
-against the previous snapshot and errors when a live fleet reports `mau=0` **and**
-`installs=0` — real users do not all vanish overnight. The zeros are still recorded
-as reported (we don't suppress what the feed said); the point is to raise the alarm.
-A decline, or MAU-only churn, is not treated as an outage.
+structurally valid payload while the active-user counts empty out. A retrieval check
+sees a healthy response and happily persists the zeros. So the collector also errors
+when the feed reports `mau=0` while the last snapshot with any activity had users —
+real users do not all vanish overnight.
+
+Two details that matter, both learned the hard way:
+
+- It keys on **MAU alone**, not on "MAU and installs are both zero". `total_installs`
+  is a 90-day window and `mau` is 30-day, so a broken ingest empties MAU at T+30
+  while installs coasts to T+90. Requiring both would wave through ~60 days of a dead
+  pipeline. Installs still reporting while actives are zero is corroboration, not a
+  reason to stay quiet.
+- It compares against the **last snapshot that had users**, not yesterday. Comparing
+  to yesterday makes the alert self-silencing: day one fires, its zeros become the
+  baseline, and every later day sees zero-following-zero and reports healthy. Keying
+  on the last live snapshot keeps the alarm ringing and states the growing gap.
+
+The zeros are still recorded as reported (we don't suppress what the feed said); the
+point is to raise the alarm. A real decline is not an outage — only reaching zero is.
+A fleet that has never reported an active user is not an outage either.
 
 Failures emit GitHub Actions annotations so they surface in the run summary, and a
 final step re-raises the failure **after** the day's data is committed — so the run
