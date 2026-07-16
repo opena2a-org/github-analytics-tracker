@@ -60,6 +60,12 @@ const FEED_TIMEOUT_MS = Number(process.env.TELEMETRY_FEED_TIMEOUT_MS) || 30000;
 // pure classifiers, and that glue was untestable while this was hardcoded.
 // Unset in production, where it resolves to the committed database.
 const dbPath = process.env.TELEMETRY_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
+// Same reason, and not optional: writeBadge previously hardcoded this path, so
+// a test that exercised a healthy collection wrote a real badge into the repo —
+// one claiming "0 active CLI users", which the workflow commits and a shield
+// renders. A test must not be able to publish a fabricated number.
+const badgePath =
+  process.env.TELEMETRY_BADGE_PATH || path.join(__dirname, '..', 'data', 'telemetry-badge.json');
 const today = new Date().toISOString().split('T')[0];
 
 /**
@@ -276,10 +282,7 @@ function writeBadge(feed) {
     color: 'brightgreen',
     style: 'flat',
   };
-  fs.writeFileSync(
-    path.join(__dirname, '..', 'data', 'telemetry-badge.json'),
-    JSON.stringify(badge, null, 2)
-  );
+  fs.writeFileSync(badgePath, JSON.stringify(badge, null, 2));
 }
 
 async function main() {

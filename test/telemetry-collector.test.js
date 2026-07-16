@@ -53,6 +53,9 @@ function run(env, dbFile) {
         ...process.env,
         GITHUB_ACTIONS: '1',
         TELEMETRY_DB_PATH: dbFile,
+        // Must point somewhere disposable: without this the healthy-feed case
+        // wrote a real badge into data/, claiming "0 active CLI users".
+        TELEMETRY_BADGE_PATH: join(dbFile, '..', 'telemetry-badge.json'),
         TELEMETRY_FEED_TIMEOUT_MS: '5000',
         ...env,
       },
