@@ -84,9 +84,10 @@ HF_AUTHOR=opena2a                                             # auto-discovers a
 HF_MODELS=org/model,org/other                                 # optional extra models
 HF_TOKEN=hf_...                                               # optional, raises HF rate limits / private repos
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json          # optional for BigQuery country stats
-REGISTRY_URL=https://api.oa2a.org                     # optional; enables first-party CLI telemetry
+REGISTRY_URL=https://api.oa2a.org                             # optional; enables first-party CLI telemetry
 REGISTRY_TELEMETRY_TOKEN=...                                  # optional; SA token for the gated detail view (server-side only)
 ANALYTICS_TRACKER_PASSWORD=...                                # optional; gates the fine-grained telemetry view on THIS dashboard
+TELEMETRY_STALE_AFTER_DAYS=2                                  # optional; consecutive failure days tolerated before the collector exits 1
 ```
 
 The collector persists only the coarse, anonymous adoption feed. The fine-grained
@@ -101,7 +102,55 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:0
 1. Settings → Secrets and variables → Actions → New secret.
 2. Add `GH_STATS_TOKEN` (a Personal Access Token with `repo` or `public_repo` scope).
 3. Optionally set `GOOGLE_APPLICATION_CREDENTIALS_JSON` for BigQuery country stats.
-4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection (the collector skips gracefully when unset).
+4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection. Unset, the collector warns and skips.
+
+### When telemetry collection stops
+
+A collector that fails quietly is worse than one that fails outright. Two different
+failures are checked, because they look nothing alike.
+
+**The feed can't be retrieved.** A blip is tolerated; an outage is not:
+
+| Situation | Result |
+|---|---|
+| `REGISTRY_URL` unset, nothing ever collected | warning, exit 0 — legitimately not provisioned |
+| `REGISTRY_URL` unset, but telemetry *was* collected before | **error, exit 1** — the variable was removed |
+| `REGISTRY_URL` set, nothing ever collected | **error, exit 1** — broken feed or wrong URL |
+| Failing for ≤ `TELEMETRY_STALE_AFTER_DAYS` (default 2) | warning, exit 0 — transient |
+| Failing for longer | **error, exit 1** — the dashboard is serving stale numbers |
+
+**The feed responds fine but the numbers drained.** This is the shape a broken
+ingest path actually takes: the adoption feed keeps answering `200` with a
+structurally valid payload while the active-user counts empty out. A retrieval check
+sees a healthy response and happily persists the zeros. So the collector also errors
+when the feed reports `mau=0` while the last snapshot with any activity had users —
+real users do not all vanish overnight.
+
+Two details that matter, both learned the hard way:
+
+- It keys on **MAU alone**, not on "MAU and installs are both zero". `total_installs`
+  is a 90-day window and `mau` is 30-day, so a broken ingest empties MAU at T+30
+  while installs coasts to T+90. Requiring both would wave through ~60 days of a dead
+  pipeline. Installs still reporting while actives are zero is corroboration, not a
+  reason to stay quiet.
+- It compares against the **last snapshot that had users**, not yesterday. Comparing
+  to yesterday makes the alert self-silencing: day one fires, its zeros become the
+  baseline, and every later day sees zero-following-zero and reports healthy. Keying
+  on the last live snapshot keeps the alarm ringing and states the growing gap.
+
+The zeros are still recorded as reported (we don't suppress what the feed said); the
+point is to raise the alarm. A real decline is not an outage — only reaching zero is.
+A fleet that has never reported an active user is not an outage either.
+
+Failures emit GitHub Actions annotations so they surface in the run summary, and a
+final step re-raises the failure **after** the day's data is committed — so the run
+goes red and the scheduled-run notification fires, without a telemetry outage costing
+the other collectors their data. A failed run never writes: zeros must not overwrite
+a good snapshot.
+
+Untrusted feed text (HTTP error bodies) is sanitized before it reaches any log line —
+the Actions runner parses `::command::` lines on both stdout and stderr, so an
+unsanitized response body could otherwise forge or suppress these very annotations.
 
 The workflow auto-discovers public repos in the orgs listed in `GITHUB_ORG`. Add a new repo to the org, the next run picks it up. No manual list maintenance.
 

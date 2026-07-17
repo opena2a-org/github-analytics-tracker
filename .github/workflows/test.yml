@@ -1,0 +1,51 @@
+name: Test
+
+# Nothing ran the test suite before this workflow existed: the only workflow was
+# the daily collector, so every test in test/ was decoration — it passed on
+# whoever's laptop last remembered to run it, and a change that broke it merged
+# green. That is the same shape as the silent-collector bug this suite exists to
+# guard against, so it gets the same treatment: run it, and let it fail loudly.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer run of the same branch makes older ones irrelevant.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches collect-stats.yml. better-sqlite3 is a native module, so the
+          # runner needs a toolchain — ubuntu-latest has one.
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The suite drives the real collector against fixture databases and writes
+      # a badge to a temp path. If either escapes into the repo, a test could
+      # publish a fabricated number that the daily workflow then commits — which
+      # has already happened once and was caught by hand.
+      - name: Assert the test suite left no artifacts behind
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::The test suite modified tracked files. Tests must not write into the repo."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+          echo "Working tree clean."

@@ -1,6 +1,14 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { normalizeAdoptionFeed, toolDisplayName, toCount } = require('../lib/telemetry');
+const {
+  normalizeAdoptionFeed,
+  toolDisplayName,
+  toCount,
+  classifyCollectionSkip,
+  classifyFeedHealth,
+  sanitizeForLog,
+  daysBetween,
+} = require('../lib/telemetry');
 
 const validFeed = () => ({
   generatedAt: '2026-07-02T12:00:00Z',
@@ -100,4 +108,220 @@ test('normalizeAdoptionFeed tolerates missing optional arrays', () => {
   assert.deepEqual(n.tools, []);
   assert.deepEqual(n.byCountry, []);
   assert.equal(n.generatedAt, '');
+});
+
+// --- classifyCollectionSkip ------------------------------------------------
+//
+// Covers the collector failing to RETRIEVE the feed. Note what this does NOT
+// cover: a feed that answers 200 with collapsed numbers. That is the shape a
+// broken ingest actually takes, and it is classifyFeedHealth's job — see the
+// zero-collapse block further down.
+
+const skip = (o) => classifyCollectionSkip({ reason: 'feed fetch failed: HTTP 404', today: '2026-07-16', ...o });
+
+test('unconfigured and never collected: warns, does not fail the workflow', () => {
+  const r = skip({ registryUrlSet: false, lastSuccessDate: null });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+  assert.match(r.message, /not configured/i);
+  assert.match(r.message, /REGISTRY_URL/);
+});
+
+test('variable removed after it once worked: errors immediately', () => {
+  // Config being deleted is not a transient blip — no staleness grace.
+  const r = skip({ registryUrlSet: false, lastSuccessDate: '2026-07-15' });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /2026-07-15/);
+});
+
+test('configured but never succeeded: errors (broken feed, not unprovisioned)', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: null });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /NEVER succeeded/i);
+});
+
+test('a single failed run is transient: warns, keeps yesterday data', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-15' });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+  assert.match(r.message, /1d ago/);
+});
+
+test('at the staleness threshold: still tolerated', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-14', staleAfterDays: 2 });
+  assert.equal(r.level, 'warning');
+  assert.equal(r.exitCode, 0);
+});
+
+test('past the staleness threshold: errors as an outage', () => {
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-13', staleAfterDays: 2 });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /3 day/);
+  assert.match(r.message, /outage/i);
+});
+
+test('a week-long retrieval gap fails loudly instead of exiting 0', () => {
+  const r = classifyCollectionSkip({
+    reason: 'feed fetch failed: HTTP 404',
+    registryUrlSet: true,
+    lastSuccessDate: '2026-06-26',
+    today: '2026-07-03',
+  });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /7 day/);
+});
+
+test('a FUTURE last-success date errors instead of disabling escalation forever', () => {
+  // age < 0 never exceeds the threshold, so a single skewed/corrupt row would
+  // otherwise pin this to "warning" permanently — silently undoing the whole point.
+  const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-08-20' });
+  assert.equal(r.level, 'error');
+  assert.equal(r.exitCode, 1);
+  assert.match(r.message, /FUTURE/);
+  assert.doesNotMatch(r.message, /-\d+d ago/); // the old nonsense phrasing
+});
+
+test('an unreadable store is reported as UNKNOWN, not as "never succeeded"', () => {
+  // Conflating these asserts a specific false claim and points the operator at
+  // the feed when the fault is the database.
+  const r = skip({
+    registryUrlSet: true,
+    lastSuccess: { state: 'unknown', detail: 'database disk image is malformed' },
+  });
+  assert.equal(r.level, 'error');
+  assert.match(r.message, /UNKNOWN/);
+  assert.match(r.message, /malformed/);
+  assert.doesNotMatch(r.message, /never succeeded/i);
+});
+
+test('staleAfterDays rejects junk rather than silently tightening the tolerance', () => {
+  // Number('') === 0, so `${{ vars.UNSET }}` would otherwise error on the first blip.
+  for (const bad of ['', ' ', 'abc', '-1', '2.5', NaN, Infinity, null, undefined]) {
+    const r = skip({ registryUrlSet: true, lastSuccessDate: '2026-07-15', staleAfterDays: bad });
+    assert.equal(r.level, 'warning', `staleAfterDays=${JSON.stringify(bad)} should fall back to the default`);
+  }
+  // A real value is still honored.
+  assert.equal(skip({ registryUrlSet: true, lastSuccessDate: '2026-07-13', staleAfterDays: 5 }).level, 'warning');
+  assert.equal(skip({ registryUrlSet: true, lastSuccessDate: '2026-07-13', staleAfterDays: 1 }).level, 'error');
+});
+
+// --- log-injection boundary -------------------------------------------------
+//
+// The HTTP error path embeds up to 200 bytes of the registry's raw response body
+// into the message, which reaches BOTH an ::annotation:: on stdout and a
+// console.error on stderr. The runner scans both for workflow commands, so
+// untrusted bytes there can forge or suppress the very outage signal this module
+// raises.
+
+test('sanitizeForLog collapses every line terminator, including a lone CR', () => {
+  // A bare \r is the one that /\r?\n/ misses: .NET line readers break on it.
+  assert.equal(sanitizeForLog('a\rb'), 'a b');
+  assert.equal(sanitizeForLog('a\nb'), 'a b');
+  assert.equal(sanitizeForLog('a\r\nb'), 'a  b');
+  assert.equal(sanitizeForLog("a\u2028b"), "a b");
+  assert.equal(sanitizeForLog("a\u2029b"), "a b");
+  assert.equal(sanitizeForLog("a\u0085b"), "a b");
+});
+
+test('sanitizeForLog defangs the workflow-command sigil', () => {
+  assert.doesNotMatch(sanitizeForLog('x::add-mask::secret'), /::/);
+});
+
+test('a hostile feed body cannot inject a workflow command into the message', () => {
+  const hostile = 'HTTP 500: x\r::add-mask::0\r::stop-commands::deadbeef';
+  const r = classifyCollectionSkip({
+    reason: `feed fetch failed: ${hostile}`,
+    registryUrlSet: true,
+    lastSuccessDate: '2026-07-15',
+    today: '2026-07-16',
+  });
+  // Nothing that could start a new line, and no sigil left to start one with.
+  assert.ok(!/[\r\n\u2028\u2029\u0085]/.test(r.message), "message must be single-line");
+  assert.doesNotMatch(r.message, /::/);
+  // The command names may survive as inert text; what must not survive is a
+  // `::` that could begin a workflow command.
+  assert.doesNotMatch(r.message, /::add-mask::/);
+  assert.doesNotMatch(r.message, /::stop-commands::/);
+});
+
+test('the message is bounded so a 200-byte body cannot flood the annotation', () => {
+  const r = classifyCollectionSkip({
+    reason: `feed fetch failed: ${'A'.repeat(5000)}`,
+    registryUrlSet: true,
+    lastSuccessDate: '2026-07-15',
+    today: '2026-07-16',
+  });
+  assert.ok(r.message.length <= 520, `message length ${r.message.length}`);
+});
+
+// --- classifyFeedHealth (the drain detector) ---------------------------------
+//
+// The failure a retrieval check structurally cannot see, and the one a broken
+// ingest actually produces: the adoption feed answers 200 with valid numbers
+// whose active counts have drained. normalizeAdoptionFeed accepts them
+// (correctly — they are well-formed), persist() writes them, and last-success
+// advances, so classifyCollectionSkip is never even called.
+
+const LIVE = { mau: 200, totalInstalls: 500, date: '2026-06-16' };
+
+test('a drained feed is reported as an outage', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  assert.ok(r, 'zero actives against a live install base must not pass silently');
+  assert.equal(r.level, 'error');
+  assert.match(r.message, /mau=0/);
+  assert.match(r.message, /mau=200 on 2026-06-16/);
+  assert.match(r.message, /do not all disappear overnight/i);
+});
+
+test('MAU zero while installs survive IS the drain signal, not "just churn"', () => {
+  // Regression guard for a real blind spot: the first version required mau AND
+  // installs to BOTH be zero. total_installs is a 90-day window and mau is
+  // 30-day, so during an ingest outage MAU empties at T+30 while installs
+  // coasts to T+90 — the old check waved through ~60 days of a dead pipeline.
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 500 }, LIVE, '2026-07-16');
+  assert.ok(r, 'mau=0 with 500 live installs is a dead pipeline, not churn');
+  assert.match(r.message, /500 install/);
+  assert.match(r.message, /coasting on old events/);
+});
+
+test('the alert keeps firing on later days rather than self-silencing', () => {
+  // Comparing against YESTERDAY made this fire once: day one's zeros persisted
+  // and became the baseline, so every later day saw zero-following-zero and
+  // reported healthy. Keying on the last LIVE snapshot keeps it ringing.
+  const day1 = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  const day8 = classifyFeedHealth({ mau: 0, totalInstalls: 100 }, LIVE, '2026-07-23');
+  assert.ok(day1 && day8, 'a sustained outage must keep erroring');
+  // And it gets louder: the gap is stated and grows.
+  assert.match(day1.message, /for 30 day\(s\)/);
+  assert.match(day8.message, /for 37 day\(s\)/);
+});
+
+test('once installs drain too, it still errors and says so', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 0 }, LIVE, '2026-09-20');
+  assert.ok(r);
+  assert.match(r.message, /retention window has now emptied/);
+});
+
+test('healthy numbers report nothing', () => {
+  assert.equal(classifyFeedHealth({ mau: 200, totalInstalls: 500 }, LIVE, '2026-07-16'), null);
+});
+
+test('a real decline is not an outage — only reaching zero is', () => {
+  assert.equal(classifyFeedHealth({ mau: 1, totalInstalls: 500 }, LIVE, '2026-07-16'), null);
+});
+
+test('a fleet that never had users is not an outage', () => {
+  // Brand-new deployment: nothing has died, so nothing to report.
+  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, null, '2026-07-16'), null);
+  assert.equal(classifyFeedHealth({ mau: 0, totalInstalls: 0 }, { mau: 0, totalInstalls: 0, date: '2026-07-15' }, '2026-07-16'), null);
+});
+
+test('the drain message is sanitized and bounded like every other output', () => {
+  const r = classifyFeedHealth({ mau: 0, totalInstalls: 333 }, LIVE, '2026-07-16');
+  assert.ok(!/[\r\n]/.test(r.message), 'must be single-line');
+  assert.doesNotMatch(r.message, /::/);
 });

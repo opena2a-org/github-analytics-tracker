@@ -7,7 +7,12 @@ const fs = require('fs');
 
 require('dotenv').config();
 
-const { normalizeAdoptionFeed } = require('../lib/telemetry');
+const {
+  normalizeAdoptionFeed,
+  classifyCollectionSkip,
+  classifyFeedHealth,
+  sanitizeForLog,
+} = require('../lib/telemetry');
 
 /*
  * First-party CLI telemetry collector.
@@ -27,21 +32,139 @@ const { normalizeAdoptionFeed } = require('../lib/telemetry');
  * dashboard and is never persisted here.
  *
  * Config (env):
- *   REGISTRY_URL=https://api.oa2a.org   # Registry base URL (required)
+ *   REGISTRY_URL=https://api.oa2a.org       # Registry base URL (required)
+ *   TELEMETRY_STALE_AFTER_DAYS=2            # optional; consecutive failure days
+ *                                           # tolerated before this exits 1
  *
- * If REGISTRY_URL is unset the collector skips gracefully (exit 0), so the
- * daily workflow doesn't fail before the Registry endpoint is provisioned.
+ * Failure policy: a single failed run warns and exits 0 (a transient feed blip
+ * must not fail the daily workflow, and must never write zeros over a good
+ * snapshot). A SUSTAINED failure exits 1 — see classifyCollectionSkip in
+ * lib/telemetry.js for the full rule and the incident that motivated it.
+ *
+ * The workflow marks this step continue-on-error, so a non-zero exit surfaces
+ * the failure without dropping the other collectors' data for the day (this
+ * step runs before generate-md and the commit step).
  */
 const REGISTRY_URL = (process.env.REGISTRY_URL || '').trim().replace(/\/+$/, '');
-
-if (!REGISTRY_URL) {
-  console.log('REGISTRY_URL not set — skipping first-party telemetry collection.');
-  process.exit(0);
-}
+// Left unvalidated here on purpose: normalizeStaleAfterDays inside
+// classifyCollectionSkip rejects anything that is not a non-negative integer and
+// falls back to the default. Number('') === 0 would otherwise set the tolerance
+// to zero for the standard `${{ vars.UNSET }}` Actions pattern.
+const STALE_AFTER_DAYS = process.env.TELEMETRY_STALE_AFTER_DAYS;
 
 const FEED_PATH = '/api/v1/telemetry/v1/adoption/public';
-const dbPath = path.join(__dirname, '..', 'data', 'analytics.db');
+const FEED_TIMEOUT_MS = Number(process.env.TELEMETRY_FEED_TIMEOUT_MS) || 30000;
+// TELEMETRY_DB_PATH exists so the tests can drive the real script against
+// fixture databases (corrupt, empty, no-table, drained). Every bug the reviews
+// found in this collector lived in the db/annotation glue rather than in the
+// pure classifiers, and that glue was untestable while this was hardcoded.
+// Unset in production, where it resolves to the committed database.
+const dbPath = process.env.TELEMETRY_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
+// Same reason, and not optional: writeBadge previously hardcoded this path, so
+// a test that exercised a healthy collection wrote a real badge into the repo —
+// one claiming "0 active CLI users", which the workflow commits and a shield
+// renders. A test must not be able to publish a fabricated number.
+const badgePath =
+  process.env.TELEMETRY_BADGE_PATH || path.join(__dirname, '..', 'data', 'telemetry-badge.json');
 const today = new Date().toISOString().split('T')[0];
+
+/**
+ * Emit a GitHub Actions annotation so a failure is visible in the run summary
+ * and the PR/commit UI, not just buried in step output nobody opens. No-op
+ * locally.
+ */
+/**
+ * Emit a GitHub Actions annotation so a failure surfaces in the run summary and
+ * the commit UI, not only in step output nobody opens.
+ *
+ * The runner scans stdout AND stderr for `::command::` lines, so `message` must
+ * already be sanitized by the caller — sanitizing only here would leave the
+ * console.* sinks below as an open injection path. Sanitizing again is cheap
+ * and keeps this safe if a future caller forgets.
+ */
+function annotate(level, message) {
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(`::${level}::${sanitizeForLog(message, 500)}`);
+  }
+}
+
+/**
+ * Newest stored snapshot, three-valued.
+ *
+ *   { state: 'known', date }  — a snapshot exists
+ *   { state: 'never' }        — the store is readable and holds nothing
+ *   { state: 'unknown', ... } — the store could not be read
+ *
+ * The distinction matters: collapsing 'unknown' into 'never' makes the
+ * collector assert "has never succeeded" when the truth is "the database is
+ * corrupt and 60 days of data may be sitting in it" — a confident, wrong
+ * diagnosis pointing the operator at the wrong system.
+ */
+function readLastSuccess() {
+  let db;
+  try {
+    if (!fs.existsSync(dbPath)) return { state: 'never' };
+    db = new Database(dbPath, { readonly: true });
+    const row = db.prepare('SELECT MAX(date) AS d FROM telemetry_snapshots').get();
+    return row && row.d ? { state: 'known', date: row.d } : { state: 'never' };
+  } catch (err) {
+    // A missing table means the schema predates telemetry: readable, empty.
+    if (/no such table/i.test(err.message || '')) return { state: 'never' };
+    return { state: 'unknown', detail: err.message };
+  } finally {
+    try { if (db) db.close(); } catch { /* already closed */ }
+  }
+}
+
+/**
+ * Newest stored snapshot that had ANY active users, for the drain check.
+ *
+ * Deliberately not "yesterday": comparing against yesterday makes the alert
+ * self-silencing, because the first zero day persists and becomes the baseline
+ * every later day is measured against. Keying on the last LIVE snapshot keeps
+ * the alarm ringing until someone fixes it.
+ */
+function readLastLiveTotals() {
+  let db;
+  try {
+    if (!fs.existsSync(dbPath)) return null;
+    db = new Database(dbPath, { readonly: true });
+    const row = db
+      .prepare(
+        'SELECT date, mau, total_installs AS totalInstalls FROM telemetry_snapshots ' +
+          'WHERE date < ? AND mau > 0 ORDER BY date DESC LIMIT 1'
+      )
+      .get(today);
+    return row || null;
+  } catch {
+    return null;
+  } finally {
+    try { if (db) db.close(); } catch { /* already closed */ }
+  }
+}
+
+/**
+ * Report a skipped/failed collection at the right volume and exit.
+ * Never writes data — a bad run must not overwrite a good snapshot with zeros.
+ */
+function reportSkipAndExit(reason) {
+  const { level, exitCode, message } = classifyCollectionSkip({
+    reason,
+    registryUrlSet: Boolean(REGISTRY_URL),
+    lastSuccess: readLastSuccess(),
+    today,
+    staleAfterDays: STALE_AFTER_DAYS,
+  });
+  // `message` is sanitized by the classifier, so both sinks are safe.
+  annotate(level, message);
+  if (level === 'error') console.error('  %s', message);
+  else console.warn('  %s', message);
+  process.exit(exitCode);
+}
+
+if (require.main === module && !REGISTRY_URL) {
+  reportSkipAndExit('REGISTRY_URL is not set');
+}
 
 function httpGetJson(rawUrl) {
   return new Promise((resolve, reject) => {
@@ -54,7 +177,7 @@ function httpGetJson(rawUrl) {
     }
     const client = url.protocol === 'http:' ? http : https;
     const headers = { 'User-Agent': 'github-analytics-tracker', Accept: 'application/json' };
-    client.get(url, { headers }, (res) => {
+    const req = client.get(url, { headers }, (res) => {
       let data = '';
       res.on('data', chunk => (data += chunk));
       res.on('end', () => {
@@ -69,7 +192,15 @@ function httpGetJson(rawUrl) {
         }
       });
       res.on('error', reject);
-    }).on('error', reject);
+    });
+    // Without this a registry that accepts the connection and never answers
+    // hangs the daily workflow until the job's own limit kills it — a silent
+    // failure of a different shape, and one that also takes the other
+    // collectors' commit down with it.
+    req.setTimeout(FEED_TIMEOUT_MS, () => {
+      req.destroy(new Error(`feed request timed out after ${FEED_TIMEOUT_MS}ms`));
+    });
+    req.on('error', reject);
   });
 }
 
@@ -151,10 +282,7 @@ function writeBadge(feed) {
     color: 'brightgreen',
     style: 'flat',
   };
-  fs.writeFileSync(
-    path.join(__dirname, '..', 'data', 'telemetry-badge.json'),
-    JSON.stringify(badge, null, 2)
-  );
+  fs.writeFileSync(badgePath, JSON.stringify(badge, null, 2));
 }
 
 async function main() {
@@ -166,19 +294,21 @@ async function main() {
   try {
     raw = await httpGetJson(REGISTRY_URL + FEED_PATH);
   } catch (err) {
-    // A transient/unavailable feed must not fail the whole daily workflow, and
-    // must not write zeros over yesterday's real snapshot. Skip this run.
-    console.error('  Feed fetch failed: %s — skipping (no data written).', err.message);
-    process.exit(0);
+    // A transient feed must not fail the workflow or write zeros over a good
+    // snapshot — but a sustained one is an outage, so let the classifier decide
+    // rather than swallowing every failure the same way.
+    reportSkipAndExit(`feed fetch failed: ${err.message}`);
   }
 
   let feed;
   try {
     feed = normalizeAdoptionFeed(raw);
   } catch (err) {
-    console.error('  Feed failed validation: %s — skipping (no data written).', err.message);
-    process.exit(0);
+    reportSkipAndExit(`feed failed validation: ${err.message}`);
   }
+
+  // Read BEFORE writing, so today's row can't become the thing we compare to.
+  const lastLive = readLastLiveTotals();
 
   const db = new Database(dbPath);
   try {
@@ -192,10 +322,34 @@ async function main() {
     '  Installs: %d | WAU: %d | MAU: %d | engaged(MAU): %d | tools: %d | countries: %d',
     feed.totalInstalls, feed.wau, feed.mau, feed.engagedMau, feed.tools.length, feed.byCountry.length
   );
+
+  // A retrieval check cannot see a feed that answers 200 with drained numbers,
+  // which is exactly what a broken ingest looks like from here. The zeros are
+  // recorded as reported — we don't suppress what the feed said — but a live
+  // fleet does not drop to zero overnight, so say so loudly, every day, until
+  // it is fixed.
+  const health = classifyFeedHealth(feed, lastLive, today);
+  if (health) {
+    annotate(health.level, health.message);
+    console.error('  %s', health.message);
+    process.exit(1);
+  }
+
   console.log('First-party telemetry collection complete.');
 }
 
-main().catch(error => {
-  console.error('Fatal error: %s', error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(error => {
+    const msg = sanitizeForLog(error && error.message);
+    annotate('error', `Telemetry collector crashed: ${msg}`);
+    console.error('Fatal error: %s', msg);
+    process.exit(1);
+  });
+}
+
+// Exported for test/telemetry-collector.test.js, which drives the real script as
+// a subprocess against fixture databases. Mirrors collect-chrome-stats.js
+// exporting parseListing for test/chrome.test.js. The db readers are bound to
+// the module-level dbPath, so the tests exercise them through the CLI rather
+// than by calling them directly.
+module.exports = { annotate, readLastSuccess, readLastLiveTotals };
