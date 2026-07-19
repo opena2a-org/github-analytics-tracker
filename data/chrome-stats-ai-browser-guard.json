@@ -1,10 +1,10 @@
 {
-  "lastUpdated": "2026-07-18T06:37:15.694Z",
+  "lastUpdated": "2026-07-19T06:49:38.254Z",
   "extensionId": "ojphpdmabflmcjhglfogmkdgchkncikf",
   "name": "AI Browser Guard",
   "version": "0.5.0",
   "stats": {
-    "users": 4,
+    "users": 6,
     "rating": null,
     "ratingCount": null,
     "note": "users = Google rounded weekly-active-user count, not cumulative installs"
