@@ -1,24 +1,24 @@
 {
-  "lastUpdated": "2026-07-20T07:00:56.905Z",
+  "lastUpdated": "2026-07-21T06:49:16.105Z",
   "total": {
-    "adoption": 280232,
-    "adoptionExCrypto": 259917,
+    "adoption": 282487,
+    "adoptionExCrypto": 262149,
     "npm": 111903,
-    "pypi": 28359,
-    "clones": 131665,
-    "docker": 8305,
-    "views": 28006,
-    "stars": 247,
+    "pypi": 28395,
+    "clones": 133858,
+    "docker": 8331,
+    "views": 28065,
+    "stars": 248,
     "repos": 45,
     "npmPackages": 41,
-    "chromeUsers": 6,
+    "chromeUsers": 7,
     "chromeExtensions": 1,
     "telemetry": {
-      "asOf": "2026-07-20",
+      "asOf": "2026-07-21",
       "totalInstalls": 0,
       "wau": 67,
-      "mau": 191,
-      "engagedMau": 12,
+      "mau": 198,
+      "engagedMau": 13,
       "tools": 5,
       "countries": 0,
       "provenance": "anonymous first-party CLI telemetry; unauthenticated ingest (self-asserted id); wau/mau are best-effort and forgeable (not a sybil-verified count); engagedMau is a sybil-dampened floor (installs with >=2 active days of real usage); verifiedMau is the sybil-resistant tier (installs whose events are Ed25519-signed by an enrolled telemetry:sensor key), 0 until CLI signing ships; tiers rank verified > engaged > reported"
@@ -26,8 +26,8 @@
   },
   "excludingCrypto": {
     "npm": 110437,
-    "pypi": 12724,
-    "clones": 128451,
-    "docker": 8305
+    "pypi": 12737,
+    "clones": 130644,
+    "docker": 8331
   }
 }
