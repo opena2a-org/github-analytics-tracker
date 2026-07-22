@@ -1,13 +1,16 @@
 {
-  "lastUpdated": "2026-07-22T20:21:16.853Z",
+  "lastUpdated": "2026-07-22T22:45:00.700Z",
   "total": {
-    "adoption": 150108,
-    "adoptionExCrypto": 132929,
+    "adoption": 163775,
+    "adoptionExCrypto": 146596,
+    "downloads": 298844,
+    "downloadsExCrypto": 278460,
     "npm": 112222,
     "pypi": 28487,
     "cloneUniques": 1021,
     "clones": 136090,
-    "docker": 8378,
+    "docker": 18544,
+    "hf": 3501,
     "views": 28164,
     "stars": 248,
     "repos": 45,
@@ -30,6 +33,7 @@
     "pypi": 12784,
     "cloneUniques": 1012,
     "clones": 132876,
-    "docker": 8378
+    "docker": 18544,
+    "downloads": 278460
   }
 }

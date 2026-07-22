@@ -58,10 +58,30 @@ try {
     ORDER BY ts.date DESC LIMIT 1
   `).get();
 
-  // Docker totals
+  // Docker totals: latest pull_count per image, summed across images — matching
+  // the dashboard (pages/api/overview.js). MAX() across all rows silently took
+  // only the single biggest image and undercounted the fleet by ~10K.
   const dockerTotal = db.prepare(`
-    SELECT COALESCE(MAX(pull_count), 0) as total FROM docker_pulls
+    SELECT COALESCE(SUM(p), 0) AS total FROM (
+      SELECT (SELECT pull_count FROM docker_pulls dp2
+              WHERE dp2.image_id = dp.image_id ORDER BY date DESC LIMIT 1) AS p
+      FROM docker_pulls dp GROUP BY dp.image_id
+    )
   `).get();
+
+  // HuggingFace model downloads: latest all-time count per model, summed —
+  // matching the dashboard. Previously omitted here entirely, which was the
+  // other half of the summary-vs-dashboard reconciliation gap.
+  const hfTableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='huggingface_stats'"
+  ).get();
+  const hfTotal = hfTableExists ? db.prepare(`
+    SELECT COALESCE(SUM(d), 0) AS total FROM (
+      SELECT (SELECT downloads_all_time FROM huggingface_stats h2
+              WHERE h2.model_id = h.model_id ORDER BY date DESC LIMIT 1) AS d
+      FROM huggingface_stats h GROUP BY h.model_id
+    )
+  `).get() : { total: 0 };
 
   // GitHub views
   const viewsTotal = db.prepare(`
@@ -139,14 +159,29 @@ try {
   const npmPkgCount = db.prepare('SELECT COUNT(*) as count FROM npm_packages').get();
 
   // Total adoption (all ecosystems). Clone term = UNIQUE CLONERS, not raw count.
-  const totalAll = npmTotal.total + pypiTotal.total + cloneUniquesTotal.total + dockerTotal.total;
-  const totalExCrypto = npmExCrypto.total + pypiExCrypto.total + cloneUniquesExCrypto.total + dockerTotal.total;
+  // Same formula as the dashboard's combined.totalAdoption (overview.js):
+  // uniqueCloners + npm + pypi + docker + hf — the two surfaces must agree.
+  const totalAll = npmTotal.total + pypiTotal.total + cloneUniquesTotal.total + dockerTotal.total + hfTotal.total;
+  const totalExCrypto = npmExCrypto.total + pypiExCrypto.total + cloneUniquesExCrypto.total + dockerTotal.total + hfTotal.total;
+
+  // Gross DOWNLOADS (all ecosystems): npm downloads + PyPI downloads + Docker
+  // pulls + git clones (raw) + HF model downloads. Every term is literally a
+  // download event, counted the same way the ecosystems themselves report
+  // downloads (incl. CI and re-downloads — same semantics as npm's public
+  // download counts). This is the marketing/headline metric; `adoption` above
+  // stays the deduplicated floor. Views are NOT downloads, never included.
+  const downloadsAll = npmTotal.total + pypiTotal.total + clonesTotal.total + dockerTotal.total + hfTotal.total;
+  const downloadsExCrypto = npmExCrypto.total + pypiExCrypto.total + clonesExCrypto.total + dockerTotal.total + hfTotal.total;
 
   const summary = {
     lastUpdated: new Date().toISOString(),
     total: {
       adoption: totalAll,
       adoptionExCrypto: totalExCrypto,
+      // Gross download events across npm + PyPI + Docker + git clones. The
+      // website's "downloads" headline sources THIS field, never `adoption`.
+      downloads: downloadsAll,
+      downloadsExCrypto,
       npm: npmTotal.total,
       pypi: pypiTotal.total,
       // Distinct cloners — the term summed into `adoption`.
@@ -154,6 +189,7 @@ try {
       // Raw git-clone count — context/transparency only, NOT in `adoption`.
       clones: clonesTotal.total,
       docker: dockerTotal.total,
+      hf: hfTotal.total,
       views: viewsTotal.total,
       stars: starsTotal.total,
       repos: repoCount.count,
@@ -171,6 +207,7 @@ try {
       cloneUniques: cloneUniquesExCrypto.total,
       clones: clonesExCrypto.total,
       docker: dockerTotal.total,
+      downloads: downloadsExCrypto,
     },
   };
 
@@ -179,6 +216,7 @@ try {
   console.log(`Summary written to ${outPath}`);
   console.log(`  Total adoption: ${totalAll.toLocaleString()}`);
   console.log(`  Excl. CryptoServe: ${totalExCrypto.toLocaleString()}`);
+  console.log(`  Gross downloads: ${downloadsAll.toLocaleString()} (excl. CryptoServe: ${downloadsExCrypto.toLocaleString()})`);
 } catch (err) {
   console.error('Error generating summary:', err);
   process.exit(1);
