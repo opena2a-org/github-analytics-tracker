@@ -36,7 +36,10 @@ try {
     WHERE p.name NOT LIKE 'cryptoserve%'
   `).get();
 
-  // GitHub clones totals
+  // GitHub clones. Adoption counts UNIQUE CLONERS (distinct pullers), NOT the raw
+  // clone count — raw count is dominated by CI/mirror re-cloning (a handful of
+  // actors looping) and is not adoption. See lib/adoption.js. The raw count is
+  // still surfaced as `clones` for context/transparency.
   const clonesTotal = db.prepare(`
     SELECT COALESCE(SUM(count), 0) as total FROM traffic_clones
   `).get();
@@ -45,6 +48,14 @@ try {
     SELECT COALESCE(SUM(c.count), 0) as total
     FROM repositories r JOIN traffic_clones c ON r.id = c.repo_id
     WHERE r.full_name != 'ecolibria/cryptoserve'
+  `).get();
+
+  // cryptoserve's own 14-day deduped cloners, to subtract for the ex-crypto total.
+  const cryptoUniqueCloners = db.prepare(`
+    SELECT COALESCE(clones_uniques, 0) AS u
+    FROM traffic_summary ts JOIN repositories r ON r.id = ts.repo_id
+    WHERE r.full_name = 'ecolibria/cryptoserve'
+    ORDER BY ts.date DESC LIMIT 1
   `).get();
 
   // Docker totals
@@ -65,6 +76,13 @@ try {
   const canonTotals = canonicalRepoTotals(db);
   const starsTotal = { total: canonTotals.stars };
   const repoCount = { count: canonTotals.repoCount };
+
+  // Unique cloners = 14-day deduplicated distinct cloners, deduped by canonical
+  // repo (twins collapsed, snapshot from the canonical row) — identical to the
+  // dashboard's totals.github.totalCloneUniques. NOT SUM(daily uniques) and NOT a
+  // sum across twin rows, both of which over-count. See lib/adoption.js.
+  const cloneUniquesTotal = { total: canonTotals.uniqueCloners };
+  const cloneUniquesExCrypto = { total: canonTotals.uniqueCloners - (cryptoUniqueCloners?.u || 0) };
 
   // Chrome Web Store weekly-active users (latest snapshot per extension,
   // summed across extensions). This is NOT a download count and is deliberately
@@ -120,9 +138,9 @@ try {
   // npm package count
   const npmPkgCount = db.prepare('SELECT COUNT(*) as count FROM npm_packages').get();
 
-  // Total adoption (all ecosystems)
-  const totalAll = npmTotal.total + pypiTotal.total + clonesTotal.total + dockerTotal.total;
-  const totalExCrypto = npmExCrypto.total + pypiExCrypto.total + clonesExCrypto.total + dockerTotal.total;
+  // Total adoption (all ecosystems). Clone term = UNIQUE CLONERS, not raw count.
+  const totalAll = npmTotal.total + pypiTotal.total + cloneUniquesTotal.total + dockerTotal.total;
+  const totalExCrypto = npmExCrypto.total + pypiExCrypto.total + cloneUniquesExCrypto.total + dockerTotal.total;
 
   const summary = {
     lastUpdated: new Date().toISOString(),
@@ -131,6 +149,9 @@ try {
       adoptionExCrypto: totalExCrypto,
       npm: npmTotal.total,
       pypi: pypiTotal.total,
+      // Distinct cloners — the term summed into `adoption`.
+      cloneUniques: cloneUniquesTotal.total,
+      // Raw git-clone count — context/transparency only, NOT in `adoption`.
       clones: clonesTotal.total,
       docker: dockerTotal.total,
       views: viewsTotal.total,
@@ -147,6 +168,7 @@ try {
     excludingCrypto: {
       npm: npmExCrypto.total,
       pypi: pypiExCrypto.total,
+      cloneUniques: cloneUniquesExCrypto.total,
       clones: clonesExCrypto.total,
       docker: dockerTotal.total,
     },

@@ -7,13 +7,14 @@ const {
 } = require('../lib/repos');
 
 // Overview-shaped repoStat factory — only the fields the merge reads.
-function row(owner, repo, canonical, { views = 0, clones = 0, stars = 0, forks = 0, archived = false } = {}) {
+function row(owner, repo, canonical, { views = 0, clones = 0, uniqueCloners = 0, stars = 0, forks = 0, archived = false } = {}) {
   return {
     name: `${owner}/${repo}`, owner, repo,
     canonicalFullName: canonical || `${owner}/${repo}`,
     totalViews: views, views24h: 0, views7d: 0, views30d: 0, customViews: 0,
     totalClones: clones, clones24h: 0, clones7d: 0, clones30d: 0, customClones: 0,
-    recentUniqueVisitors: 0, recentUniqueCloners: 0,
+    // 14-day deduplicated distinct cloners — a snapshot, taken from the canonical row.
+    recentUniqueVisitors: 0, recentUniqueCloners: uniqueCloners,
     stars, starsGrowth24h: 0, starsGrowth7d: 0, starsGrowth30d: 0, starsGrowthAll: 0, starsGrowthCustom: 0,
     forks, archived,
   };
@@ -30,15 +31,16 @@ test('canonicalNameOf / ownNameOf read both row shapes', () => {
 test('mergeByCanonical: transfer twin — traffic sums, stars from canonical (live) row', () => {
   // Stale opena2a-org row + live opena2a-standards row for the same spec.
   const merged = mergeByCanonical([
-    row('opena2a-org', 'agent-trust-protocol', 'opena2a-standards/agent-trust-protocol', { views: 33, clones: 114, stars: 2 }),
-    row('opena2a-standards', 'agent-trust-protocol', 'opena2a-standards/agent-trust-protocol', { views: 35, clones: 69, stars: 2 }),
+    row('opena2a-org', 'agent-trust-protocol', 'opena2a-standards/agent-trust-protocol', { views: 33, clones: 114, uniqueCloners: 8, stars: 2 }),
+    row('opena2a-standards', 'agent-trust-protocol', 'opena2a-standards/agent-trust-protocol', { views: 35, clones: 69, uniqueCloners: 5, stars: 2 }),
   ]);
   assert.strictEqual(merged.length, 1, 'twins collapse to one logical repo');
   const m = merged[0];
   assert.strictEqual(m.name, 'opena2a-standards/agent-trust-protocol', 'reported under canonical path');
   assert.strictEqual(m.owner, 'opena2a-standards');
   assert.strictEqual(m.totalViews, 68, 'views summed across twins');
-  assert.strictEqual(m.totalClones, 183, 'clones summed across twins');
+  assert.strictEqual(m.totalClones, 183, 'raw clones summed across twins');
+  assert.strictEqual(m.recentUniqueCloners, 5, 'deduped unique cloners taken from canonical row (NOT summed to 13 — a 14-day dedup cannot be added across twins)');
   assert.strictEqual(m.stars, 2, 'stars NOT summed — taken from canonical row (would be 4 if summed)');
   assert.strictEqual(m.aliasCount, 1);
 });
@@ -82,10 +84,12 @@ test('canonicalRepoTotals: dedups twins against a real DB schema', () => {
     CREATE TABLE repositories (id INTEGER PRIMARY KEY, owner TEXT, repo TEXT, full_name TEXT UNIQUE, canonical_full_name TEXT, archived INTEGER DEFAULT 0);
     CREATE TABLE stargazers (id INTEGER PRIMARY KEY, repo_id INTEGER, date TEXT, total_stars INTEGER);
     CREATE TABLE forks (id INTEGER PRIMARY KEY, repo_id INTEGER, date TEXT, total_forks INTEGER);
+    CREATE TABLE traffic_summary (id INTEGER PRIMARY KEY, repo_id INTEGER, date TEXT, views_count INTEGER, views_uniques INTEGER, clones_count INTEGER, clones_uniques INTEGER);
   `);
   const addRepo = db.prepare('INSERT INTO repositories (id, owner, repo, full_name, canonical_full_name, archived) VALUES (?,?,?,?,?,?)');
   const addStar = db.prepare('INSERT INTO stargazers (repo_id, date, total_stars) VALUES (?,?,?)');
   const addFork = db.prepare('INSERT INTO forks (repo_id, date, total_forks) VALUES (?,?,?)');
+  const addSummary = db.prepare('INSERT INTO traffic_summary (repo_id, date, views_count, views_uniques, clones_count, clones_uniques) VALUES (?,?,0,0,0,?)');
 
   // 1: live repo (3 stars). 2: stale transfer twin of 3. 3: canonical of the twin (2 stars).
   // 4: archived real repo, last snapshot is older (2 stars) — must still count.
@@ -99,9 +103,16 @@ test('canonicalRepoTotals: dedups twins against a real DB schema', () => {
   addStar.run(3, '2026-06-18', 2);  addFork.run(3, '2026-06-18', 0);   // canonical
   addStar.run(4, '2026-05-24', 2);  addFork.run(4, '2026-05-24', 5);   // archived, older date
 
+  // Deduped unique cloners: canonical row of the twin wins (5), stale twin's 9 dropped.
+  addSummary.run(1, '2026-06-18', 30); // live
+  addSummary.run(2, '2026-05-24', 9);  // stale twin — MUST be dropped, not summed
+  addSummary.run(3, '2026-06-18', 5);  // canonical
+  addSummary.run(4, '2026-05-24', 2);  // archived
+
   const t = canonicalRepoTotals(db);
   db.close();
   assert.strictEqual(t.repoCount, 3, 'twin collapses: hackmyagent, spec, killchain');
   assert.strictEqual(t.stars, 34, '30 + 2 (canonical spec, not the 9 twin) + 2 (archived)');
   assert.strictEqual(t.forks, 7, '2 + 0 + 5');
+  assert.strictEqual(t.uniqueCloners, 37, '30 + 5 (canonical spec, NOT the 9 stale twin) + 2 (archived)');
 });
