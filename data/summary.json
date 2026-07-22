@@ -1,10 +1,11 @@
 {
-  "lastUpdated": "2026-07-22T06:49:31.191Z",
+  "lastUpdated": "2026-07-22T20:21:16.853Z",
   "total": {
-    "adoption": 285177,
-    "adoptionExCrypto": 264793,
+    "adoption": 150108,
+    "adoptionExCrypto": 132929,
     "npm": 112222,
     "pypi": 28487,
+    "cloneUniques": 1021,
     "clones": 136090,
     "docker": 8378,
     "views": 28164,
@@ -27,6 +28,7 @@
   "excludingCrypto": {
     "npm": 110755,
     "pypi": 12784,
+    "cloneUniques": 1012,
     "clones": 132876,
     "docker": 8378
   }
