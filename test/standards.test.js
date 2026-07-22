@@ -3,11 +3,13 @@ const assert = require('node:assert');
 const { groupStandards, STANDARDS_ORG } = require('../lib/standards');
 
 // Minimal repoStat row factory — only the fields groupStandards reads.
-function repo(owner, name, { views = 0, clones = 0, stars = 0, forks = 0, views7d = 0, clones7d = 0, starsGrowthAll = 0 } = {}) {
+function repo(owner, name, { views = 0, clones = 0, uniqueCloners = 0, stars = 0, forks = 0, views7d = 0, clones7d = 0, starsGrowthAll = 0 } = {}) {
   return {
     owner, repo: name, name: `${owner}/${name}`,
     totalViews: views, views24h: 0, views7d, views30d: 0, customViews: 0,
     totalClones: clones, clones24h: 0, clones7d, clones30d: 0, customClones: 0,
+    // 14-day deduplicated distinct cloners — a snapshot, from the canonical row.
+    recentUniqueVisitors: 0, recentUniqueCloners: uniqueCloners,
     stars, starsGrowth24h: 0, starsGrowth7d: 0, starsGrowth30d: 0, starsGrowthAll, starsGrowthCustom: 0,
     forks,
   };
@@ -21,16 +23,17 @@ const families = [
 test('transferred repo merges stale opena2a-org row: traffic sums, stars from canonical', () => {
   const rows = [
     // Stale pre-transfer row left behind under opena2a-org.
-    repo('opena2a-org', 'spec-a', { views: 30, clones: 100, stars: 5, forks: 1 }),
+    repo('opena2a-org', 'spec-a', { views: 30, clones: 100, uniqueCloners: 9, stars: 5, forks: 1 }),
     // Live row under the standards org (current stars/forks).
-    repo(STANDARDS_ORG, 'spec-a', { views: 12, clones: 8, stars: 7, forks: 2 }),
+    repo(STANDARDS_ORG, 'spec-a', { views: 12, clones: 8, uniqueCloners: 4, stars: 7, forks: 2 }),
   ];
   const { standards } = groupStandards(rows, families);
   const famA = standards.find(f => f.name === 'Fam A');
   const specA = famA.repos.find(r => r.repo === 'spec-a');
 
   assert.strictEqual(specA.github.views, 42, 'views summed across both rows');
-  assert.strictEqual(specA.github.clones, 108, 'clones summed across both rows');
+  assert.strictEqual(specA.github.clones, 108, 'raw clones summed across both rows');
+  assert.strictEqual(specA.github.cloneUniques, 4, 'deduped unique cloners from canonical standards-org row (NOT summed to 13 — a 14-day dedup cannot be added across twins)');
   assert.strictEqual(specA.github.stars, 7, 'stars taken from canonical standards-org row, not summed');
   assert.strictEqual(specA.github.forks, 2, 'forks taken from canonical row');
   assert.strictEqual(specA.name, `${STANDARDS_ORG}/spec-a`, 'canonical name wins');

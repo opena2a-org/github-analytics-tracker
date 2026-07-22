@@ -3,6 +3,7 @@ const path = require('path');
 const { computeWindowedStats, computeStarGrowth } = require('../../lib/windowing');
 const { groupStandards } = require('../../lib/standards');
 const { mergeByCanonical } = require('../../lib/repos');
+const { sumAdoption } = require('../../lib/adoption');
 
 /**
  * Overview API: Returns combined GitHub + npm metrics suitable for
@@ -74,6 +75,12 @@ export default async function handler(req, res) {
         FROM traffic_clones WHERE repo_id = ? AND date > date(${clonesAnchor}, '-30 days')
       `).get(repo.id);
 
+      // Unique cloners — the adoption signal (distinct pullers) — is GitHub's own
+      // 14-day DEDUPLICATED count (traffic_summary.clones_uniques, read into
+      // recentUniqueCloners below), NOT a sum of per-day uniques. See lib/adoption.js:
+      // summing daily uniques double-counts a cloner across days and re-inflates the
+      // exact noise this replaces. GitHub only dedupes over 14 days, so this is a
+      // rolling snapshot, handled like recentUniqueVisitors / Chrome users.
       const summary = db.prepare(`
         SELECT views_uniques, clones_uniques
         FROM traffic_summary WHERE repo_id = ?
@@ -88,7 +95,9 @@ export default async function handler(req, res) {
         ORDER BY date DESC LIMIT 1
       `).get(repo.id);
 
-      // Custom date range queries for GitHub traffic
+      // Custom date range queries for GitHub traffic. (Unique cloners has no
+      // custom-range form — GitHub only dedupes over a rolling 14 days, so the
+      // snapshot in recentUniqueCloners is used for every window.)
       let customViews = 0, customClones = 0;
       if (isCustomRange) {
         const cv = db.prepare(`
@@ -118,6 +127,7 @@ export default async function handler(req, res) {
         clones30d: clones30d.total,
         customClones,
         recentUniqueVisitors: summary?.views_uniques || 0,
+        // 14-day deduplicated distinct cloners — the adoption clone term. See lib/adoption.js.
         recentUniqueCloners: summary?.clones_uniques || 0,
         ...starGrowth,
         forks: forks?.forks || 0,
@@ -362,6 +372,8 @@ export default async function handler(req, res) {
       const matchedChrome = chromeStats.filter(c => (config.chromeExtensions || []).includes(c.extensionId));
 
       const githubClones = matchedRepos.reduce((s, r) => s + r.totalClones, 0);
+      // 14-day deduplicated distinct cloners across the tool's repos (snapshot).
+      const githubCloneUniques = matchedRepos.reduce((s, r) => s + (r.recentUniqueCloners || 0), 0);
       const npmDownloads = matchedPackages.reduce((s, p) => s + p.allTimeDownloads, 0);
       const pypiDownloads = matchedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
       const dockerPulls = matchedDocker.reduce((s, d) => s + d.totalPulls, 0);
@@ -381,6 +393,9 @@ export default async function handler(req, res) {
           clones7d: matchedRepos.reduce((s, r) => s + r.clones7d, 0),
           clones30d: matchedRepos.reduce((s, r) => s + r.clones30d, 0),
           customClones: matchedRepos.reduce((s, r) => s + (r.customClones || 0), 0),
+          // 14-day deduplicated distinct cloners (snapshot) — the clone term used
+          // in adoption. Period-independent; see lib/adoption.js.
+          cloneUniques: githubCloneUniques,
           stars: matchedRepos.reduce((s, r) => s + r.stars, 0),
           starsGrowth24h: matchedRepos.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
           starsGrowth7d: matchedRepos.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
@@ -429,9 +444,11 @@ export default async function handler(req, res) {
           ratingCount: matchedChrome[0]?.ratingCount ?? null,
           extensionCount: matchedChrome.length,
         },
-        // Combined adoption: clones + npm + pypi + docker pulls + HF model downloads.
-        // Chrome weekly-active users are intentionally excluded (snapshot, not installs).
-        totalAdoption: githubClones + npmDownloads + pypiDownloads + dockerPulls + hfDownloads,
+        // Combined adoption: UNIQUE CLONERS + npm + pypi + docker pulls + HF model
+        // downloads. Raw clone count is deliberately NOT used — it is CI/mirror
+        // re-clone noise (see lib/adoption.js). Chrome weekly-active users are
+        // excluded too (a snapshot, not installs).
+        totalAdoption: sumAdoption({ cloneUniques: githubCloneUniques, npm: npmDownloads, pypi: pypiDownloads, docker: dockerPulls, hf: hfDownloads }),
       };
     });
 
@@ -465,6 +482,7 @@ export default async function handler(req, res) {
 
     if (ungroupedRepos.length > 0 || ungroupedNpm.length > 0 || ungroupedPypi.length > 0 || ungroupedDocker.length > 0 || ungroupedHf.length > 0) {
       const ugClones = ungroupedRepos.reduce((s, r) => s + r.totalClones, 0);
+      const ugCloneUniques = ungroupedRepos.reduce((s, r) => s + (r.recentUniqueCloners || 0), 0);
       const ugNpm = ungroupedNpm.reduce((s, p) => s + p.allTimeDownloads, 0);
       const ugPypi = ungroupedPypi.reduce((s, p) => s + p.allTimeDownloads, 0);
       const ugDocker = ungroupedDocker.reduce((s, d) => s + d.totalPulls, 0);
@@ -483,6 +501,7 @@ export default async function handler(req, res) {
           clones7d: ungroupedRepos.reduce((s, r) => s + r.clones7d, 0),
           clones30d: ungroupedRepos.reduce((s, r) => s + r.clones30d, 0),
           customClones: ungroupedRepos.reduce((s, r) => s + (r.customClones || 0), 0),
+          cloneUniques: ugCloneUniques,
           stars: ungroupedRepos.reduce((s, r) => s + r.stars, 0),
           starsGrowth24h: ungroupedRepos.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
           starsGrowth7d: ungroupedRepos.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
@@ -522,7 +541,7 @@ export default async function handler(req, res) {
           usersGrowth7d: 0, usersGrowth30d: 0, rating: null, ratingCount: null,
           extensionCount: ungroupedChrome.length,
         },
-        totalAdoption: ugClones + ugNpm + ugPypi + ugDocker + ugHf,
+        totalAdoption: sumAdoption({ cloneUniques: ugCloneUniques, npm: ugNpm, pypi: ugPypi, docker: ugDocker, hf: ugHf }),
       });
     }
 
@@ -542,6 +561,8 @@ export default async function handler(req, res) {
         clones24h: repoStats.reduce((s, r) => s + r.clones24h, 0),
         clones7d: repoStats.reduce((s, r) => s + r.clones7d, 0),
         clones30d: repoStats.reduce((s, r) => s + r.clones30d, 0),
+        // 14-day deduplicated distinct cloners across all repos (snapshot).
+        totalCloneUniques: repoStats.reduce((s, r) => s + (r.recentUniqueCloners || 0), 0),
         totalStars: repoStats.reduce((s, r) => s + r.stars, 0),
         starsGrowth24h: repoStats.reduce((s, r) => s + (r.starsGrowth24h || 0), 0),
         starsGrowth7d: repoStats.reduce((s, r) => s + (r.starsGrowth7d || 0), 0),
@@ -583,11 +604,14 @@ export default async function handler(req, res) {
         usersGrowth30d: chromeStats.reduce((s, c) => s + (c.usersGrowth30d || 0), 0),
       },
       combined: {
-        totalAdoption: repoStats.reduce((s, r) => s + r.totalClones, 0) +
-                       npmStats.reduce((s, p) => s + p.allTimeDownloads, 0) +
-                       totalPypiDownloads +
-                       totalDockerPulls +
-                       totalHfDownloads,
+        // 14-day deduplicated unique cloners, not raw clone count — see lib/adoption.js.
+        totalAdoption: sumAdoption({
+          cloneUniques: repoStats.reduce((s, r) => s + (r.recentUniqueCloners || 0), 0),
+          npm: npmStats.reduce((s, p) => s + p.allTimeDownloads, 0),
+          pypi: totalPypiDownloads,
+          docker: totalDockerPulls,
+          hf: totalHfDownloads,
+        }),
         totalPageViews: repoStats.reduce((s, r) => s + r.totalViews, 0),
       },
     };
@@ -678,6 +702,7 @@ export default async function handler(req, res) {
       stars: standards.reduce((s, f) => s + (f.github.stars || 0), 0),
       views: standards.reduce((s, f) => s + (f.github.views || 0), 0),
       clones: standards.reduce((s, f) => s + (f.github.clones || 0), 0),
+      cloneUniques: standards.reduce((s, f) => s + (f.github.cloneUniques || 0), 0),
       forks: standards.reduce((s, f) => s + (f.github.forks || 0), 0),
     };
 
