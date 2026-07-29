@@ -1,15 +1,16 @@
 {
-  "lastUpdated": "2026-07-29T06:50:39.402Z",
-  "repository": "opena2a-org/atx-conformance",
+  "lastUpdated": "2026-07-29T06:51:42.016Z",
+  "repository": "opena2a-org/crypto-census-data",
   "stats": {
+    "allTime": {
+      "views": 0,
+      "clones": 0
+    },
     "recent14Days": {
       "views": 0,
       "viewsUnique": 0,
       "clones": 0,
       "clonesUnique": 0
-    },
-    "allTime": {
-      "clones": 0
     },
     "stars": 0,
     "forks": 0
