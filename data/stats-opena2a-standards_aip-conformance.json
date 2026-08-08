@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-08-07T06:23:59.246Z",
+  "lastUpdated": "2026-08-08T06:14:02.297Z",
   "repository": "opena2a-standards/aip-conformance",
   "stats": {
     "allTime": {
       "views": 51,
-      "clones": 183
+      "clones": 184
     },
     "recent14Days": {
-      "views": 21,
+      "views": 17,
       "viewsUnique": 2,
-      "clones": 4,
-      "clonesUnique": 4
+      "clones": 5,
+      "clonesUnique": 5
     },
     "stars": 1,
     "forks": 0
