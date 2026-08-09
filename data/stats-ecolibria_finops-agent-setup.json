@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-08-08T06:14:02.290Z",
+  "lastUpdated": "2026-08-09T06:14:13.416Z",
   "repository": "ecolibria/finops-agent-setup",
   "stats": {
     "allTime": {
       "views": 22,
-      "clones": 38
+      "clones": 39
     },
     "recent14Days": {
       "views": 5,
       "viewsUnique": 1,
-      "clones": 0,
-      "clonesUnique": 0
+      "clones": 1,
+      "clonesUnique": 1
     },
     "stars": 0,
     "forks": 0
