@@ -1,14 +1,14 @@
 {
-  "lastUpdated": "2026-08-21T06:08:30.681Z",
+  "lastUpdated": "2026-08-22T06:06:10.839Z",
   "repository": "opena2a-org/crypto-census-data",
   "stats": {
     "allTime": {
-      "views": 40,
-      "clones": 76
+      "views": 45,
+      "clones": 77
     },
     "recent14Days": {
-      "views": 36,
-      "viewsUnique": 2,
+      "views": 41,
+      "viewsUnique": 3,
       "clones": 7,
       "clonesUnique": 6
     },
