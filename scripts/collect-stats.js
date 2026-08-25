@@ -489,16 +489,32 @@ async function main() {
 
   console.log('Tracking %d repositories\n', repos.length);
 
+  const failed = [];
   for (const repo of repos) {
     try {
       await collectStatsForRepo(repo);
     } catch (error) {
       console.error('Failed to collect stats for %s: %s', repo, error.message);
+      failed.push({ repo, error: error.message });
     }
   }
 
   console.log('\nGenerating badge JSON files...');
   await generateBadgeJson();
+
+  // Record what this run discovered and what failed, so generate-summary can
+  // report coverage (summary.collectors.github) and verify-run can fail the
+  // workflow when discovered repos silently go uncollected. Per-repo errors are
+  // swallowed above on purpose (one bad repo must not cost the others' data);
+  // this file is how they stop being silent.
+  const runPath = path.join(__dirname, '..', 'data', 'collect-github-run.json');
+  fs.writeFileSync(runPath, JSON.stringify({
+    date: today,
+    reposDiscovered: repos.length,
+    repos,
+    failed,
+  }, null, 2));
+  console.log('Run record written to %s (%d failed)', runPath, failed.length);
 
   console.log('\nCollection complete!');
   db.close();
