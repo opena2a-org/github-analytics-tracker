@@ -1,39 +1,257 @@
 {
-  "lastUpdated": "2026-08-25T06:08:19.673Z",
+  "lastUpdated": "2026-08-26T06:12:56.537Z",
   "total": {
-    "adoption": 208137,
-    "adoptionExCrypto": 188664,
-    "downloads": 387478,
-    "downloadsExCrypto": 363857,
-    "npm": 140287,
-    "pypi": 32631,
-    "cloneUniques": 3128,
-    "clones": 182469,
-    "docker": 27619,
-    "hf": 4472,
-    "views": 34335,
-    "stars": 316,
+    "adoption": 212284,
+    "adoptionExCrypto": 192748,
+    "downloads": 394866,
+    "downloadsExCrypto": 371179,
+    "npm": 143402,
+    "pypi": 32730,
+    "cloneUniques": 3085,
+    "clones": 185667,
+    "docker": 28580,
+    "hf": 4487,
+    "views": 34492,
+    "stars": 317,
     "repos": 46,
     "npmPackages": 41,
-    "chromeUsers": 16,
+    "chromeUsers": 14,
     "chromeExtensions": 1,
     "telemetry": {
-      "asOf": "2026-08-25",
+      "asOf": "2026-08-26",
       "totalInstalls": 0,
-      "wau": 134,
-      "mau": 429,
-      "engagedMau": 52,
+      "wau": 129,
+      "mau": 423,
+      "engagedMau": 53,
       "tools": 5,
       "countries": 0,
       "provenance": "anonymous first-party CLI telemetry; unauthenticated ingest (self-asserted id); wau/mau are best-effort and forgeable (not a sybil-verified count); engagedMau is a sybil-dampened floor (installs with >=2 active days of real usage); verifiedMau is the sybil-resistant tier (installs whose events are Ed25519-signed by an enrolled telemetry:sensor key), 0 until CLI signing ships; tiers rank verified > engaged > reported"
     }
   },
   "excludingCrypto": {
-    "npm": 138094,
-    "pypi": 15377,
-    "cloneUniques": 3102,
-    "clones": 178295,
-    "docker": 27619,
-    "downloads": 363857
+    "npm": 141195,
+    "pypi": 15426,
+    "cloneUniques": 3060,
+    "clones": 181491,
+    "docker": 28580,
+    "downloads": 371179
+  },
+  "series": {
+    "downloads": {
+      "value": 394866,
+      "scope": "tracked-orgs",
+      "includesCryptoServe": true,
+      "method": "gross-sum",
+      "definition": "Gross download events summed across everything the tracker collects (public non-fork repos in opena2a-org, opena2a-standards and ecolibria; npm packages by author ecolibria plus pinned; PyPI packages discovered from those repos plus pinned; Docker images under opena2a/; Hugging Face models by opena2a): npm downloads (daily rows since 2025-01-28), PyPI downloads without mirrors (daily rows since 2026-02-02; pypistats serves 180 days, earlier history unrecoverable), Docker Hub cumulative pulls, Hugging Face all-time downloads, and GitHub git clones (daily counts since 2025-10-24, summed as GitHub reports them, so automated CI, mirror and repeat clones each count) - not deduplicated across days, actors or sources; page views excluded.",
+      "window": {
+        "npm": {
+          "kind": "daily-rows",
+          "first": "2025-01-28",
+          "asOf": "2026-08-25"
+        },
+        "pypi": {
+          "kind": "daily-rows",
+          "first": "2026-02-02",
+          "asOf": "2026-08-25",
+          "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
+        },
+        "docker": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        },
+        "huggingface": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-06-02",
+          "asOf": "2026-08-26"
+        },
+        "clones": {
+          "kind": "daily-rows",
+          "first": "2025-10-24",
+          "asOf": "2026-08-25"
+        }
+      },
+      "components": {
+        "npm": 143402,
+        "pypi": 32730,
+        "docker": 28580,
+        "huggingface": 4487,
+        "clones": 185667
+      },
+      "status": "ok"
+    },
+    "downloadsExCrypto": {
+      "value": 371179,
+      "scope": "tracked-orgs-ex-cryptoserve",
+      "includesCryptoServe": false,
+      "method": "gross-sum",
+      "definition": "Gross download events summed across everything the tracker collects (public non-fork repos in opena2a-org, opena2a-standards and ecolibria; npm packages by author ecolibria plus pinned; PyPI packages discovered from those repos plus pinned; Docker images under opena2a/; Hugging Face models by opena2a), excluding ecolibria/cryptoserve and the cryptoserve* packages: npm downloads (daily rows since 2025-01-28), PyPI downloads without mirrors (daily rows since 2026-02-02; pypistats serves 180 days, earlier history unrecoverable), Docker Hub cumulative pulls, Hugging Face all-time downloads, and GitHub git clones (daily counts since 2025-10-24, summed as GitHub reports them, so automated CI, mirror and repeat clones each count) - not deduplicated across days, actors or sources; page views excluded.",
+      "window": {
+        "npm": {
+          "kind": "daily-rows",
+          "first": "2025-01-28",
+          "asOf": "2026-08-25"
+        },
+        "pypi": {
+          "kind": "daily-rows",
+          "first": "2026-02-02",
+          "asOf": "2026-08-25",
+          "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
+        },
+        "docker": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        },
+        "huggingface": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-06-02",
+          "asOf": "2026-08-26"
+        },
+        "clones": {
+          "kind": "daily-rows",
+          "first": "2025-10-24",
+          "asOf": "2026-08-25"
+        }
+      },
+      "components": {
+        "npm": 141195,
+        "pypi": 15426,
+        "docker": 28580,
+        "huggingface": 4487,
+        "clones": 181491
+      },
+      "status": "ok"
+    },
+    "adoption": {
+      "value": 212284,
+      "scope": "tracked-orgs",
+      "includesCryptoServe": true,
+      "method": "mixed-window-sum",
+      "definition": "Package, image and model download events plus current 14-day distinct cloners: the same gross npm, PyPI, Docker Hub and Hugging Face terms plus GitHub's rolling 14-day distinct-cloner snapshot; a mixed-window sum in which only the clone term is deduplicated, and only within 14 days.",
+      "window": {
+        "npm": {
+          "kind": "daily-rows",
+          "first": "2025-01-28",
+          "asOf": "2026-08-25"
+        },
+        "pypi": {
+          "kind": "daily-rows",
+          "first": "2026-02-02",
+          "asOf": "2026-08-25",
+          "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
+        },
+        "docker": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        },
+        "huggingface": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-06-02",
+          "asOf": "2026-08-26"
+        },
+        "cloneUniques": {
+          "kind": "rolling-14-day-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        }
+      },
+      "components": {
+        "npm": 143402,
+        "pypi": 32730,
+        "docker": 28580,
+        "huggingface": 4487,
+        "cloneUniques": 3085
+      },
+      "status": "ok"
+    },
+    "adoptionExCrypto": {
+      "value": 192748,
+      "scope": "tracked-orgs-ex-cryptoserve",
+      "includesCryptoServe": false,
+      "method": "mixed-window-sum",
+      "definition": "Package, image and model download events plus current 14-day distinct cloners, excluding ecolibria/cryptoserve and the cryptoserve* packages: the same gross npm, PyPI, Docker Hub and Hugging Face terms plus GitHub's rolling 14-day distinct-cloner snapshot; a mixed-window sum in which only the clone term is deduplicated, and only within 14 days.",
+      "window": {
+        "npm": {
+          "kind": "daily-rows",
+          "first": "2025-01-28",
+          "asOf": "2026-08-25"
+        },
+        "pypi": {
+          "kind": "daily-rows",
+          "first": "2026-02-02",
+          "asOf": "2026-08-25",
+          "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
+        },
+        "docker": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        },
+        "huggingface": {
+          "kind": "cumulative-snapshot",
+          "firstSnapshot": "2026-06-02",
+          "asOf": "2026-08-26"
+        },
+        "cloneUniques": {
+          "kind": "rolling-14-day-snapshot",
+          "firstSnapshot": "2026-02-22",
+          "asOf": "2026-08-26"
+        }
+      },
+      "components": {
+        "npm": 141195,
+        "pypi": 15426,
+        "docker": 28580,
+        "huggingface": 4487,
+        "cloneUniques": 3060
+      },
+      "status": "ok"
+    }
+  },
+  "collectors": {
+    "github": {
+      "ran": true,
+      "ok": true,
+      "error": null,
+      "reposDiscovered": 44,
+      "reposCollectedToday": 44,
+      "reposLagging": [
+        "opena2a-org/opena2a-website"
+      ],
+      "reposFailed": [],
+      "trafficDenied": []
+    },
+    "npm": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    },
+    "pypi": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    },
+    "docker": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    },
+    "huggingface": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    },
+    "chrome": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    },
+    "telemetry": {
+      "ran": true,
+      "ok": true,
+      "error": null
+    }
   }
 }
