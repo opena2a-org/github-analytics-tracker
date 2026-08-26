@@ -13,6 +13,7 @@ import {
 // Adoption = unique cloners + installs, defined once and shared with the API so
 // the number can't drift between where it's computed and where it's shown.
 import { periodPick, hfPeriod, rowAdoption } from '../lib/adoption';
+import { SERIES } from '../lib/series';
 
 /* ============================================================
    Source identity — one place defines color + icon per source
@@ -480,6 +481,9 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
 
   const active = (period === 'custom' && custom) ? custom : overview;
   const { totals, products = [] } = active;
+  // Registry series (lib/series.js) as computed by the overview API; labels
+  // come from the registry, never typed here.
+  const series = active.series || overview.series || {};
 
   // WoW / MoM from honest, complete, anchored windows (npm + PyPI installs).
   // We deliberately avoid the trends-series growth here: its most recent bucket
@@ -509,9 +513,9 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
 
   const channelData = [
     { name: 'npm', value: totals.npm?.allTimeDownloads || 0, color: C.npm },
-    // Unique cloners (GitHub's 14-day deduplicated count), not raw clone count —
-    // the raw count is CI/mirror re-clone noise, shown only on the GitHub tab.
-    { name: 'Unique Cloners (14d)', value: totals.github?.totalCloneUniques || 0, color: C.github },
+    // Distinct cloners (GitHub's rolling 14-day count), not raw clone count —
+    // the raw count is CI/mirror re-clone noise, shown on the GitHub tab.
+    { name: 'Distinct Cloners (14d)', value: totals.github?.totalCloneUniques || 0, color: C.github },
     { name: 'PyPI', value: totals.pypi?.allTimeDownloads || 0, color: C.pypi },
     { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.docker },
     { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
@@ -521,17 +525,17 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
   return (
     <>
       <div className="hero">
-        <div className="hero-eyebrow">Total ecosystem adoption</div>
+        <div className="hero-eyebrow">{SERIES.downloads.label}</div>
         <div className="hero-main">
-          <div className="hero-figure">{fmtFull(totals.combined.totalAdoption)}</div>
+          <div className="hero-figure">{fmtFull(series.downloads?.value ?? 0)}</div>
           <div className="hero-deltas">
             {wowDownloads != null && <div className="hero-delta"><span>Installs WoW</span><Delta value={wowDownloads} /></div>}
             {momDownloads != null && <div className="hero-delta"><span>Installs MoM</span><Delta value={momDownloads} /></div>}
           </div>
         </div>
         <div className="hero-sub">
-          Unique cloners + package installs + image pulls + model downloads across {totals.github.repos} repositories,
-          {' '}{(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages, {totals.docker?.images || 0} images and {totals.hf?.models || 0} models.
+          npm, PyPI, Docker, GitHub, Hugging Face, including CryptoServe packages.
+          {' '}{totals.github.repos} repositories, {(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages, {totals.docker?.images || 0} images and {totals.hf?.models || 0} models.
         </div>
       </div>
 
@@ -550,6 +554,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
       )}
 
       <div className="cards">
+        <Kpi icon={<Activity size={17} />} color={C.accent} label={SERIES.adoption.label} value={fmtFull(series.adoption?.value ?? totals.combined.totalAdoption)} sub="all time · cloner term is a rolling 14-day snapshot" />
         <Kpi icon={<Eye size={17} />} color={C.github} label={`Page Views`} value={fmtFull(pt.views)} sub={periodWord} />
         <Kpi icon={<Star size={17} />} color={C.pypi} label="GitHub Stars" value={fmtFull(totals.github.totalStars)} sub="current total" />
         <Kpi icon={<Download size={17} />} color={C.npm} label="npm Installs" value={fmtFull(pt.npm)} sub={`${periodWord} · ${totals.npm.packages} pkgs`} />
@@ -569,7 +574,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
 
       <Panel
         title="Tool Adoption"
-        sub="Adoption = unique cloners + npm + PyPI + Docker pulls + HF downloads. Cloners = GitHub's 14-day DEDUPLICATED distinct-cloner count (a rolling snapshot shown identically under every period — GitHub only dedupes over 14 days), NOT raw clone count. Raw clones are dominated by CI/mirror re-cloning (a handful of actors looping) and are shown only on the GitHub tab as an operational metric. Views, stars, and Chrome users are shown for context, not summed. Docker and HF report cumulative totals only, so they show only under the All-time window. Chrome is Google's rounded weekly-active-user count, not installs."
+        sub={`Adoption = ${SERIES.adoption.label}: npm + PyPI + Docker pulls + HF downloads plus GitHub's rolling 14-day distinct-cloner count (a snapshot shown identically under every period; GitHub only reports distinct cloners within 14 days), NOT raw clone count. Raw clones are dominated by CI/mirror re-cloning (a handful of actors looping) and are shown on the GitHub tab and in the gross downloads series. Views, stars, and Chrome users are shown for context, not summed. Docker and HF report cumulative totals only, so they show only under the All-time window. Chrome is Google's rounded weekly-active-user count, not installs.`}
         tools={<Filter value={filter} onChange={setFilter} placeholder="Filter tools…" />}
         pad={false}>
         {(period === 'custom' && !custom)
@@ -814,9 +819,9 @@ function AdoptionTable({ products, period }) {
   const cols = [
     { key: 'name', label: 'Tool', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div><div className="cell-desc">{r.description}</div></div>) },
     { key: 'views', label: 'Views', align: 'right', sortValue: r => periodPick(r.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews'), render: r => fmtFull(periodPick(r.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews')) },
-    // Unique cloners (distinct pullers) = GitHub's 14-day deduplicated count, the
-    // clone term that feeds Adoption. A rolling 14d snapshot (period-independent);
-    // raw clone count lives on the GitHub tab. See lib/adoption.js.
+    // Distinct cloners = GitHub's rolling 14-day distinct-cloner count, the
+    // clone term that feeds Adoption. A snapshot (period-independent); raw clone
+    // count lives on the GitHub tab. See lib/adoption.js.
     { key: 'cloners', label: 'Cloners 14d', align: 'right', sortValue: r => r.github?.cloneUniques || 0, render: r => fmtFull(r.github?.cloneUniques || 0) },
     {
       key: 'npm', label: 'npm', align: 'right', sortValue: r => periodPick(r.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads'),
@@ -836,7 +841,7 @@ function AdoptionTable({ products, period }) {
   ];
   const t = products.reduce((a, p) => {
     a.views += periodPick(p.github, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews');
-    a.clones += p.github?.cloneUniques || 0; // 14-day deduped snapshot (period-independent)
+    a.clones += p.github?.cloneUniques || 0; // rolling 14-day distinct-cloner snapshot (period-independent)
     a.npm += periodPick(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
     a.pypi += periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
     a.docker += period === 'all' ? (p.docker?.totalPulls || 0) : 0;
@@ -876,7 +881,7 @@ function StandardsTab({ overview, loading, period }) {
   const periodWord = PERIOD_LABEL[period];
   const totals = overview?.totals?.standards || {};
   const pickViews = g => periodPick(g, 'views', 'views30d', 'views7d', 'views24h', period, 'customViews');
-  // 14-day deduplicated distinct cloners (snapshot), consistent with tool adoption.
+  // Rolling 14-day distinct cloners (snapshot), consistent with tool adoption.
   const pickClones = g => g?.cloneUniques || 0;
 
   const agg = standards.reduce((a, f) => {
@@ -923,7 +928,7 @@ function StandardsTab({ overview, loading, period }) {
         <Kpi icon={<GitPullRequest size={17} />} color={C.accent} label="Cloners" value={fmtFull(agg.clones)} sub="unique · last 14d" />
       </div>
 
-      <Panel title="Standards by family" sub="Specs and protocols grouped by family. Adoption here is stars, views and unique cloners (GitHub's 14-day deduplicated count) — these are specifications, not installable packages." pad={false}>
+      <Panel title="Standards by family" sub="Specs and protocols grouped by family. Adoption here is stars, views and distinct cloners (GitHub's rolling 14-day count) — these are specifications, not installable packages." pad={false}>
         <DataTable columns={famCols} rows={standards} getKey={r => r.name} initialSort={{ key: 'stars', dir: 'desc' }} footer={famFooter} />
       </Panel>
 

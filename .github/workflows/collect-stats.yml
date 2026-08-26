@@ -36,12 +36,16 @@ jobs:
         run: npm run setup-db
 
       - name: Collect GitHub stats
+        id: github
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
           GITHUB_ORG: opena2a-org,opena2a-standards,ecolibria
         run: npm run collect
 
       - name: Collect npm stats
+        id: npm
+        continue-on-error: true
         env:
           NPM_AUTHOR: ecolibria
           # Scoped @opena2a/* packages are pinned explicitly because npm
@@ -50,6 +54,8 @@ jobs:
         run: npm run collect-npm
 
       - name: Collect PyPI stats
+        id: pypi
+        continue-on-error: true
         env:
           # PyPI has no author-discovery API (profile pages are bot-gated).
           # New packages are auto-discovered by scanning GITHUB_ORG repos for
@@ -62,16 +68,22 @@ jobs:
         run: npm run collect-pypi
 
       - name: Collect Docker stats
+        id: docker
+        continue-on-error: true
         env:
           DOCKER_IMAGES: opena2a/dvaa,opena2a/aim-server,opena2a/aim-dashboard
         run: npm run collect-docker
 
       - name: Collect HuggingFace stats
+        id: huggingface
+        continue-on-error: true
         env:
           HF_AUTHOR: opena2a
         run: npm run collect-hf
 
       - name: Collect Chrome Web Store stats
+        id: chrome
+        continue-on-error: true
         env:
           # Chrome Web Store extension ids (no install/download API exists; the
           # collector scrapes the public listing's rounded weekly-active-user
@@ -81,16 +93,17 @@ jobs:
 
       - name: Collect first-party CLI telemetry
         id: telemetry
-        # continue-on-error keeps a telemetry outage from dropping the other
-        # collectors' data: this step runs before generate-md/generate-summary
-        # and the commit step, so a hard failure here would silently cost a full
-        # day of npm/pypi/docker/hf/chrome numbers.
+        # Every collector step above carries continue-on-error so one outage
+        # never drops the other collectors' data: they all run before
+        # generate-md/generate-summary and the commit step, so a hard failure
+        # would silently cost a full day of the other sources' numbers.
         #
         # But continue-on-error alone would ALSO swallow the failure — the job
         # would go green and a scheduled run that nobody watches would notify
-        # nobody, which is the exact silence this is meant to end. The
-        # "Surface telemetry outage" step at the end re-raises it once the data
-        # is safely committed.
+        # nobody, which is the exact silence this is meant to end. The step
+        # outcomes are passed to generate-summary (summary.collectors, and any
+        # failed source marks its series "partial"), and the "Verify run" step
+        # at the end re-raises every failure once the data is safely committed.
         continue-on-error: true
         env:
           # Registry base URL exposing the coarse public adoption feed
@@ -105,13 +118,24 @@ jobs:
         run: npm run generate-md
 
       - name: Generate summary JSON
+        env:
+          # Per-collector outcomes for summary.collectors; a failed source marks
+          # the series that sum it as "partial" rather than a healthy value.
+          COLLECTOR_OUTCOMES: >-
+            {"github":"${{ steps.github.outcome }}",
+             "npm":"${{ steps.npm.outcome }}",
+             "pypi":"${{ steps.pypi.outcome }}",
+             "docker":"${{ steps.docker.outcome }}",
+             "huggingface":"${{ steps.huggingface.outcome }}",
+             "chrome":"${{ steps.chrome.outcome }}",
+             "telemetry":"${{ steps.telemetry.outcome }}"}
         run: npm run generate-summary
 
       - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add data/analytics.db data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/telemetry-badge.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
+          git add data/analytics.db data/collect-github-run.json data/badge-*.json data/stats-*.json data/npm-stats-*.json data/pypi-stats-*.json data/docker-badge-*.json data/hf-badge-*.json data/chrome-badge-*.json data/chrome-stats-*.json data/telemetry-badge.json data/summary.json ANALYTICS.md ANALYTICS_DETAILED.md
           git diff --staged --quiet || git commit -m "chore: update analytics data [skip ci]"
           # `git push || echo "No changes to push"` used to swallow EVERY push
           # failure — a non-fast-forward, a rejected hook, an auth error — and
@@ -124,13 +148,17 @@ jobs:
             git push
           fi
 
-      # Re-raise a telemetry outage AFTER the day's data is safely committed, so
-      # the run goes red and the scheduled-workflow failure notification fires.
-      # Without this the telemetry step's continue-on-error would leave the job
-      # green and nobody would ever learn that collection stopped — which is the
-      # failure mode this whole thing exists to prevent.
-      - name: Surface telemetry outage
-        if: steps.telemetry.outcome == 'failure'
-        run: |
-          echo "::error::First-party telemetry collection failed — see the 'Collect first-party CLI telemetry' step above. Other collectors' data for today was committed successfully."
-          exit 1
+      # Re-raise any collector failure AFTER the day's data is safely committed,
+      # so the run goes red and the scheduled-workflow failure notification
+      # fires. Without this the collectors' continue-on-error would leave the
+      # job green and nobody would ever learn that collection stopped — which is
+      # the failure mode this whole thing exists to prevent. Also fails when the
+      # just-published summary is older than 48h (missed runs) or when GitHub
+      # discovery found repos that did not reach traffic_summary today beyond
+      # the allowlist.
+      - name: Verify run
+        env:
+          # Repos discovery returns that are expected to have no traffic row
+          # (the token lacks push access to them). Comma-separated owner/repo.
+          TRAFFIC_MISSING_ALLOWLIST: ${{ vars.TRAFFIC_MISSING_ALLOWLIST }}
+        run: npm run verify-run
