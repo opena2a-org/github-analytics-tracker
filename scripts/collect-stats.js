@@ -91,6 +91,13 @@ function getOrCreateRepo(owner, repo) {
  * We also store the 14-day summary totals (with properly deduplicated
  * unique counts) in the traffic_summary table.
  */
+// Repos whose traffic API returned 403 this run (the token lacks push access).
+// Recorded in the run record so verify-run can NAME the repo in its coverage
+// error instead of failing on an anonymous gap; the fix is to grant access or
+// declare the repo in TRAFFIC_MISSING_ALLOWLIST. Deliberately not auto-excused:
+// a repo silently losing token access must still turn the run red once.
+const trafficDenied = new Set();
+
 async function collectTrafficViews(owner, repo, repoId) {
   try {
     const { data } = await octokit.rest.repos.getViews({
@@ -127,6 +134,7 @@ async function collectTrafficViews(owner, repo, repoId) {
     console.log('  Views: %d days stored, 14-day total: %d (%d unique)', storedDays, data.count, data.uniques);
   } catch (error) {
     if (error.status === 403) {
+      trafficDenied.add(`${owner}/${repo}`);
       console.log('  Views: skipped (no push access to %s/%s)', owner, repo);
     } else {
       console.error('  Views: failed - %s', error.message);
@@ -172,6 +180,7 @@ async function collectTrafficClones(owner, repo, repoId) {
     console.log('  Clones: %d days stored, 14-day total: %d (%d unique)', storedDays, data.count, data.uniques);
   } catch (error) {
     if (error.status === 403) {
+      trafficDenied.add(`${owner}/${repo}`);
       console.log('  Clones: skipped (no push access to %s/%s)', owner, repo);
     } else {
       console.error('  Clones: failed - %s', error.message);
@@ -513,6 +522,7 @@ async function main() {
     reposDiscovered: repos.length,
     repos,
     failed,
+    trafficDenied: [...trafficDenied].sort(),
   }, null, 2));
   console.log('Run record written to %s (%d failed)', runPath, failed.length);
 

@@ -124,6 +124,7 @@ test('collectors block: step outcomes and the GitHub run record drive ran/ok/err
     const today = new Date().toISOString().split('T')[0];
     fs.writeFileSync(path.join(dir, 'collect-github-run.json'), JSON.stringify({
       date: today, reposDiscovered: 45, repos: [], failed: [{ repo: 'o/x', error: 'HTTP 403' }],
+      trafficDenied: ['opena2a-org/opena2a-website'],
     }));
     const env = { COLLECTOR_OUTCOMES: JSON.stringify({ github: 'success', npm: 'failure', pypi: 'success', docker: 'success', huggingface: 'success', chrome: 'success', telemetry: 'skipped' }) };
     const s = buildSummary(db, { dataDir: dir, env });
@@ -136,6 +137,7 @@ test('collectors block: step outcomes and the GitHub run record drive ran/ok/err
     assert.match(s.collectors.github.error, /o\/x/);
     assert.strictEqual(typeof s.collectors.github.reposCollectedToday, 'number');
     assert.ok(Array.isArray(s.collectors.github.reposLagging));
+    assert.deepStrictEqual(s.collectors.github.trafficDenied, ['opena2a-org/opena2a-website'], 'denied repos pass through from the run record');
     for (const key of SERIES_KEYS) assert.strictEqual(s.series[key].status, 'partial', `${key} partial after an npm failure`);
 
     // A stale run record (not today) is ignored: discovered unknown, not ran.
@@ -160,6 +162,13 @@ test('verify-run: stale summary, failed collector, or uncovered repos fail the r
   };
   assert.deepStrictEqual(checkRun(base, { now: fresh, allowlist: ['o/private-ish'] }), []);
   assert.match(checkRun(base, { now: fresh, allowlist: [] })[0], /gap 1 exceeds the 0 allowlisted/);
+  // A traffic-denied repo (403, token lacks push access) is NAMED in the
+  // coverage error so the red run is actionable, and an undeclared denial
+  // still fails: denial is a fact to declare, never an auto-excuse.
+  const denied = { ...base, collectors: { ...base.collectors, github: { ...base.collectors.github, trafficDenied: ['opena2a-org/opena2a-website'] } } };
+  assert.match(checkRun(denied, { now: fresh, allowlist: [] })[0], /token lacks traffic access to: opena2a-org\/opena2a-website .*TRAFFIC_MISSING_ALLOWLIST/);
+  // Declared in the allowlist: the gap is covered and the run passes.
+  assert.deepStrictEqual(checkRun(denied, { now: fresh, allowlist: ['opena2a-org/opena2a-website'] }), []);
   assert.match(checkRun({ ...base, lastUpdated: '2026-08-22T05:30:00Z' }, { now: fresh, allowlist: ['x'] })[0], /old \(limit 48h\)/);
   assert.match(checkRun({ ...base, collectors: { ...base.collectors, npm: { ran: true, ok: false, error: 'boom' } } }, { now: fresh, allowlist: ['x'] })[0], /collector npm failed: boom/);
   assert.match(checkRun({ collectors: {} }, { now: fresh })[0], /lastUpdated is missing/);

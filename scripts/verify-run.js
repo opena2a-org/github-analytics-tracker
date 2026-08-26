@@ -40,7 +40,15 @@ function checkRun(summary, { now = new Date(), maxAgeHours = 48, allowlist = [] 
   if (g && typeof g.reposDiscovered === 'number' && typeof g.reposCollectedToday === 'number') {
     const gap = g.reposDiscovered - g.reposCollectedToday;
     if (gap > allowlist.length) {
-      problems.push(`GitHub discovered ${g.reposDiscovered} repos but ${g.reposCollectedToday} have a traffic row today; gap ${gap} exceeds the ${allowlist.length} allowlisted (${allowlist.join(', ') || 'none'})`);
+      // Traffic-denied repos (token lacks push access, 403) are named so the
+      // red run is actionable: grant access, or declare the repo in
+      // TRAFFIC_MISSING_ALLOWLIST. They are not auto-excused: an undeclared
+      // denial is exactly the silent coverage loss this gate exists to catch.
+      const denied = Array.isArray(g.trafficDenied) ? g.trafficDenied.filter(r => !allowlist.includes(r)) : [];
+      const deniedNote = denied.length
+        ? `; token lacks traffic access to: ${denied.join(', ')} (grant access or add to TRAFFIC_MISSING_ALLOWLIST)`
+        : '';
+      problems.push(`GitHub discovered ${g.reposDiscovered} repos but ${g.reposCollectedToday} have a traffic row today; gap ${gap} exceeds the ${allowlist.length} allowlisted (${allowlist.join(', ') || 'none'})${deniedNote}`);
     }
   }
 
