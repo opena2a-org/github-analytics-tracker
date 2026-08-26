@@ -205,5 +205,9 @@ test('pages render series only through the registry label, and never call adopti
   assert.ok(rendersSeries >= 2, 'the dashboard renders the downloads and adoption series');
   const index = fs.readFileSync(path.join(pagesDir, 'index.js'), 'utf8');
   assert.ok(!index.includes('Total ecosystem adoption'), 'the hero no longer reads "Total ecosystem adoption"');
-  assert.ok(index.includes('SERIES.downloads.label'), 'the hero carries the downloads registry label');
+  // Abdel 2026-08-26: CryptoServe is excluded from every counted series; the
+  // hero renders the ex-CryptoServe series through its registry label, and the
+  // inclusive label may not be the headline.
+  assert.ok(index.includes('SERIES.downloadsExCrypto.label'), 'the hero carries the ex-CryptoServe downloads registry label');
+  assert.ok(!index.includes('SERIES.downloads.label'), 'the inclusive downloads label is not the hero');
 });
