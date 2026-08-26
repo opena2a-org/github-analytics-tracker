@@ -525,16 +525,16 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
   return (
     <>
       <div className="hero">
-        <div className="hero-eyebrow">{SERIES.downloads.label}</div>
+        <div className="hero-eyebrow">{SERIES.downloadsExCrypto.label}</div>
         <div className="hero-main">
-          <div className="hero-figure">{fmtFull(series.downloads?.value ?? 0)}</div>
+          <div className="hero-figure">{fmtFull(series.downloadsExCrypto?.value ?? 0)}</div>
           <div className="hero-deltas">
             {wowDownloads != null && <div className="hero-delta"><span>Installs WoW</span><Delta value={wowDownloads} /></div>}
             {momDownloads != null && <div className="hero-delta"><span>Installs MoM</span><Delta value={momDownloads} /></div>}
           </div>
         </div>
         <div className="hero-sub">
-          npm, PyPI, Docker, GitHub, Hugging Face, including CryptoServe packages.
+          npm, PyPI, Docker, GitHub, Hugging Face. CryptoServe excluded (Abdel 2026-08-26); its accounting stays in the inclusive series.
           {' '}{totals.github.repos} repositories, {(totals.npm?.packages || 0) + (totals.pypi?.packages || 0)} packages, {totals.docker?.images || 0} images and {totals.hf?.models || 0} models.
         </div>
       </div>
