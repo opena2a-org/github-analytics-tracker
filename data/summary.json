@@ -1,44 +1,44 @@
 {
-  "lastUpdated": "2026-08-29T06:05:41.466Z",
+  "lastUpdated": "2026-08-30T06:06:07.815Z",
   "total": {
-    "adoption": 218751,
-    "adoptionExCrypto": 199096,
-    "downloads": 403461,
-    "downloadsExCrypto": 379652,
-    "npm": 148533,
-    "pypi": 33053,
-    "cloneUniques": 2935,
-    "clones": 187645,
-    "docker": 29733,
-    "hf": 4497,
-    "views": 35481,
-    "stars": 318,
+    "adoption": 220885,
+    "adoptionExCrypto": 201066,
+    "downloads": 406119,
+    "downloadsExCrypto": 382145,
+    "npm": 149952,
+    "pypi": 33303,
+    "cloneUniques": 2961,
+    "clones": 188195,
+    "docker": 30129,
+    "hf": 4540,
+    "views": 35976,
+    "stars": 324,
     "repos": 46,
     "npmPackages": 41,
-    "chromeUsers": 14,
+    "chromeUsers": 15,
     "chromeExtensions": 1,
     "telemetry": {
-      "asOf": "2026-08-29",
+      "asOf": "2026-08-30",
       "totalInstalls": 0,
       "wau": 110,
-      "mau": 416,
-      "engagedMau": 54,
+      "mau": 425,
+      "engagedMau": 53,
       "tools": 5,
       "countries": 0,
       "provenance": "anonymous first-party CLI telemetry; unauthenticated ingest (self-asserted id); wau/mau are best-effort and forgeable (not a sybil-verified count); engagedMau is a sybil-dampened floor (installs with >=2 active days of real usage); verifiedMau is the sybil-resistant tier (installs whose events are Ed25519-signed by an enrolled telemetry:sensor key), 0 until CLI signing ships; tiers rank verified > engaged > reported"
     }
   },
   "excludingCrypto": {
-    "npm": 146318,
-    "pypi": 15638,
-    "cloneUniques": 2910,
-    "clones": 183466,
-    "docker": 29733,
-    "downloads": 379652
+    "npm": 147733,
+    "pypi": 15727,
+    "cloneUniques": 2937,
+    "clones": 184016,
+    "docker": 30129,
+    "downloads": 382145
   },
   "series": {
     "downloads": {
-      "value": 403461,
+      "value": 406119,
       "scope": "tracked-orgs",
       "includesCryptoServe": true,
       "method": "gross-sum",
@@ -47,41 +47,41 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-08-28"
+          "asOf": "2026-08-29"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-08-28",
+          "asOf": "2026-08-29",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "clones": {
           "kind": "daily-rows",
           "first": "2025-10-24",
-          "asOf": "2026-08-27"
+          "asOf": "2026-08-29"
         }
       },
       "components": {
-        "npm": 148533,
-        "pypi": 33053,
-        "docker": 29733,
-        "huggingface": 4497,
-        "clones": 187645
+        "npm": 149952,
+        "pypi": 33303,
+        "docker": 30129,
+        "huggingface": 4540,
+        "clones": 188195
       },
       "status": "ok"
     },
     "downloadsExCrypto": {
-      "value": 379652,
+      "value": 382145,
       "scope": "tracked-orgs-ex-cryptoserve",
       "includesCryptoServe": false,
       "method": "gross-sum",
@@ -90,41 +90,41 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-08-28"
+          "asOf": "2026-08-29"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-08-28",
+          "asOf": "2026-08-29",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "clones": {
           "kind": "daily-rows",
           "first": "2025-10-24",
-          "asOf": "2026-08-27"
+          "asOf": "2026-08-29"
         }
       },
       "components": {
-        "npm": 146318,
-        "pypi": 15638,
-        "docker": 29733,
-        "huggingface": 4497,
-        "clones": 183466
+        "npm": 147733,
+        "pypi": 15727,
+        "docker": 30129,
+        "huggingface": 4540,
+        "clones": 184016
       },
       "status": "ok"
     },
     "adoption": {
-      "value": 218751,
+      "value": 220885,
       "scope": "tracked-orgs",
       "includesCryptoServe": true,
       "method": "mixed-window-sum",
@@ -133,41 +133,41 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-08-28"
+          "asOf": "2026-08-29"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-08-28",
+          "asOf": "2026-08-29",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "cloneUniques": {
           "kind": "rolling-14-day-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         }
       },
       "components": {
-        "npm": 148533,
-        "pypi": 33053,
-        "docker": 29733,
-        "huggingface": 4497,
-        "cloneUniques": 2935
+        "npm": 149952,
+        "pypi": 33303,
+        "docker": 30129,
+        "huggingface": 4540,
+        "cloneUniques": 2961
       },
       "status": "ok"
     },
     "adoptionExCrypto": {
-      "value": 199096,
+      "value": 201066,
       "scope": "tracked-orgs-ex-cryptoserve",
       "includesCryptoServe": false,
       "method": "mixed-window-sum",
@@ -176,36 +176,36 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-08-28"
+          "asOf": "2026-08-29"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-08-28",
+          "asOf": "2026-08-29",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         },
         "cloneUniques": {
           "kind": "rolling-14-day-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-08-29"
+          "asOf": "2026-08-30"
         }
       },
       "components": {
-        "npm": 146318,
-        "pypi": 15638,
-        "docker": 29733,
-        "huggingface": 4497,
-        "cloneUniques": 2910
+        "npm": 147733,
+        "pypi": 15727,
+        "docker": 30129,
+        "huggingface": 4540,
+        "cloneUniques": 2937
       },
       "status": "ok"
     }
