@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-08-30T06:06:07.635Z",
+  "lastUpdated": "2026-08-31T06:06:59.738Z",
   "repository": "opena2a-org/hackmyagent",
   "stats": {
     "allTime": {
-      "views": 4974,
-      "clones": 108274
+      "views": 5098,
+      "clones": 109295
     },
     "recent14Days": {
-      "views": 646,
-      "viewsUnique": 67,
-      "clones": 5930,
-      "clonesUnique": 284
+      "views": 704,
+      "viewsUnique": 72,
+      "clones": 6921,
+      "clonesUnique": 301
     },
     "stars": 39,
     "forks": 3
