@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-09-01T06:07:44.842Z",
+  "lastUpdated": "2026-09-02T06:06:24.648Z",
   "repository": "opena2a-standards/agent-threat-matrix",
   "stats": {
     "allTime": {
-      "views": 196,
-      "clones": 300
+      "views": 197,
+      "clones": 304
     },
     "recent14Days": {
-      "views": 34,
-      "viewsUnique": 5,
-      "clones": 64,
-      "clonesUnique": 25
+      "views": 33,
+      "viewsUnique": 6,
+      "clones": 68,
+      "clonesUnique": 26
     },
     "stars": 5,
     "forks": 0
