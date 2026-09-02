@@ -1,8 +1,8 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+import Database from 'better-sqlite3';
+import path from 'path';
 
 export default function handler(req, res) {
-  const dbPath = path.join(process.cwd(), 'data', 'analytics.db');
+  const dbPath = process.env.ANALYTICS_DB_PATH || path.join(process.cwd(), 'data', 'analytics.db');
   const db = new Database(dbPath, { readonly: true });
 
   try {
@@ -92,6 +92,7 @@ export default function handler(req, res) {
 
       // Get country download breakdown (latest snapshot from BigQuery)
       let countryDownloads = [];
+      let countryAsOf = null;
       const countryTableCheck = db.prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_downloads'"
       ).get();
@@ -99,6 +100,7 @@ export default function handler(req, res) {
         const latestCountryDate = db.prepare(
           'SELECT MAX(date) as date FROM pypi_country_downloads WHERE package_id = ?'
         ).get(pkgId);
+        countryAsOf = latestCountryDate?.date || null;
 
         if (latestCountryDate?.date) {
           countryDownloads = db.prepare(`
@@ -120,6 +122,7 @@ export default function handler(req, res) {
         pythonVersions,
         systemStats,
         countryDownloads,
+        countryAsOf,
       });
     }
 
