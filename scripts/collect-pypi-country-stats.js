@@ -39,12 +39,12 @@ const RUN_FILE = 'pypi-country-run.json';
  * True if GOOGLE_APPLICATION_CREDENTIALS is set and the file exists,
  * or if GOOGLE_CLOUD_PROJECT is set (workload identity / metadata auth).
  */
-function isBigQueryAvailable(env = process.env) {
+function isBigQueryAvailable(env = process.env, log = console.log) {
   if (env.GOOGLE_APPLICATION_CREDENTIALS) {
     if (fs.existsSync(env.GOOGLE_APPLICATION_CREDENTIALS)) {
       return true;
     }
-    console.log('Warning: GOOGLE_APPLICATION_CREDENTIALS is set but the file does not exist: %s',
+    log('Warning: GOOGLE_APPLICATION_CREDENTIALS is set but the file does not exist: %s',
       env.GOOGLE_APPLICATION_CREDENTIALS);
     return false;
   }
@@ -179,6 +179,9 @@ function newestStoredDay(db) {
  * day) as the per-(package_id, country_code) SUM of pypi_country_daily over
  * the stored days inside the 30 most recent closed days. Purely local: no
  * client call; fewer than 30 stored days simply sum over what is stored.
+ * The whole table is replaced, not just the as-of rows: a stale snapshot at
+ * any other date would otherwise shadow the rollup through the consumers'
+ * MAX(date) reads.
  */
 function rollupCountryDownloads(db, now) {
   const asOf = newestStoredDay(db);
@@ -186,7 +189,7 @@ function rollupCountryDownloads(db, now) {
   const today = utcMidnight(now);
   const windowStart = isoDay(addDays(today, -WINDOW_DAYS));
   const windowEnd = isoDay(addDays(today, -1));
-  db.prepare('DELETE FROM pypi_country_downloads WHERE date = ?').run(asOf);
+  db.prepare('DELETE FROM pypi_country_downloads').run();
   db.prepare(`
     INSERT INTO pypi_country_downloads (package_id, date, country_code, downloads)
     SELECT package_id, ?, country_code, SUM(downloads)
@@ -206,13 +209,18 @@ function createBigQueryAdapter() {
       const [job] = await bigquery.createQueryJob(options);
       if (options.dryRun) {
         const stats = job.metadata?.statistics || {};
-        return { rows: [], totalBytesProcessed: Number(stats.totalBytesProcessed || 0) };
+        if (stats.totalBytesProcessed === undefined) {
+          // Fail closed: an estimate we cannot read must never bill as 0.
+          throw new Error('dry-run job statistics carry no totalBytesProcessed');
+        }
+        return { rows: [], totalBytesProcessed: Number(stats.totalBytesProcessed) };
       }
       const [rows] = await job.getQueryResults();
       const [metadata] = await job.getMetadata();
       const stats = metadata?.statistics || {};
-      const billed = stats.query?.totalBytesBilled ?? stats.totalBytesProcessed ?? 0;
-      return { rows, totalBytesProcessed: Number(billed) };
+      // No `?? 0` fallback: an unreadable billed figure surfaces as NaN so the
+      // caller charges the dry-run estimate instead of under-counting.
+      return { rows, totalBytesProcessed: Number(stats.query?.totalBytesBilled ?? stats.totalBytesProcessed) };
     },
   };
 }
@@ -239,6 +247,8 @@ async function collect({
 } = {}) {
   dbPath = dbPath || env.ANALYTICS_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
   dataDir = dataDir || path.dirname(dbPath);
+  // Every exit path writes the status file; make sure its directory exists.
+  fs.mkdirSync(dataDir, { recursive: true });
 
   const finish = (status, extra = {}) => {
     const record = {
@@ -253,7 +263,7 @@ async function collect({
   };
 
   if (!client) {
-    if (!isBigQueryAvailable(env)) {
+    if (!isBigQueryAvailable(env, log)) {
       log('BigQuery credentials not configured.');
       let asOf = null;
       try {
@@ -309,14 +319,34 @@ async function collect({
         fetched_at = excluded.fetched_at
     `);
 
+    // One transaction per landed day: the daily rows and the fetch record
+    // appear together or not at all, so a crash cannot leave a day half
+    // written (present rows, no record) to be re-billed.
+    const landDay = db.transaction((dayIso, rows, charge) => {
+      for (const row of rows) {
+        const packageId = packageIds.get(row.project);
+        if (!packageId) continue;
+        insertDaily.run(packageId, dayIso, row.country_code || 'unknown', Number(row.downloads) || 0);
+      }
+      recordFetch.run(dayIso, rows.length, charge, now.toISOString());
+    });
+
     let rowsLanded = 0;
     for (const day of missingDays) {
       const dayIso = isoDay(day);
       const options = buildDayQueryOptions(packages, day);
 
       // Cap gate, dry run first: nothing is billed until both caps clear.
+      // Fail closed: an estimate that is not a finite non-negative number
+      // must never compare as 0 and let the day bill.
       const dry = await client.query({ ...options, dryRun: true });
-      const estimate = Number(dry.totalBytesProcessed) || 0;
+      const estimate = Number(dry.totalBytesProcessed);
+      if (!Number.isFinite(estimate) || estimate < 0) {
+        log('Refusing %s: unreadable dry-run estimate (%s)', dayIso, String(dry.totalBytesProcessed));
+        return finish('error', {
+          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
+        });
+      }
       if (estimate > PER_QUERY_CAP_BYTES) {
         log('Refusing %s: dry run estimates %d bytes, over the per-query cap', dayIso, estimate);
         return finish('refused_cap', {
@@ -331,22 +361,26 @@ async function collect({
         });
       }
 
+      // Reservation: charge the estimate to the ledger BEFORE the billed call.
+      // If the call throws after the job may have run, the reservation stands,
+      // so the month ledger can only over-count a billed query, never
+      // under-count one; on success it is rewritten with the actual figure.
+      writeBudget(dataDir, month, monthBytes + estimate, now);
+
       const billed = await client.query({ ...options, maximumBytesBilled: PER_QUERY_CAP_BYTES });
-      const billedBytes = Number(billed.totalBytesProcessed) || 0;
-      monthBytes += billedBytes;
-      runBytes += billedBytes;
+      const billedBytes = Number(billed.totalBytesProcessed);
+      // An unreadable or negative billed figure charges the estimate: never
+      // enter less than we reserved into the ledger for a query that ran.
+      const charge = Number.isFinite(billedBytes) && billedBytes >= 0 ? billedBytes : estimate;
+      monthBytes += charge;
+      runBytes += charge;
       writeBudget(dataDir, month, monthBytes, now);
 
       const rows = billed.rows || [];
-      for (const row of rows) {
-        const packageId = packageIds.get(row.project);
-        if (!packageId) continue;
-        insertDaily.run(packageId, dayIso, row.country_code || 'unknown', Number(row.downloads) || 0);
-      }
-      recordFetch.run(dayIso, rows.length, billedBytes, now.toISOString());
+      landDay(dayIso, rows, charge);
       daysFetched += 1;
       rowsLanded += rows.length;
-      log('  %s: %d rows, %d bytes billed', dayIso, rows.length, billedBytes);
+      log('  %s: %d rows, %d bytes billed', dayIso, rows.length, charge);
     }
 
     const asOf = rollupCountryDownloads(db, now);
