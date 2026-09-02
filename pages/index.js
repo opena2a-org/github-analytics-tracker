@@ -436,7 +436,7 @@ export default function Dashboard() {
             {tab === 'github' && <GitHubTab repos={repos} selRepo={selRepo} setSelRepo={setSelRepo} data={ghData} loading={ghLoading} combined={ghCombined} weekly={ghWeekly} />}
             {tab === 'standards' && <StandardsTab overview={overview} loading={ovLoading} period={period === 'custom' ? '30d' : period} />}
             {tab === 'npm' && <PackageTab eco="npm" color={C.npm} packages={npmPkgs} sel={selNpm} setSel={setSelNpm} data={npmData} loading={npmLoading} weekly={() => weeklyDownloads(npmData?.downloads)} versionDownloads={npmData?.versionDownloads} />}
-            {tab === 'pypi' && <PackageTab eco="PyPI" color={C.pypi} packages={pypiPkgs} sel={selPypi} setSel={setSelPypi} data={pypiData} loading={pypiLoading} weekly={() => weeklyDownloads(pypiData?.downloads)} pythonVersions={pypiData?.pythonVersions} systemStats={pypiData?.systemStats} countryDownloads={pypiData?.countryDownloads} />}
+            {tab === 'pypi' && <PackageTab eco="PyPI" color={C.pypi} packages={pypiPkgs} sel={selPypi} setSel={setSelPypi} data={pypiData} loading={pypiLoading} weekly={() => weeklyDownloads(pypiData?.downloads)} pythonVersions={pypiData?.pythonVersions} systemStats={pypiData?.systemStats} countryDownloads={pypiData?.countryDownloads} countryAsOf={pypiData?.countryAsOf} />}
             {tab === 'docker' && <DockerTab images={images} sel={selImg} setSel={setSelImg} data={dockerData} loading={dockerLoading} />}
             {tab === 'huggingface' && <HuggingFaceTab models={hfModels} sel={selHf} setSel={setSelHf} data={hfData} loading={hfLoading} />}
             {tab === 'chrome' && <ChromeTab extensions={chromeExts} sel={selChrome} setSel={setSelChrome} data={chromeData} loading={chromeLoading} />}
@@ -1025,7 +1025,7 @@ function GitHubTab({ repos, selRepo, setSelRepo, data, loading, combined, weekly
    ============================================================ */
 const COUNTRY_NAMES = { US: 'United States', DE: 'Germany', CN: 'China', GB: 'United Kingdom', FR: 'France', IN: 'India', JP: 'Japan', KR: 'South Korea', BR: 'Brazil', CA: 'Canada', AU: 'Australia', NL: 'Netherlands', RU: 'Russia', SE: 'Sweden', SG: 'Singapore', PL: 'Poland', ES: 'Spain', IT: 'Italy', CH: 'Switzerland', HK: 'Hong Kong' };
 
-function PackageTab({ eco, color, packages, sel, setSel, data, loading, weekly, versionDownloads, pythonVersions, systemStats, countryDownloads }) {
+function PackageTab({ eco, color, packages, sel, setSel, data, loading, weekly, versionDownloads, pythonVersions, systemStats, countryDownloads, countryAsOf }) {
   const [filter, setFilter] = useState('');
   const rows = filter ? packages.filter(p => p.name.toLowerCase().includes(filter.toLowerCase())) : packages;
   const t = packages.reduce((a, p) => { a.d7 += p.last7Downloads || 0; a.d30 += p.last30Downloads || 0; a.all += p.allTimeDownloads || 0; return a; }, { d7: 0, d30: 0, all: 0 });
@@ -1091,7 +1091,7 @@ function PackageTab({ eco, color, packages, sel, setSel, data, loading, weekly, 
           </div>
 
           {countryDownloads?.length > 0 && (
-            <BreakdownChart title="Downloads by Country" sub="Last 30 days (BigQuery public dataset)" color={C.pypi} maxItems={20} nameKey="country" valueKey="downloads"
+            <BreakdownChart title="Downloads by Country" sub={countryAsOf ? `30 days as of ${countryAsOf} (BigQuery public dataset)` : 'Last 30 days (BigQuery public dataset)'} color={C.pypi} maxItems={20} nameKey="country" valueKey="downloads"
               data={countryDownloads.map(d => ({ country: COUNTRY_NAMES[d.countryCode] || d.countryCode, downloads: d.downloads }))} />
           )}
         </>

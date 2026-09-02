@@ -310,6 +310,29 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_pypi_country_pkg_date ON pypi_country_downloads(package_id, date);
 
+  -- Per-day country rows (one closed UTC day each); pypi_country_downloads
+  -- above holds the locally-summed 30-day rollup the dashboard reads.
+  CREATE TABLE IF NOT EXISTS pypi_country_daily (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    package_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    downloads INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (package_id) REFERENCES pypi_packages(id),
+    UNIQUE(package_id, date, country_code)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_pypi_country_daily_pkg_date ON pypi_country_daily(package_id, date);
+
+  -- Which closed days the BigQuery collector has already fetched (a queried
+  -- day that returned zero rows is still recorded, so it is never re-billed).
+  CREATE TABLE IF NOT EXISTS pypi_country_fetch_days (
+    date TEXT PRIMARY KEY,
+    row_count INTEGER NOT NULL DEFAULT 0,
+    bytes_billed INTEGER NOT NULL DEFAULT 0,
+    fetched_at TEXT NOT NULL
+  );
+
   -- HuggingFace model tracking.
   -- HF's API exposes only point-in-time counters (no per-day history), so we
   -- snapshot daily like Docker pulls: downloads_all_time is cumulative, while
