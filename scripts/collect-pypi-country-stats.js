@@ -143,6 +143,19 @@ function ensureTables(db) {
   `);
 }
 
+/**
+ * A byte figure as BigQuery reports it: a non-negative integer, as a number or
+ * an int64 digit-string. Anything else (null, '', false, a float, a
+ * scientific-notation string, an object) is null, never coerced to 0 -- the
+ * ledger's reader accepts only integers, and a coerced 0 is how a cap is
+ * bypassed.
+ */
+function readByteFigure(value) {
+  if (typeof value === 'number') return Number.isInteger(value) && value >= 0 ? value : null;
+  if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+  return null;
+}
+
 /** Month-to-date billed bytes; a missing/unparseable file or another month starts at 0. */
 function readBudget(dataDir, month) {
   try {
@@ -189,14 +202,17 @@ function rollupCountryDownloads(db, now) {
   const today = utcMidnight(now);
   const windowStart = isoDay(addDays(today, -WINDOW_DAYS));
   const windowEnd = isoDay(addDays(today, -1));
-  db.prepare('DELETE FROM pypi_country_downloads').run();
-  db.prepare(`
-    INSERT INTO pypi_country_downloads (package_id, date, country_code, downloads)
-    SELECT package_id, ?, country_code, SUM(downloads)
-    FROM pypi_country_daily
-    WHERE date >= ? AND date <= ?
-    GROUP BY package_id, country_code
-  `).run(asOf, windowStart, windowEnd);
+  // One transaction: an insert that aborts must not leave the table empty.
+  db.transaction(() => {
+    db.prepare('DELETE FROM pypi_country_downloads').run();
+    db.prepare(`
+      INSERT INTO pypi_country_downloads (package_id, date, country_code, downloads)
+      SELECT package_id, ?, country_code, SUM(downloads)
+      FROM pypi_country_daily
+      WHERE date >= ? AND date <= ?
+      GROUP BY package_id, country_code
+    `).run(asOf, windowStart, windowEnd);
+  })();
   return asOf;
 }
 
@@ -209,18 +225,20 @@ function createBigQueryAdapter() {
       const [job] = await bigquery.createQueryJob(options);
       if (options.dryRun) {
         const stats = job.metadata?.statistics || {};
-        if (stats.totalBytesProcessed === undefined) {
+        if (readByteFigure(stats.totalBytesProcessed) === null) {
           // Fail closed: an estimate we cannot read must never bill as 0.
-          throw new Error('dry-run job statistics carry no totalBytesProcessed');
+          throw new Error('dry-run job statistics carry no readable totalBytesProcessed');
         }
-        return { rows: [], totalBytesProcessed: Number(stats.totalBytesProcessed) };
+        return { rows: [], totalBytesProcessed: readByteFigure(stats.totalBytesProcessed) };
       }
       const [rows] = await job.getQueryResults();
       const [metadata] = await job.getMetadata();
       const stats = metadata?.statistics || {};
       // No `?? 0` fallback: an unreadable billed figure surfaces as NaN so the
       // caller charges the dry-run estimate instead of under-counting.
-      return { rows, totalBytesProcessed: Number(stats.query?.totalBytesBilled ?? stats.totalBytesProcessed) };
+      // No fallback to 0: an unreadable billed figure surfaces as null so the
+      // caller charges the dry-run estimate instead of under-counting.
+      return { rows, totalBytesProcessed: readByteFigure(stats.query?.totalBytesBilled ?? stats.totalBytesProcessed) };
     },
   };
 }
@@ -340,8 +358,8 @@ async function collect({
       // Fail closed: an estimate that is not a finite non-negative number
       // must never compare as 0 and let the day bill.
       const dry = await client.query({ ...options, dryRun: true });
-      const estimate = Number(dry.totalBytesProcessed);
-      if (!Number.isFinite(estimate) || estimate < 0) {
+      const estimate = readByteFigure(dry.totalBytesProcessed);
+      if (estimate === null) {
         log('Refusing %s: unreadable dry-run estimate (%s)', dayIso, String(dry.totalBytesProcessed));
         return finish('error', {
           asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
@@ -368,10 +386,11 @@ async function collect({
       writeBudget(dataDir, month, monthBytes + estimate, now);
 
       const billed = await client.query({ ...options, maximumBytesBilled: PER_QUERY_CAP_BYTES });
-      const billedBytes = Number(billed.totalBytesProcessed);
-      // An unreadable or negative billed figure charges the estimate: never
-      // enter less than we reserved into the ledger for a query that ran.
-      const charge = Number.isFinite(billedBytes) && billedBytes >= 0 ? billedBytes : estimate;
+      const billedBytes = readByteFigure(billed.totalBytesProcessed);
+      // An unreadable, negative or non-integer billed figure charges the
+      // estimate: never enter less than we reserved into the ledger for a
+      // query that ran, and never a value the ledger's reader would reject.
+      const charge = billedBytes === null ? estimate : billedBytes;
       monthBytes += charge;
       runBytes += charge;
       writeBudget(dataDir, month, monthBytes, now);
@@ -425,4 +444,5 @@ module.exports = {
   MAX_DAYS_PER_RUN,
   BUDGET_FILE,
   RUN_FILE,
+  readByteFigure,
 };

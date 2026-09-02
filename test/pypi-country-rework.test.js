@@ -116,7 +116,7 @@ function oneMissingDay(dir, extra = {}) {
 // AC9 — the caps fail closed on an unreadable estimate
 // ---------------------------------------------------------------------------
 
-for (const [label, badEstimate] of [['undefined', undefined], ['a non-numeric string', 'abc'], ['a negative number', -1]]) {
+for (const [label, badEstimate] of [['undefined', undefined], ['a non-numeric string', 'abc'], ['a negative number', -1], ['null', null], ['an empty string', ''], ['false', false], ['a float', 5000.5], ['a scientific-notation string', '1e3']]) {
   test(`GAT-01.AC9 a dry run reporting ${label} bills nothing, persists error and exits 1`, async () => {
     const dir = tmp();
     try {
@@ -283,6 +283,61 @@ test('GAT-01.AC6 buildSummary reports error for a run record whose status is out
     db.close();
     assert.deepEqual(summary.pypiGeo, { status: 'error', asOf: null },
       'an arbitrary status string is not passed through');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// AC10 — a billed figure the ledger's reader would reject charges the estimate
+// ---------------------------------------------------------------------------
+
+for (const [label, badBilled] of [['null', null], ['an empty string', ''], ['false', false], ['a float', 5000.5]]) {
+  test(`GAT-01.AC10 a billed figure of ${label} charges the estimate, never 0 or a non-integer`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = oneMissingDay(dir);
+      seedBudget(dir, 1000);
+      const client = fakeClient({ dryBytes: 5000, billedBytes: badBilled });
+      const res = await collect({ client, dbPath, now: NOW, env: {}, log: noop });
+      assert.equal(client.billed().length, 1);
+      const ledger = readBudgetFile(dir);
+      assert.equal(ledger.bytesBilled, 6000, 'prior month-to-date plus the estimate');
+      assert.ok(Number.isInteger(ledger.bytesBilled));
+      assert.equal(res.bytesBilled, 5000);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
+test('GAT-01.AC10 an int64 digit-string billed figure is charged as its integer value', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = oneMissingDay(dir);
+    seedBudget(dir, 1000);
+    const client = fakeClient({ dryBytes: '5000', billedBytes: '4321' });
+    await collect({ client, dbPath, now: NOW, env: {}, log: noop });
+    assert.equal(readBudgetFile(dir).bytesBilled, 5321);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('GAT-01.AC11 the rollup delete and insert are one transaction: an aborting insert leaves the previous rows in place', () => {
+  const { rollupCountryDownloads } = require('../scripts/collect-pypi-country-stats');
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, {
+      daily: [{ pkg: 1, date: dayBefore(1), cc: 'FR', dl: 7 }],
+      rollup: [{ pkg: 1, date: dayBefore(2), cc: 'FR', dl: 99 }],
+    });
+    const db = new Database(dbPath);
+    db.exec('CREATE TRIGGER abort_ins BEFORE INSERT ON pypi_country_downloads BEGIN SELECT RAISE(ABORT, "injected"); END');
+    assert.throws(() => rollupCountryDownloads(db, NOW), /injected/);
+    const rows = db.prepare('SELECT date, downloads FROM pypi_country_downloads').all();
+    assert.deepEqual(rows, [{ date: dayBefore(2), downloads: 99 }], 'the delete was rolled back with the failed insert');
+    db.close();
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
