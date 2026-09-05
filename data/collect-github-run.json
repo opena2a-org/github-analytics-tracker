@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-04",
+  "date": "2026-09-05",
   "reposDiscovered": 44,
   "repos": [
     "opena2a-org/agent-identity-management",
@@ -8,7 +8,7 @@
     "opena2a-org/damn-vulnerable-ai-agent",
     "opena2a-org/secretless-ai",
     "opena2a-org/.github",
-    "opena2a-org/agent-runtime-protection",
+    "opena2a-org/arp-guard",
     "opena2a-org/oasb",
     "opena2a-org/opena2a",
     "opena2a-org/ai-trust",

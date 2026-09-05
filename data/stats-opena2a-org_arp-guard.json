@@ -1,15 +1,15 @@
 {
   "lastUpdated": "2026-09-05T06:06:28.428Z",
-  "repository": "opena2a-org/agent-runtime-protection",
+  "repository": "opena2a-org/arp-guard",
   "stats": {
     "allTime": {
-      "views": 448,
-      "clones": 925
+      "views": 70,
+      "clones": 99
     },
     "recent14Days": {
-      "views": 69,
-      "viewsUnique": 3,
-      "clones": 102,
+      "views": 70,
+      "viewsUnique": 4,
+      "clones": 99,
       "clonesUnique": 60
     },
     "stars": 2,
