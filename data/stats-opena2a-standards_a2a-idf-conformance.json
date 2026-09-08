@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-09-07T06:07:28.392Z",
+  "lastUpdated": "2026-09-08T06:06:21.661Z",
   "repository": "opena2a-standards/a2a-idf-conformance",
   "stats": {
     "allTime": {
       "views": 122,
-      "clones": 232
+      "clones": 233
     },
     "recent14Days": {
-      "views": 26,
+      "views": 21,
       "viewsUnique": 3,
-      "clones": 16,
-      "clonesUnique": 12
+      "clones": 7,
+      "clonesUnique": 7
     },
     "stars": 1,
     "forks": 1
