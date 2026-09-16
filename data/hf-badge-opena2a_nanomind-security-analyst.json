@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "HF downloads",
-  "message": "4,114",
+  "message": "4,129",
   "color": "yellow",
   "namedLogo": "huggingface",
   "style": "flat"

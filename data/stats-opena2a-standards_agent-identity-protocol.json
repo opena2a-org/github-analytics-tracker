@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-09-15T06:06:39.933Z",
+  "lastUpdated": "2026-09-16T06:08:39.900Z",
   "repository": "opena2a-standards/agent-identity-protocol",
   "stats": {
     "allTime": {
-      "views": 324,
-      "clones": 726
+      "views": 329,
+      "clones": 728
     },
     "recent14Days": {
-      "views": 62,
-      "viewsUnique": 15,
+      "views": 58,
+      "viewsUnique": 14,
       "clones": 214,
-      "clonesUnique": 61
+      "clonesUnique": 60
     },
     "stars": 3,
     "forks": 0
