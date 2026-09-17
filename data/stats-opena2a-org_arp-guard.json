@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-09-16T06:08:39.900Z",
+  "lastUpdated": "2026-09-17T06:06:31.771Z",
   "repository": "opena2a-org/arp-guard",
   "stats": {
     "allTime": {
-      "views": 136,
-      "clones": 224
+      "views": 141,
+      "clones": 228
     },
     "recent14Days": {
-      "views": 68,
+      "views": 73,
       "viewsUnique": 16,
-      "clones": 139,
-      "clonesUnique": 62
+      "clones": 142,
+      "clonesUnique": 65
     },
     "stars": 3,
     "forks": 1
