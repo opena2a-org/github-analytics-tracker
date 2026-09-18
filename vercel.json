@@ -6,5 +6,11 @@
       "path": "/api/cron/collect",
       "schedule": "2 6 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "fleet/*": false
+    }
+  }
 }
