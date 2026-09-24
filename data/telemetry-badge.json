@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "active CLI users (MAU)",
-  "message": "310",
+  "message": "302",
   "color": "brightgreen",
   "style": "flat"
 }
