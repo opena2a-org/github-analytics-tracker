@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-09-24T06:06:54.720Z",
+  "lastUpdated": "2026-09-25T06:06:10.288Z",
   "repository": "opena2a-org/trust-badge-action",
   "stats": {
     "allTime": {
-      "views": 57,
-      "clones": 264
+      "views": 58,
+      "clones": 284
     },
     "recent14Days": {
-      "views": 1,
-      "viewsUnique": 1,
-      "clones": 25,
-      "clonesUnique": 19
+      "views": 2,
+      "viewsUnique": 2,
+      "clones": 45,
+      "clonesUnique": 30
     },
     "stars": 2,
     "forks": 0
