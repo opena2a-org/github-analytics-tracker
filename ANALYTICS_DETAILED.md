@@ -1,6 +1,6 @@
 # GitHub Analytics - Detailed Daily Report
 
-> **Last Updated:** Sep 26, 2026
+> **Last Updated:** Sep 27, 2026
 > **Tracking Period:** May 23, 2026 - Sep 23, 2026
 
 ---
@@ -186,7 +186,7 @@
 | Unique Visitors | -- | 118 |
 | Clones | 114,501 | 1,641 |
 | Unique Cloners | -- | 415 |
-| Stars | 49 | -- |
+| Stars | 50 | -- |
 | Forks | 5 | -- |
 
 **Top Referrers** (last 14 days)
@@ -320,8 +320,8 @@
 
 | Contributor | Commits |
 |-------------|--------|
-| thebenignhacker | 447 |
-| benignhacker-fleet[bot] | 14 |
+| thebenignhacker | 462 |
+| benignhacker-fleet[bot] | 24 |
 | claude | 1 |
 | trwilcoxson | 1 |
 
@@ -466,7 +466,7 @@
 
 | Contributor | Commits |
 |-------------|--------|
-| thebenignhacker | 108 |
+| thebenignhacker | 110 |
 
 
 **Insights**
@@ -836,12 +836,12 @@
 | thebenignhacker | 90 |
 | benignhacker-fleet[bot] | 7 |
 
-**Release Downloads** (4 total)
+**Release Downloads** (11 total)
 
 | Release | Downloads |
 |---------|----------|
+| security-analyst-v3.0.0 | 8 |
 | nanomind-analyst-v0.1.3 | 3 |
-| security-analyst-v3.0.0 | 1 |
 
 
 **Insights**
@@ -3278,7 +3278,7 @@
 |------------|---------------|-----------------|--------------------|----|
 | agent-identity-management | 9,640 | 30,178 | 156 | 67 |
 | damn-vulnerable-ai-agent | 7,763 | 4,973 | 216 | 137 |
-| hackmyagent | 6,323 | 114,501 | 118 | 49 |
+| hackmyagent | 6,323 | 114,501 | 118 | 50 |
 | opena2a | 4,352 | 23,527 | 35 | 21 |
 | secretless-ai | 3,960 | 5,106 | 28 | 26 |
 | ai-browserguard | 1,382 | 2,771 | 19 | 6 |
@@ -3347,29 +3347,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1,800 |
-| Last 30 days | 4,499 |
-| Last 90 days | 12,365 |
-| All time | 35,512 |
+| Last 7 days | 2,141 |
+| Last 30 days | 4,838 |
+| Last 90 days | 12,874 |
+| All time | 36,026 |
 
 **Insights**
-- Average: ~150 downloads/day (last 30 days)
+- Average: ~161 downloads/day (last 30 days)
 - Peak: Sep 24, 2026 with 916 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.33.2 | 659 |
-| 0.17.11 | 348 |
-| 0.30.0 | 302 |
-| 0.25.0 | 107 |
-| 0.16.7 | 104 |
-| 0.33.0 | 103 |
-| 0.10.0 | 30 |
-| 0.11.15 | 24 |
-| 0.32.0 | 22 |
-| 0.25.2 | 18 |
+| 0.33.2 | 692 |
+| 0.17.11 | 417 |
+| 0.30.0 | 371 |
+| 0.16.7 | 131 |
+| 0.25.0 | 120 |
+| 0.33.0 | 86 |
+| 0.10.0 | 31 |
+| 0.32.0 | 28 |
+| 0.11.15 | 27 |
+| 0.25.2 | 23 |
 
 ---
 
@@ -3379,29 +3379,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 471 |
-| Last 30 days | 1,751 |
-| Last 90 days | 4,531 |
-| All time | 15,438 |
+| Last 7 days | 561 |
+| Last 30 days | 1,801 |
+| Last 90 days | 4,649 |
+| All time | 15,562 |
 
 **Insights**
-- Average: ~58 downloads/day (last 30 days)
+- Average: ~60 downloads/day (last 30 days)
 - Peak: Sep 2, 2026 with 296 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.2.25 | 314 |
-| 0.2.23 | 103 |
-| 0.1.3 | 26 |
-| 0.7.6 | 13 |
-| 0.1.1 | 4 |
+| 0.2.25 | 370 |
+| 0.2.23 | 131 |
+| 0.1.3 | 31 |
+| 0.7.6 | 16 |
+| 0.1.1 | 5 |
 | 0.2.9 | 3 |
 | 0.6.0 | 2 |
+| 0.7.3 | 2 |
 | 0.7.4 | 2 |
 | 0.7.5 | 2 |
-| 0.1.0 | 1 |
 
 ---
 
@@ -3411,29 +3411,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 411 |
-| Last 30 days | 683 |
-| Last 90 days | 2,185 |
-| All time | 12,758 |
+| Last 7 days | 564 |
+| Last 30 days | 778 |
+| Last 90 days | 2,337 |
+| All time | 12,911 |
 
 **Insights**
-- Average: ~23 downloads/day (last 30 days)
+- Average: ~26 downloads/day (last 30 days)
 - Peak: Sep 24, 2026 with 367 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.10.13 | 186 |
-| 0.8.23 | 17 |
-| 0.10.11 | 11 |
-| 0.10.12 | 10 |
-| 0.10.10 | 9 |
-| 0.10.5 | 9 |
-| 0.10.7 | 9 |
-| 0.8.24 | 9 |
-| 0.9.0 | 9 |
-| 0.10.0 | 8 |
+| 0.10.13 | 288 |
+| 0.8.23 | 27 |
+| 0.10.12 | 14 |
+| 0.10.11 | 13 |
+| 0.10.10 | 11 |
+| 0.10.5 | 11 |
+| 0.10.7 | 11 |
+| 0.8.24 | 11 |
+| 0.9.0 | 11 |
+| 0.10.0 | 10 |
 
 ---
 
@@ -3443,29 +3443,29 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 653 |
-| Last 30 days | 1,411 |
-| Last 90 days | 4,263 |
-| All time | 12,502 |
+| Last 7 days | 861 |
+| Last 30 days | 1,599 |
+| Last 90 days | 4,492 |
+| All time | 12,734 |
 
 **Insights**
-- Average: ~47 downloads/day (last 30 days)
+- Average: ~53 downloads/day (last 30 days)
 - Peak: Sep 24, 2026 with 414 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.23.0 | 394 |
-| 0.14.1 | 77 |
-| 0.22.1 | 23 |
+| 0.23.0 | 456 |
+| 0.14.1 | 125 |
+| 0.22.1 | 36 |
 | 0.10.0 | 14 |
-| 0.16.1 | 9 |
-| 0.16.4 | 9 |
-| 0.17.0 | 9 |
-| 0.18.0 | 9 |
-| 0.18.2 | 9 |
-| 0.21.2 | 9 |
+| 0.21.2 | 12 |
+| 0.21.3 | 12 |
+| 0.22.0 | 12 |
+| 0.16.1 | 11 |
+| 0.16.4 | 11 |
+| 0.17.0 | 11 |
 
 ---
 
@@ -3475,21 +3475,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1,102 |
-| Last 30 days | 2,168 |
-| Last 90 days | 5,356 |
-| All time | 11,647 |
+| Last 7 days | 1,371 |
+| Last 30 days | 2,400 |
+| Last 90 days | 5,662 |
+| All time | 11,961 |
 
 **Insights**
-- Average: ~72 downloads/day (last 30 days)
+- Average: ~80 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 551 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 848 |
-| 0.2.0 | 310 |
+| 0.1.2 | 981 |
+| 0.2.0 | 435 |
 
 ---
 
@@ -3499,22 +3499,22 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 821 |
-| Last 30 days | 2,649 |
-| Last 90 days | 5,352 |
-| All time | 10,063 |
+| Last 7 days | 961 |
+| Last 30 days | 2,742 |
+| Last 90 days | 5,570 |
+| All time | 10,287 |
 
 **Insights**
-- Average: ~88 downloads/day (last 30 days)
+- Average: ~91 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 424 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 345 |
-| 0.1.0 | 308 |
-| 0.1.1 | 244 |
+| 0.1.0 | 378 |
+| 0.3.0 | 360 |
+| 0.1.1 | 307 |
 
 ---
 
@@ -3524,21 +3524,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1,088 |
-| Last 30 days | 2,790 |
-| Last 90 days | 6,060 |
-| All time | 8,962 |
+| Last 7 days | 1,219 |
+| Last 30 days | 2,906 |
+| Last 90 days | 6,261 |
+| All time | 9,165 |
 
 **Insights**
-- Average: ~93 downloads/day (last 30 days)
+- Average: ~97 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 587 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 593 |
-| 0.2.0 | 568 |
+| 0.1.0 | 669 |
+| 0.2.0 | 621 |
 | 0.0.0 | 1 |
 
 ---
@@ -3549,21 +3549,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 575 |
-| Last 30 days | 1,355 |
-| Last 90 days | 3,489 |
-| All time | 8,609 |
+| Last 7 days | 651 |
+| Last 30 days | 1,402 |
+| Last 90 days | 3,600 |
+| All time | 8,727 |
 
 **Insights**
-- Average: ~45 downloads/day (last 30 days)
+- Average: ~47 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 289 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.2 | 603 |
-| 0.1.0 | 16 |
+| 0.1.2 | 675 |
+| 0.1.0 | 18 |
 
 ---
 
@@ -3573,10 +3573,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 423 |
-| Last 30 days | 1,431 |
-| Last 90 days | 3,727 |
-| All time | 7,278 |
+| Last 7 days | 464 |
+| Last 30 days | 1,449 |
+| Last 90 days | 3,808 |
+| All time | 7,363 |
 
 **Insights**
 - Average: ~48 downloads/day (last 30 days)
@@ -3586,12 +3586,12 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.5.2 | 376 |
-| 0.4.0 | 54 |
-| 0.5.1 | 24 |
-| 0.5.0 | 4 |
-| 0.2.0 | 3 |
-| 0.3.0 | 2 |
+| 0.5.2 | 410 |
+| 0.4.0 | 59 |
+| 0.5.1 | 27 |
+| 0.5.0 | 6 |
+| 0.3.0 | 3 |
+| 0.2.0 | 2 |
 | 0.1.0 | 1 |
 
 ---
@@ -3602,21 +3602,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 777 |
-| Last 30 days | 1,723 |
-| Last 90 days | 3,693 |
-| All time | 6,421 |
+| Last 7 days | 855 |
+| Last 30 days | 1,790 |
+| Last 90 days | 3,809 |
+| All time | 6,541 |
 
 **Insights**
-- Average: ~57 downloads/day (last 30 days)
+- Average: ~60 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 425 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 564 |
-| 0.1.2 | 253 |
+| 0.3.0 | 620 |
+| 0.1.2 | 277 |
 
 ---
 
@@ -3626,21 +3626,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 626 |
-| Last 30 days | 1,509 |
-| Last 90 days | 3,514 |
-| All time | 5,816 |
+| Last 7 days | 690 |
+| Last 30 days | 1,575 |
+| Last 90 days | 3,628 |
+| All time | 5,932 |
 
 **Insights**
-- Average: ~50 downloads/day (last 30 days)
+- Average: ~53 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 321 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 565 |
-| 0.2.0 | 108 |
+| 0.3.0 | 618 |
+| 0.2.0 | 123 |
 | 0.1.0 | 1 |
 
 ---
@@ -3651,22 +3651,23 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 748 |
-| Last 30 days | 1,545 |
-| Last 90 days | 3,810 |
-| All time | 5,679 |
+| Last 7 days | 865 |
+| Last 30 days | 1,649 |
+| Last 90 days | 3,960 |
+| All time | 5,833 |
 
 **Insights**
-- Average: ~52 downloads/day (last 30 days)
+- Average: ~55 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 417 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 576 |
-| 0.1.3 | 210 |
-| 0.1.0 | 1 |
+| 0.1.1 | 647 |
+| 0.1.3 | 252 |
+| 0.1.0 | 2 |
+| 0.1.2 | 1 |
 
 ---
 
@@ -3676,22 +3677,22 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 621 |
-| Last 30 days | 1,912 |
-| Last 90 days | 4,542 |
-| All time | 4,542 |
+| Last 7 days | 697 |
+| Last 30 days | 1,994 |
+| Last 90 days | 4,673 |
+| All time | 4,673 |
 
 **Insights**
-- Average: ~64 downloads/day (last 30 days)
+- Average: ~66 downloads/day (last 30 days)
 - Peak: Sep 2, 2026 with 401 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 1.3.1 | 352 |
-| 1.0.2 | 313 |
-| 1.0.1 | 3 |
+| 1.0.2 | 384 |
+| 1.3.1 | 360 |
+| 1.0.1 | 4 |
 | 1.3.0 | 3 |
 | 1.2.0 | 1 |
 
@@ -3703,21 +3704,21 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 554 |
-| Last 30 days | 1,414 |
-| Last 90 days | 3,381 |
-| All time | 3,791 |
+| Last 7 days | 626 |
+| Last 30 days | 1,482 |
+| Last 90 days | 3,488 |
+| All time | 3,899 |
 
 **Insights**
-- Average: ~47 downloads/day (last 30 days)
+- Average: ~49 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 306 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 580 |
-| 0.4.0 | 10 |
+| 0.3.0 | 652 |
+| 0.4.0 | 5 |
 | 0.1.0 | 2 |
 | 0.2.0 | 2 |
 | 0.1.1 | 1 |
@@ -3730,20 +3731,20 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 298 |
-| Last 30 days | 879 |
-| Last 90 days | 1,873 |
-| All time | 3,680 |
+| Last 7 days | 364 |
+| Last 30 days | 923 |
+| Last 90 days | 1,953 |
+| All time | 3,762 |
 
 **Insights**
-- Average: ~29 downloads/day (last 30 days)
+- Average: ~31 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 163 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 312 |
+| 0.1.1 | 380 |
 
 ---
 
@@ -3753,20 +3754,20 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 296 |
-| Last 30 days | 797 |
-| Last 90 days | 1,902 |
-| All time | 3,632 |
+| Last 7 days | 363 |
+| Last 30 days | 843 |
+| Last 90 days | 1,983 |
+| All time | 3,714 |
 
 **Insights**
-- Average: ~27 downloads/day (last 30 days)
+- Average: ~28 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 164 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 308 |
+| 0.1.1 | 377 |
 | 0.1.0 | 1 |
 
 ---
@@ -3777,20 +3778,20 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 294 |
-| Last 30 days | 659 |
-| Last 90 days | 1,622 |
-| All time | 3,131 |
+| Last 7 days | 362 |
+| Last 30 days | 729 |
+| Last 90 days | 1,684 |
+| All time | 3,215 |
 
 **Insights**
-- Average: ~22 downloads/day (last 30 days)
+- Average: ~24 downloads/day (last 30 days)
 - Peak: Sep 23, 2026 with 162 downloads
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 2.2.3 | 300 |
+| 2.2.3 | 372 |
 | 2.2.0 | 4 |
 | 0.1.1 | 1 |
 | 2.1.0 | 1 |
@@ -3825,16 +3826,44 @@
 
 ---
 
+### damn-vulnerable-ai-agent v0.9.2
+
+> The AI agent you're supposed to break. 17 agents, 12 vulnerability categories, zero consequences.
+
+| Period | Downloads |
+|--------|-----------|
+| Last 7 days | 112 |
+| Last 30 days | 368 |
+| Last 90 days | 589 |
+| All time | 2,319 |
+
+**Insights**
+- Average: ~12 downloads/day (last 30 days)
+- Peak: Sep 12, 2026 with 35 downloads
+
+**Downloads by Version** (last week)
+
+| Version | Downloads |
+|---------|-----------|
+| 0.9.2 | 125 |
+| 0.6.0 | 3 |
+| 0.6.2 | 1 |
+| 0.7.1 | 1 |
+| 0.7.4 | 1 |
+| 0.9.1 | 1 |
+
+---
+
 ### cryptoserve v0.6.0
 
 > CryptoServe CLI - Cryptographic scanning, PQC analysis, encryption, and local key management
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 10 |
-| Last 30 days | 77 |
-| Last 90 days | 911 |
-| All time | 2,290 |
+| Last 7 days | 20 |
+| Last 30 days | 86 |
+| Last 90 days | 919 |
+| All time | 2,301 |
 
 **Insights**
 - Average: ~3 downloads/day (last 30 days)
@@ -3844,38 +3873,12 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.6.0 | 6 |
+| 0.6.0 | 9 |
+| 0.3.4 | 4 |
+| 0.5.0 | 4 |
+| 0.4.0 | 2 |
 | 0.1.2 | 1 |
 | 0.3.0 | 1 |
-| 0.3.4 | 1 |
-| 0.5.0 | 1 |
-
----
-
-### damn-vulnerable-ai-agent v0.9.2
-
-> The AI agent you're supposed to break. 17 agents, 12 vulnerability categories, zero consequences.
-
-| Period | Downloads |
-|--------|-----------|
-| Last 7 days | 97 |
-| Last 30 days | 334 |
-| Last 90 days | 573 |
-| All time | 2,284 |
-
-**Insights**
-- Average: ~11 downloads/day (last 30 days)
-- Peak: Sep 12, 2026 with 35 downloads
-
-**Downloads by Version** (last week)
-
-| Version | Downloads |
-|---------|-----------|
-| 0.9.2 | 111 |
-| 0.6.2 | 1 |
-| 0.7.1 | 1 |
-| 0.7.4 | 1 |
-| 0.9.1 | 1 |
 
 ---
 
@@ -3885,10 +3888,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 95 |
-| Last 30 days | 351 |
-| Last 90 days | 874 |
-| All time | 1,854 |
+| Last 7 days | 105 |
+| Last 30 days | 361 |
+| Last 90 days | 890 |
+| All time | 1,878 |
 
 **Insights**
 - Average: ~12 downloads/day (last 30 days)
@@ -3898,7 +3901,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.1 | 104 |
+| 0.1.1 | 117 |
 | 0.1.0 | 2 |
 
 ---
@@ -3910,12 +3913,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 0 |
-| Last 30 days | 78 |
-| Last 90 days | 218 |
+| Last 30 days | 74 |
+| Last 90 days | 214 |
 | All time | 1,074 |
 
 **Insights**
-- Average: ~3 downloads/day (last 30 days)
+- Average: ~2 downloads/day (last 30 days)
 - Peak: Aug 29, 2026 with 24 downloads
 
 **Downloads by Version** (last week)
@@ -3932,10 +3935,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1 |
+| Last 7 days | 5 |
 | Last 30 days | 48 |
 | Last 90 days | 337 |
-| All time | 1,063 |
+| All time | 1,067 |
 
 **Insights**
 - Average: ~2 downloads/day (last 30 days)
@@ -3945,7 +3948,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.4.0 | 1 |
+| 0.4.0 | 5 |
 
 ---
 
@@ -3956,8 +3959,8 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 1 |
-| Last 30 days | 65 |
-| Last 90 days | 184 |
+| Last 30 days | 62 |
+| Last 90 days | 182 |
 | All time | 751 |
 
 **Insights**
@@ -3979,7 +3982,7 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 2 |
-| Last 30 days | 84 |
+| Last 30 days | 81 |
 | Last 90 days | 205 |
 | All time | 702 |
 
@@ -4002,8 +4005,8 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 1 |
-| Last 30 days | 22 |
-| Last 90 days | 110 |
+| Last 30 days | 19 |
+| Last 90 days | 109 |
 | All time | 616 |
 
 **Insights**
@@ -4086,9 +4089,9 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 5 |
-| Last 30 days | 38 |
-| Last 90 days | 155 |
-| All time | 416 |
+| Last 30 days | 32 |
+| Last 90 days | 156 |
+| All time | 417 |
 
 **Insights**
 - Average: ~1 downloads/day (last 30 days)
@@ -4097,7 +4100,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.3.0 | 5 |
+| 0.3.0 | 6 |
 
 ---
 
@@ -4108,8 +4111,8 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 5 |
-| Last 30 days | 17 |
-| Last 90 days | 59 |
+| Last 30 days | 15 |
+| Last 90 days | 58 |
 | All time | 339 |
 
 **Insights**
@@ -4129,19 +4132,19 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1 |
-| Last 30 days | 16 |
-| Last 90 days | 47 |
-| All time | 330 |
+| Last 7 days | 2 |
+| Last 30 days | 14 |
+| Last 90 days | 48 |
+| All time | 331 |
 
 **Insights**
-- Average: ~1 downloads/day (last 30 days)
+- Average: ~0 downloads/day (last 30 days)
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 1 |
+| 0.1.0 | 2 |
 
 ---
 
@@ -4151,10 +4154,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 1 |
-| Last 30 days | 13 |
-| Last 90 days | 46 |
-| All time | 330 |
+| Last 7 days | 2 |
+| Last 30 days | 11 |
+| Last 90 days | 47 |
+| All time | 331 |
 
 **Insights**
 - Average: ~0 downloads/day (last 30 days)
@@ -4163,7 +4166,7 @@
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 1 |
+| 0.1.0 | 2 |
 
 ---
 
@@ -4174,12 +4177,12 @@
 | Period | Downloads |
 |--------|-----------|
 | Last 7 days | 4 |
-| Last 30 days | 15 |
+| Last 30 days | 12 |
 | Last 90 days | 48 |
 | All time | 329 |
 
 **Insights**
-- Average: ~1 downloads/day (last 30 days)
+- Average: ~0 downloads/day (last 30 days)
 
 **Downloads by Version** (last week)
 
@@ -4254,19 +4257,18 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 0 |
-| Last 30 days | 15 |
+| Last 7 days | 1 |
+| Last 30 days | 13 |
 | Last 90 days | 45 |
-| All time | 279 |
+| All time | 280 |
 
 **Insights**
-- Average: ~1 downloads/day (last 30 days)
+- Average: ~0 downloads/day (last 30 days)
 
 **Downloads by Version** (last week)
 
 | Version | Downloads |
 |---------|-----------|
-| 0.1.0 | 1 |
 | 0.1.1 | 1 |
 
 ---
@@ -4334,10 +4336,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 231 |
-| Last 30 days | 1,679 |
-| Last 90 days | 4,449 |
-| All time | 12,821 |
+| Last 7 days | 206 |
+| Last 30 days | 1,668 |
+| Last 90 days | 4,451 |
+| All time | 12,833 |
 
 **Insights**
 - Average: ~56 downloads/day (last 30 days)
@@ -4359,7 +4361,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 1,472 |
+| null | 1,482 |
 | Linux | 309 |
 | Darwin | 97 |
 | Windows | 29 |
@@ -4372,10 +4374,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 36 |
-| Last 30 days | 383 |
+| Last 7 days | 35 |
+| Last 30 days | 377 |
 | Last 90 days | 1,352 |
-| All time | 6,563 |
+| All time | 6,584 |
 
 **Insights**
 - Average: ~15 downloads/day (last 26 days)
@@ -4397,7 +4399,7 @@
 | OS | Downloads |
 |----|----------|
 | Linux | 451 |
-| null | 406 |
+| null | 407 |
 | Darwin | 17 |
 | Windows | 4 |
 
@@ -4409,10 +4411,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 40 |
-| Last 30 days | 324 |
-| Last 90 days | 1,130 |
-| All time | 5,552 |
+| Last 7 days | 36 |
+| Last 30 days | 321 |
+| Last 90 days | 1,133 |
+| All time | 5,572 |
 
 **Insights**
 - Average: ~12 downloads/day (last 27 days)
@@ -4434,7 +4436,7 @@
 | OS | Downloads |
 |----|----------|
 | Linux | 466 |
-| null | 353 |
+| null | 357 |
 | Windows | 18 |
 | Darwin | 13 |
 
@@ -4446,10 +4448,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 27 |
-| Last 30 days | 207 |
-| Last 90 days | 758 |
-| All time | 3,536 |
+| Last 7 days | 29 |
+| Last 30 days | 205 |
+| Last 90 days | 763 |
+| All time | 3,550 |
 
 **Insights**
 - Average: ~8 downloads/day (last 27 days)
@@ -4471,7 +4473,7 @@
 | OS | Downloads |
 |----|----------|
 | Linux | 453 |
-| null | 246 |
+| null | 250 |
 | Windows | 9 |
 | Darwin | 7 |
 
@@ -4483,13 +4485,13 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 53 |
-| Last 30 days | 263 |
-| Last 90 days | 1,309 |
-| All time | 2,782 |
+| Last 7 days | 40 |
+| Last 30 days | 268 |
+| Last 90 days | 1,287 |
+| All time | 2,787 |
 
 **Insights**
-- Average: ~10 downloads/day (last 27 days)
+- Average: ~10 downloads/day (last 28 days)
 - Peak: Sep 13, 2026 with 24 downloads
 
 **Downloads by Python Version**
@@ -4505,7 +4507,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 529 |
+| null | 533 |
 | Linux | 69 |
 | Darwin | 22 |
 | Windows | 5 |
@@ -4518,10 +4520,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 28 |
-| Last 30 days | 182 |
-| Last 90 days | 650 |
-| All time | 2,759 |
+| Last 7 days | 27 |
+| Last 30 days | 181 |
+| Last 90 days | 652 |
+| All time | 2,770 |
 
 **Insights**
 - Average: ~7 downloads/day (last 25 days)
@@ -4538,7 +4540,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 269 |
+| null | 270 |
 | Linux | 13 |
 | Darwin | 6 |
 | Windows | 2 |
@@ -4551,10 +4553,10 @@
 
 | Period | Downloads |
 |--------|-----------|
-| Last 7 days | 23 |
-| Last 30 days | 132 |
-| Last 90 days | 509 |
-| All time | 1,962 |
+| Last 7 days | 35 |
+| Last 30 days | 138 |
+| Last 90 days | 515 |
+| All time | 1,974 |
 
 **Insights**
 - Average: ~6 downloads/day (last 24 days)
@@ -4572,7 +4574,7 @@
 
 | OS | Downloads |
 |----|----------|
-| null | 473 |
+| null | 475 |
 | Linux | 38 |
 | Darwin | 17 |
 | Windows | 2 |
