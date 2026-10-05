@@ -9,6 +9,7 @@ const { computeOverview } = require('../lib/overview');
 const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
   huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
+  parseModelDetailQuery,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -354,4 +355,63 @@ test('the collector migrates a database created before the nullable schema befor
       db.close();
     }
   });
+});
+
+// The API handler, loaded as Next.js would serve it: its source rewritten from
+// an ES module default export to a CommonJS one.
+function loadStatsHandler() {
+  const Module = require('node:module');
+  const file = join(__dirname, '..', 'pages', 'api', 'huggingface-stats.js');
+  const source = readFileSync(file, 'utf8');
+  const exportLine = 'export default function handler(';
+  assert.ok(source.includes(exportLine), 'the handler is a default-exported function');
+  const mod = new Module(file);
+  mod.filename = file;
+  mod.paths = Module._nodeModulePaths(join(__dirname, '..', 'pages', 'api'));
+  mod._compile(source.replace(exportLine, 'module.exports = function handler('), file);
+  return mod.exports;
+}
+
+function callHandler(handler, query) {
+  const res = {
+    statusCode: null, body: null,
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; return this; },
+  };
+  handler({ query }, res);
+  return res;
+}
+
+test('a model detail query gives the model id and the first date of its range', () => {
+  const now = new Date('2026-10-05T12:00:00Z');
+  assert.deepStrictEqual(parseModelDetailQuery({ model_id: '3', days: '30' }, now), { modelId: 3, startDate: '2026-09-05' });
+  assert.deepStrictEqual(parseModelDetailQuery({ model_id: '3' }, now), { modelId: 3, startDate: '2026-09-05' }, 'days defaults to 30');
+  assert.deepStrictEqual(parseModelDetailQuery({ model_id: '3', days: '7' }, now), { modelId: 3, startDate: '2026-09-28' });
+  const all = parseModelDetailQuery({ model_id: '3', days: 'all' }, now);
+  assert.ok(all.startDate < '1970-01-01', 'days=all reaches before any snapshot');
+  assert.deepStrictEqual(parseModelDetailQuery({ model_id: '3', days: '100000000000' }, now), all,
+    'a range longer than all is all, not an invalid date');
+});
+
+test('a model_id that is not an integer, or a days that is neither all nor a positive integer, is an error naming it', () => {
+  for (const model_id of ['abc', '1.5', '1abc', '', ' 1', ['1', '2']]) {
+    assert.deepStrictEqual(parseModelDetailQuery({ model_id, days: '30' }), { error: 'model_id must be an integer' },
+      `model_id ${JSON.stringify(model_id)}`);
+  }
+  for (const days of ['zzz', '0', '-5', '1.5', '7d', '', ['7', '30']]) {
+    assert.deepStrictEqual(parseModelDetailQuery({ model_id: '1', days }), { error: 'days must be "all" or a positive integer' },
+      `days ${JSON.stringify(days)}`);
+  }
+});
+
+test('/api/huggingface-stats answers a non-numeric model_id or days with 400, not 404 or 500', () => {
+  const handler = loadStatsHandler();
+  const badDays = callHandler(handler, { model_id: '1', days: 'zzz' });
+  assert.strictEqual(badDays.statusCode, 400);
+  assert.match(badDays.body.error, /^days /);
+  const negativeDays = callHandler(handler, { model_id: '1', days: '-5' });
+  assert.strictEqual(negativeDays.statusCode, 400);
+  const badModel = callHandler(handler, { model_id: 'abc' });
+  assert.strictEqual(badModel.statusCode, 400);
+  assert.match(badModel.body.error, /^model_id /);
 });
