@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats } = require('../lib/huggingface');
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, '..', 'data');
@@ -347,20 +348,9 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE TABLE IF NOT EXISTS huggingface_stats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    model_id INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    downloads_30d INTEGER NOT NULL DEFAULT 0,
-    downloads_all_time INTEGER NOT NULL DEFAULT 0,
-    likes INTEGER NOT NULL DEFAULT 0,
-    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (model_id) REFERENCES huggingface_models(id),
-    UNIQUE(model_id, date)
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_hf_stats_model ON huggingface_stats(model_id);
-  CREATE INDEX IF NOT EXISTS idx_hf_stats_date ON huggingface_stats(date);
+  -- Counts are NULL (reason in absent_reason) when the API did not return
+  -- them; see lib/huggingface.js.
+${huggingfaceStatsDdl('huggingface_stats')}
 
   -- Chrome Web Store extension tracking.
   -- Google exposes no install/download API. The only public number is the
@@ -502,6 +492,13 @@ if (telToolExists) {
     console.log('Migration: added telemetry_tool_snapshots.engaged_mau');
   }
 }
+
+// huggingface_stats counts became nullable (an absent API count is NULL with
+// absent_reason, never a measured 0); an older table is rebuilt in place.
+if (migrateHuggingfaceStats(db)) {
+  console.log('Migration: rebuilt huggingface_stats with nullable counts and absent_reason');
+}
+db.exec(HF_STATS_INDEXES);
 
 console.log('Database setup complete: %s', dbPath);
 
