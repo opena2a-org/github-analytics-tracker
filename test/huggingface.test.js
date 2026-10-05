@@ -1,14 +1,17 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { mkdtempSync, rmSync, existsSync, readFileSync } = require('node:fs');
+const { mkdtempSync, rmSync, existsSync, readFileSync, copyFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
 const Database = require('better-sqlite3');
 const { buildSummary } = require('../lib/summary');
 const { computeOverview } = require('../lib/overview');
-const { huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads } = require('../lib/huggingface');
+const {
+  huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
+  huggingfaceModelList, huggingfaceModelDetail,
+} = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
-const { countsFor, recordModel } = require('../scripts/collect-huggingface-stats');
+const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
 
 /*
  * A Hugging Face count the API does not return is absent, not a measured 0.
@@ -18,6 +21,14 @@ const { countsFor, recordModel } = require('../scripts/collect-huggingface-stats
  */
 
 const DB_PATH = join(__dirname, '..', 'data', 'analytics.db');
+
+// Every collector step succeeded, so a series is `partial` only through a
+// Hugging Face gap, never through a missing step outcome.
+const ALL_COLLECTED = {
+  COLLECTOR_OUTCOMES: JSON.stringify(Object.fromEntries(
+    ['github', 'npm', 'pypi', 'docker', 'huggingface', 'chrome', 'telemetry'].map(n => [n, 'success'])
+  )),
+};
 
 const HF_MODELS_DDL = `
   CREATE TABLE huggingface_models (
@@ -134,10 +145,11 @@ test('the summary keeps the last measured value, with its date, when the newest 
     const db = committedCopy();
     try {
       migrateHuggingfaceStats(db);
-      const base = buildSummary(db, { dataDir, env: {} });
+      const base = buildSummary(db, { dataDir, env: ALL_COLLECTED });
       const baseOverview = computeOverview(db, {});
       assert.strictEqual(typeof base.total.hf, 'number');
       assert.ok(base.total.hf > 0, 'the committed database has measured Hugging Face downloads');
+      for (const key of Object.keys(base.series)) assert.strictEqual(base.series[key].status, 'ok', `${key} is ok before the gap`);
 
       // One model's newest snapshot arrives without a count.
       const target = db.prepare(`
@@ -151,7 +163,7 @@ test('the summary keeps the last measured value, with its date, when the newest 
         VALUES (?, ?, NULL, NULL, 2, 'downloads absent from the API response; downloadsAllTime absent from the API response')
       `).run(target.id, absentDate);
 
-      const s = buildSummary(db, { dataDir, env: {} });
+      const s = buildSummary(db, { dataDir, env: ALL_COLLECTED });
       assert.strictEqual(s.total.hf, base.total.hf, 'the absent snapshot does not lower the total');
       assert.strictEqual(s.total.downloads, base.total.downloads);
       assert.strictEqual(s.total.adoption, base.total.adoption);
@@ -163,7 +175,7 @@ test('the summary keeps the last measured value, with its date, when the newest 
         newestSnapshot: absentDate,
         lastMeasured: target.last,
       }]);
-      for (const key of Object.keys(s.series)) assert.strictEqual(s.series[key].status, 'partial', `${key} is partial`);
+      for (const key of Object.keys(s.series)) assert.strictEqual(s.series[key].status, 'partial', `${key} is partial through the gap`);
       assert.deepStrictEqual(s.momentum, base.momentum, 'momentum reads the absent snapshot as no data, not a drop to 0');
 
       const overview = computeOverview(db, {});
@@ -209,6 +221,90 @@ test('a model with no measured count, or no table at all, is a reported gap, nev
       assert.strictEqual(s.series.downloads.status, 'partial');
     } finally {
       copy.close();
+    }
+  });
+});
+
+test('the API route and the overview keep each model\'s last measured counts, and give null when none is measured', () => {
+  const db = committedCopy();
+  try {
+    migrateHuggingfaceStats(db);
+    const target = db.prepare(`
+      SELECT model_id AS id, MAX(date) AS last FROM huggingface_stats
+      GROUP BY model_id ORDER BY MAX(downloads_all_time) DESC LIMIT 1
+    `).get();
+    const measured = db.prepare(`
+      SELECT downloads_all_time AS downloadsAllTime, downloads_30d AS downloads30d, likes
+      FROM huggingface_stats WHERE model_id = ? AND date = ?
+    `).get(target.id, target.last);
+    assert.ok(measured.downloadsAllTime > 0 && measured.downloads30d > 0 && measured.likes > 0,
+      'the committed database has a model with non-zero counts');
+    const baseEntry = huggingfaceModelList(db).find(m => m.id === target.id);
+    const baseDetail = huggingfaceModelDetail(db, target.id, '0000-00-00');
+    const baseOverview = computeOverview(db, {});
+    assert.deepStrictEqual(
+      { downloadsAllTime: baseEntry.downloadsAllTime, downloads30d: baseEntry.downloads30d, likes: baseEntry.likes },
+      { ...measured });
+
+    // The model's newest snapshot arrives with none of its counts.
+    const absentDate = db.prepare("SELECT date(MAX(date), '+1 day') AS d FROM huggingface_stats").get().d;
+    db.prepare(`
+      INSERT INTO huggingface_stats (model_id, date, downloads_30d, downloads_all_time, likes, absent_reason)
+      VALUES (?, ?, NULL, NULL, NULL, 'downloads absent from the API response')
+    `).run(target.id, absentDate);
+
+    const entry = huggingfaceModelList(db).find(m => m.id === target.id);
+    assert.deepStrictEqual(entry, baseEntry, 'the list keeps the last measured counts, not 0');
+    const detail = huggingfaceModelDetail(db, target.id, '0000-00-00');
+    assert.deepStrictEqual(
+      { ...detail.summary, daysTracked: null },
+      { ...baseDetail.summary, daysTracked: null },
+      'the summary keeps the last measured counts and the period growth');
+    assert.strictEqual(detail.summary.daysTracked, baseDetail.summary.daysTracked + 1);
+    const last = detail.series[detail.series.length - 1];
+    assert.deepStrictEqual(last, { date: absentDate, downloadsAllTime: null, downloads30d: null, likes: null, dailyDownloads: null });
+
+    const overview = computeOverview(db, {});
+    assert.strictEqual(overview.totals.hf.downloads30d, baseOverview.totals.hf.downloads30d, '30-day total keeps the measured value');
+    assert.strictEqual(overview.totals.hf.likes, baseOverview.totals.hf.likes, 'likes total keeps the measured value');
+    assert.deepStrictEqual(overview.products.map(p => p.hf), baseOverview.products.map(p => p.hf));
+
+    // Nothing measured at all: null, never 0.
+    db.exec("UPDATE huggingface_stats SET downloads_30d = NULL, downloads_all_time = NULL, likes = NULL, absent_reason = 'x'");
+    for (const m of huggingfaceModelList(db)) {
+      assert.deepStrictEqual([m.downloadsAllTime, m.downloads30d, m.likes, m.last7Downloads], [null, null, null, null], m.name);
+    }
+    const none = huggingfaceModelDetail(db, target.id, '0000-00-00').summary;
+    assert.deepStrictEqual([none.downloadsAllTime, none.downloads30d, none.likes, none.periodDownloads], [null, null, null, null]);
+    const empty = computeOverview(db, {});
+    assert.strictEqual(empty.totals.hf.downloads30d, null);
+    assert.strictEqual(empty.totals.hf.likes, null);
+    assert.strictEqual(huggingfaceModelDetail(db, -1, '0000-00-00'), null, 'an unknown model is not found');
+  } finally {
+    db.close();
+  }
+});
+
+test('the collector migrates a database created before the nullable schema before it writes', () => {
+  withTmp((dir) => {
+    const file = join(dir, 'analytics.db');
+    copyFileSync(DB_PATH, file);
+    const db = openDatabase(file);
+    try {
+      const cols = db.prepare('PRAGMA table_info(huggingface_stats)').all();
+      assert.ok(cols.some(c => c.name === 'absent_reason'), 'absent_reason is added');
+      const counts = recordModel(db, { id: 'org/after-migration', likes: 1 }, { today: '2026-10-01', dataDir: dir });
+      assert.strictEqual(counts.downloadsAllTime, null);
+      const row = db.prepare(`
+        SELECT downloads_all_time, absent_reason FROM huggingface_stats s
+        JOIN huggingface_models m ON m.id = s.model_id WHERE m.model_id = 'org/after-migration'
+      `).get();
+      assert.deepStrictEqual({ ...row }, {
+        downloads_all_time: null,
+        absent_reason: 'downloads absent from the API response; downloadsAllTime absent from the API response',
+      });
+    } finally {
+      db.close();
     }
   });
 });

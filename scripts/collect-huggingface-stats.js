@@ -2,6 +2,7 @@ const https = require('https');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { migrateHuggingfaceStats } = require('../lib/huggingface');
 
 /*
  * HuggingFace model analytics collector.
@@ -163,6 +164,18 @@ function recordModel(db, model, { today, dataDir = DATA_DIR } = {}) {
   return counts;
 }
 
+/**
+ * Open the stats database with huggingface_stats on the nullable schema, so a
+ * database created before it collects without a separate `npm run setup-db`.
+ */
+function openDatabase(file = path.join(DATA_DIR, 'analytics.db')) {
+  const db = new Database(file);
+  if (migrateHuggingfaceStats(db)) {
+    console.log('Migration: rebuilt huggingface_stats with nullable counts and absent_reason');
+  }
+  return db;
+}
+
 async function main() {
   require('dotenv').config();
   const authors = listEnv(process.env.HF_AUTHOR);
@@ -173,7 +186,7 @@ async function main() {
     process.exit(1);
   }
 
-  const db = new Database(path.join(DATA_DIR, 'analytics.db'));
+  const db = openDatabase();
   const today = new Date().toISOString().split('T')[0];
 
   console.log('HuggingFace Analytics Collector');
@@ -219,4 +232,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { readCount, countsFor, recordModel };
+module.exports = { readCount, countsFor, recordModel, openDatabase };
