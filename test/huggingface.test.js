@@ -333,6 +333,57 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
   assert.ok(index.includes('<span className="v">{formatMeasured(v)}</span>'), 'overview source rows show a null count as not measured');
 });
 
+test('one model\'s detail reads that model\'s last counts only, however many models are tracked', () => {
+  const db = freshDb();
+  try {
+    const addModel = db.prepare("INSERT INTO huggingface_models (model_id, author) VALUES (?, 'org')");
+    const addSnapshot = db.prepare(`
+      INSERT INTO huggingface_stats (model_id, date, downloads_30d, downloads_all_time, likes, absent_reason)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const target = addModel.run('org/target').lastInsertRowid;
+    addSnapshot.run(target, '2026-10-01', 5, 50, 2, null);
+    addSnapshot.run(target, '2026-10-02', null, null, null, 'downloads absent from the API response');
+
+    // Every statement the detail executes, by SQL text.
+    const executed = [];
+    const prepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      const stmt = prepare(sql);
+      for (const method of ['get', 'all', 'run', 'iterate']) {
+        const run = stmt[method].bind(stmt);
+        stmt[method] = (...args) => { executed.push(sql); return run(...args); };
+      }
+      return stmt;
+    };
+    const detailExecutions = () => {
+      executed.length = 0;
+      const detail = huggingfaceModelDetail(db, target, '0000-00-00');
+      return { detail, count: executed.length };
+    };
+
+    const alone = detailExecutions();
+    for (let i = 0; i < 20; i++) {
+      addSnapshot.run(addModel.run(`org/other-${i}`).lastInsertRowid, '2026-10-01', i, 100 + i, i, null);
+    }
+    const among = detailExecutions();
+    assert.strictEqual(among.count, alone.count, 'the statement count does not grow with the number of models');
+    assert.deepStrictEqual(among.detail, alone.detail);
+    assert.deepStrictEqual(
+      [among.detail.summary.downloadsAllTime, among.detail.summary.downloads30d, among.detail.summary.likes],
+      [50, 5, 2], 'the last measured counts of the requested model');
+
+    const list = huggingfaceModelList(db);
+    assert.strictEqual(list.length, 21);
+    assert.deepStrictEqual(
+      list.filter(m => m.id === target).map(m => [m.downloadsAllTime, m.downloads30d, m.likes]),
+      [[50, 5, 2]], 'the list reads the same last measured counts');
+    assert.deepStrictEqual(list.find(m => m.name === 'org/other-7').downloadsAllTime, 107);
+  } finally {
+    db.close();
+  }
+});
+
 test('the collector migrates a database created before the nullable schema before it writes', () => {
   withTmp((dir) => {
     const file = join(dir, 'analytics.db');
