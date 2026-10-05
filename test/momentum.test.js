@@ -142,15 +142,86 @@ test('cumulative snapshots measure the count gained in each window', () => {
   assert.strictEqual(m.mom.reason, REASON.coverage);
 });
 
-test('an entity first seen inside the window counts its whole total as growth there', () => {
+test('an entity first seen inside the window carries its existing total in; only later gains are growth', () => {
   const rows = [
     { entity: 1, date: '2026-06-01', value: 100 },
     { entity: 1, date: '2026-06-15', value: 100 },
     { entity: 2, date: '2026-06-12', value: 40 }, // new image, appeared this week
+    { entity: 2, date: '2026-06-15', value: 43 }, // and gained 3 since
   ];
   const s = snapshotSeries(rows);
   assert.strictEqual(s.valueAt('2026-06-08'), 100);
-  assert.strictEqual(s.windowTotal('2026-06-09', '2026-06-15'), 40);
+  assert.strictEqual(s.valueAt('2026-06-15'), 143, 'the running total still includes the new image');
+  assert.strictEqual(s.windowTotal('2026-06-09', '2026-06-15'), 3, 'not 43: the 40 predate collection');
+  assert.strictEqual(s.windowCarriedIn('2026-06-09', '2026-06-15'), 40);
+  assert.strictEqual(s.windowCarriedIn('2026-06-02', '2026-06-08'), 0);
+});
+
+test('onboarding a repository does not inflate the published growth figure', () => {
+  // Repo 1 gains one star a day throughout. Repo 2 already has 50 stars when
+  // it is first collected in the previous week, then gains nothing. Counting
+  // the 50 as growth would publish previous 57 and a fake 87.72% drop.
+  const rows = [{ entity: 1, date: '2026-05-31', value: 19 }];
+  for (let i = 0; i < 14; i++) rows.push({ entity: 1, date: addDays('2026-06-14', -(13 - i)), value: 20 + i });
+  for (let i = 3; i < 14; i++) rows.push({ entity: 2, date: addDays('2026-06-14', -(13 - i)), value: 50 });
+  const m = seriesMomentum(snapshotSeries(rows), { table: 'stargazers', column: 'total_stars' });
+  assert.strictEqual(m.wow.current, 7);
+  assert.strictEqual(m.wow.previous, 7);
+  assert.strictEqual(m.wow.growthPct, 0);
+  assert.deepStrictEqual(m.wow.carriedIn, { current: 0, previous: 50 });
+  // Daily-row series have no carried-in notion.
+  const d = seriesMomentum(dailySeries(days('2026-06-14', 14, () => 100)), { table: 't', column: 'v' });
+  assert.strictEqual('carriedIn' in d.wow, false);
+});
+
+test('star momentum agrees with the community star trend on what was carried in (committed database)', () => {
+  const db = new Database(DB_PATH, { readonly: true });
+  let summary;
+  try {
+    summary = buildSummary(db, { env: {} });
+  } finally {
+    db.close();
+  }
+  const stars = summary.momentum.sources.stars;
+  // Recompute each window from the stargazers table directly: the canonical
+  // rows' gain after their first snapshot, and the first-snapshot values apart.
+  const db2 = new Database(DB_PATH, { readonly: true });
+  try {
+    const { groupByCanonical, pickCanonical } = require('../lib/repos');
+    const repos = db2.prepare('SELECT id, full_name, canonical_full_name FROM repositories').all();
+    const lists = [];
+    for (const [canon, group] of groupByCanonical(repos)) {
+      const list = db2.prepare('SELECT date, total_stars AS value FROM stargazers WHERE repo_id = ? ORDER BY date')
+        .all(pickCanonical(group, canon).id);
+      if (list.length) lists.push(list);
+    }
+    const at = (list, date) => { let v; for (const s of list) { if (s.date > date) break; v = s.value || 0; } return v; };
+    const measure = (w) => {
+      let gained = 0, carriedIn = 0;
+      for (const list of lists) {
+        const atEnd = at(list, w.end);
+        if (atEnd === undefined) continue;
+        const atStart = at(list, addDays(w.start, -1));
+        if (atStart === undefined) { carriedIn += list[0].value || 0; gained += atEnd - (list[0].value || 0); }
+        else gained += atEnd - atStart;
+      }
+      return { gained, carriedIn };
+    };
+    for (const key of ['wow', 'mom', 'qoq']) {
+      const g = stars[key];
+      assert.ok(g.carriedIn, `stars.${key} reports carriedIn`);
+      const cur = measure(g.window.current);
+      assert.strictEqual(g.current, cur.gained, `stars.${key}.current`);
+      assert.strictEqual(g.carriedIn.current, cur.carriedIn, `stars.${key}.carriedIn.current`);
+      if (g.previous !== null) {
+        const prev = measure(g.window.previous);
+        assert.strictEqual(g.previous, prev.gained, `stars.${key}.previous`);
+        assert.strictEqual(g.carriedIn.previous, prev.carriedIn, `stars.${key}.carriedIn.previous`);
+      }
+    }
+  } finally {
+    db2.close();
+  }
 });
 
 test('a snapshot series whose first reading is the previous window\'s first day is not measurable', () => {
