@@ -80,3 +80,13 @@ test('hfPeriod only reports all-time and 30d', () => {
   assert.equal(hfPeriod(hf, '7d'), null);
   assert.equal(hfPeriod(null, 'all'), null);
 });
+
+test('hfPeriod keeps a never-measured count null, not 0, and adoption still adds nothing for it', () => {
+  const unmeasured = { downloadsAllTime: null, downloads30d: null };
+  assert.equal(hfPeriod(unmeasured, 'all'), null);
+  assert.equal(hfPeriod(unmeasured, '30d'), null);
+  assert.equal(hfPeriod({ downloadsAllTime: 0, downloads30d: 0 }, 'all'), 0, 'a measured zero stays 0');
+  assert.equal(hfPeriod({ downloadsAllTime: 0, downloads30d: 0 }, '30d'), 0);
+  assert.equal(rowAdoption({ npm: { allTimeDownloads: 5 }, hf: unmeasured }, 'all'), 5);
+  assert.equal(rowAdoption({ npm: { last30Downloads: 3 }, hf: unmeasured }, '30d'), 3);
+});

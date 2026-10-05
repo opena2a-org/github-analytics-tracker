@@ -8,7 +8,7 @@ const { buildSummary } = require('../lib/summary');
 const { computeOverview } = require('../lib/overview');
 const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
-  huggingfaceModelList, huggingfaceModelDetail,
+  huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -283,6 +283,53 @@ test('the API route and the overview keep each model\'s last measured counts, an
   } finally {
     db.close();
   }
+});
+
+test('the dashboard shows a never-measured count as not measured, never 0, and totals only measured values', () => {
+  assert.strictEqual(formatMeasured(null), NOT_MEASURED);
+  assert.strictEqual(formatMeasured(undefined), NOT_MEASURED);
+  assert.strictEqual(formatMeasured(0), '0', 'a measured zero is still shown as 0');
+  assert.strictEqual(formatMeasured(1234567), (1234567).toLocaleString());
+
+  const db = committedCopy();
+  try {
+    migrateHuggingfaceStats(db);
+    db.exec('UPDATE huggingface_stats SET downloads_all_time = NULL, downloads_30d = NULL, likes = NULL');
+    const models = huggingfaceModelList(db);
+    assert.ok(models.length > 0, 'the committed database has Hugging Face models');
+    // Per-model cells, footer totals and the overview figures, as the dashboard formats them.
+    for (const m of models) {
+      assert.deepStrictEqual([m.downloadsAllTime, m.downloads30d, m.likes].map(formatMeasured),
+        [NOT_MEASURED, NOT_MEASURED, NOT_MEASURED], m.name);
+    }
+    for (const key of ['downloadsAllTime', 'downloads30d', 'likes']) {
+      assert.strictEqual(formatMeasured(sumMeasured(models.map(m => m[key]))), NOT_MEASURED, `${key} total`);
+    }
+    const overview = computeOverview(db, {});
+    assert.strictEqual(formatMeasured(overview.totals.hf.downloads30d), NOT_MEASURED);
+    assert.strictEqual(formatMeasured(overview.totals.hf.likes), NOT_MEASURED);
+  } finally {
+    db.close();
+  }
+  // One measured model: the total is its value, the unmeasured ones add nothing.
+  assert.strictEqual(formatMeasured(sumMeasured([null, 1200, undefined])), (1200).toLocaleString());
+
+  // The dashboard renders those counts through formatMeasured, never through
+  // fmtFull or `|| 0`, which turn null into 0.
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  const tab = index.slice(index.indexOf('function HuggingFaceTab('));
+  const tabBody = tab.slice(0, tab.indexOf('\n/* ====='));
+  assert.ok(tabBody.length > 0 && tabBody.includes('formatMeasured('), 'the Hugging Face tab formats through formatMeasured');
+  assert.ok(!tabBody.includes('fmtFull('), 'the Hugging Face tab does not format a count with fmtFull');
+  assert.ok(!tabBody.includes('|| 0'), 'the Hugging Face tab does not turn a null count into 0');
+  index.split('\n').forEach((line, i) => {
+    if (/totals\.hf\?\.(downloadsAllTime|downloads30d|likes) \|\| 0/.test(line)) {
+      // The channel mix charts only values above 0, so an unmeasured count is left out, not drawn as 0.
+      assert.ok(line.includes("name: 'HF Models'") && /\.filter\(d => d\.value > 0\)/.test(index),
+        `pages/index.js:${i + 1} shows an unmeasured Hugging Face count as 0: ${line.trim()}`);
+    }
+  });
+  assert.ok(index.includes('<span className="v">{formatMeasured(v)}</span>'), 'overview source rows show a null count as not measured');
 });
 
 test('the collector migrates a database created before the nullable schema before it writes', () => {
