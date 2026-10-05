@@ -13,6 +13,9 @@ import {
 // Adoption = unique cloners + installs, defined once and shared with the API so
 // the number can't drift between where it's computed and where it's shown.
 import { periodPick, hfPeriod, rowAdoption } from '../lib/adoption';
+// A Hugging Face count the API returns as null was never measured: it is shown
+// as not measured and left out of totals, never as 0.
+import { sumMeasured, formatMeasured, NOT_MEASURED } from '../lib/huggingface';
 import { SERIES } from '../lib/series';
 
 /* ============================================================
@@ -83,6 +86,10 @@ function fmtNum(n) {
   return n.toLocaleString();
 }
 function fmtFull(n) { return (n || 0).toLocaleString(); }
+/* A table cell for a count that may be unmeasured (null): muted dash, never 0 */
+function measuredCell(n) {
+  return n == null ? <span className="muted">{NOT_MEASURED}</span> : formatMeasured(n);
+}
 function fmtBytes(b) {
   if (!b) return '0 B';
   const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(1024));
@@ -560,7 +567,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
         <Kpi icon={<Download size={17} />} color={C.npm} label="npm Installs" value={fmtFull(pt.npm)} sub={`${periodWord} · ${totals.npm.packages} pkgs`} />
         <Kpi icon={<Package size={17} />} color={C.pypi} label="PyPI Installs" value={fmtFull(pt.pypi)} sub={`${periodWord} · ${totals.pypi?.packages || 0} pkgs`} />
         <Kpi icon={<Container size={17} />} color={C.docker} label="Docker Pulls" value={fmtFull(totals.docker?.totalPulls || 0)} sub={`all time · ${totals.docker?.images || 0} images`} />
-        <Kpi icon={<Brain size={17} />} color={C.hf} label="HF Downloads" value={fmtFull(totals.hf?.downloadsAllTime || 0)} sub={`all time · ${totals.hf?.downloads30d || 0} in 30d`} />
+        <Kpi icon={<Brain size={17} />} color={C.hf} label="HF Downloads" value={formatMeasured(totals.hf?.downloadsAllTime)} sub={totals.hf?.downloads30d == null ? 'all time · 30d not measured' : `all time · ${formatMeasured(totals.hf.downloads30d)} in 30d`} />
         {totals.chrome?.extensions > 0 && (
           <Kpi icon={<Chrome size={17} />} color={C.chrome} label="Chrome Users" value={fmtFull(totals.chrome?.users || 0)} sub={`weekly active · ${totals.chrome?.extensions} ext`} />
         )}
@@ -668,8 +675,8 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
           ['Last 30d', totals.pypi?.last30Downloads || 0], ['Last 7d', totals.pypi?.last7Downloads || 0],
         ]} />
         <Eco name="HuggingFace" color={C.hf} icon={<Brain size={15} color={C.hf} />} rows={[
-          ['Models', totals.hf?.models || 0], ['All-time downloads', totals.hf?.downloadsAllTime || 0],
-          ['Last 30d', totals.hf?.downloads30d || 0], ['Likes', totals.hf?.likes || 0],
+          ['Models', totals.hf?.models || 0], ['All-time downloads', totals.hf?.downloadsAllTime],
+          ['Last 30d', totals.hf?.downloads30d], ['Likes', totals.hf?.likes],
         ]} />
         {totals.chrome?.extensions > 0 && (
           <Eco name="Chrome Web Store" color={C.chrome} icon={<Chrome size={15} color={C.chrome} />} rows={[
@@ -810,7 +817,7 @@ function Eco({ name, color, icon, rows }) {
   return (
     <div className="eco">
       <div className="eco-head"><span className="chip"><i style={{ background: color }} />{name}</span><span className="ico">{icon}</span></div>
-      {rows.map(([k, v]) => <div className="eco-row" key={k}><span className="k">{k}</span><span className="v">{fmtFull(v)}</span></div>)}
+      {rows.map(([k, v]) => <div className="eco-row" key={k}><span className="k">{k}</span><span className="v">{formatMeasured(v)}</span></div>)}
     </div>
   );
 }
@@ -845,13 +852,13 @@ function AdoptionTable({ products, period }) {
     a.npm += periodPick(p.npm, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
     a.pypi += periodPick(p.pypi, 'allTimeDownloads', 'last30Downloads', 'last7Downloads', 'last24hDownloads', period, 'customDownloads');
     a.docker += period === 'all' ? (p.docker?.totalPulls || 0) : 0;
-    a.hf += hfPeriod(p.hf, period) || 0;
     a.chrome += p.chrome?.users || 0;
     a.stars += p.github?.stars || 0;
     a.starsGrowth += starGrowthPick(p.github, period) || 0;
     a.adoption += rowAdoption(p, period);
     return a;
-  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, hf: 0, chrome: 0, stars: 0, starsGrowth: 0, adoption: 0 });
+  }, { views: 0, clones: 0, npm: 0, pypi: 0, docker: 0, chrome: 0, stars: 0, starsGrowth: 0, adoption: 0 });
+  const hfTotal = sumMeasured(products.map(p => hfPeriod(p.hf, period)));
   const footer = [
     <td key="t">Total</td>,
     <td key="v" className="num">{fmtFull(t.views)}</td>,
@@ -859,7 +866,7 @@ function AdoptionTable({ products, period }) {
     <td key="n" className="num">{fmtFull(t.npm)}</td>,
     <td key="p" className="num">{fmtFull(t.pypi)}</td>,
     <td key="d" className="num">{period === 'all' ? fmtFull(t.docker) : '—'}</td>,
-    <td key="h" className="num">{(period === 'all' || period === '30d') ? fmtFull(t.hf) : '—'}</td>,
+    <td key="h" className="num">{(period === 'all' || period === '30d') ? formatMeasured(hfTotal) : '—'}</td>,
     <td key="ch" className="num">{fmtFull(t.chrome)}</td>,
     <td key="s" className="num">{fmtFull(t.stars)}<StarGrowth value={t.starsGrowth} /></td>,
     <td key="a" className="num lead">{fmtFull(t.adoption)}</td>,
@@ -1170,18 +1177,22 @@ function DockerTab({ images, sel, setSel, data, loading }) {
 function HuggingFaceTab({ models, sel, setSel, data, loading }) {
   const [filter, setFilter] = useState('');
   const rows = filter ? models.filter(m => m.name.toLowerCase().includes(filter.toLowerCase())) : models;
-  const t = models.reduce((a, m) => { a.all += m.downloadsAllTime || 0; a.d30 += m.downloads30d || 0; a.likes += m.likes || 0; return a; }, { all: 0, d30: 0, likes: 0 });
+  const t = {
+    all: sumMeasured(models.map(m => m.downloadsAllTime)),
+    d30: sumMeasured(models.map(m => m.downloads30d)),
+    likes: sumMeasured(models.map(m => m.likes)),
+  };
   const cols = [
     { key: 'name', label: 'Model', sortValue: r => r.name, render: r => (<div><div className="cell-name">{r.name}</div>{r.pipeline_tag && <div className="cell-desc">{r.pipeline_tag}</div>}</div>) },
-    { key: 'downloads30d', label: '30d', align: 'right', render: r => fmtFull(r.downloads30d) },
-    { key: 'downloadsAllTime', label: 'All Time', align: 'right', lead: true, render: r => fmtFull(r.downloadsAllTime) },
-    { key: 'likes', label: 'Likes', align: 'right', render: r => fmtFull(r.likes) },
+    { key: 'downloads30d', label: '30d', align: 'right', sortValue: r => r.downloads30d ?? -1, render: r => measuredCell(r.downloads30d) },
+    { key: 'downloadsAllTime', label: 'All Time', align: 'right', lead: true, sortValue: r => r.downloadsAllTime ?? -1, render: r => measuredCell(r.downloadsAllTime) },
+    { key: 'likes', label: 'Likes', align: 'right', sortValue: r => r.likes ?? -1, render: r => measuredCell(r.likes) },
   ];
   const footer = [
     <td key="t">Total</td>,
-    <td key="30" className="num">{fmtFull(t.d30)}</td>,
-    <td key="a" className="num lead">{fmtFull(t.all)}</td>,
-    <td key="l" className="num">{fmtFull(t.likes)}</td>,
+    <td key="30" className="num">{formatMeasured(t.d30)}</td>,
+    <td key="a" className="num lead">{formatMeasured(t.all)}</td>,
+    <td key="l" className="num">{formatMeasured(t.likes)}</td>,
   ];
   return (
     <>
@@ -1195,9 +1206,9 @@ function HuggingFaceTab({ models, sel, setSel, data, loading }) {
         <>
           <SecLabel>{data.model?.model_id || 'Detail'}</SecLabel>
           <div className="cards">
-            <Kpi icon={<Download size={17} />} color={C.hf} label="All-Time Downloads" value={fmtFull(data.summary?.downloadsAllTime)} sub="cumulative" />
-            <Kpi icon={<TrendingUp size={17} />} color={C.accent} label="Last 30 Days" value={fmtFull(data.summary?.downloads30d)} sub="rolling (HF API)" />
-            <Kpi icon={<Heart size={17} />} color={C.npm} label="Likes" value={fmtFull(data.summary?.likes)} sub={data.model?.pipeline_tag || ''} />
+            <Kpi icon={<Download size={17} />} color={C.hf} label="All-Time Downloads" value={formatMeasured(data.summary?.downloadsAllTime)} sub="cumulative" />
+            <Kpi icon={<TrendingUp size={17} />} color={C.accent} label="Last 30 Days" value={formatMeasured(data.summary?.downloads30d)} sub="rolling (HF API)" />
+            <Kpi icon={<Heart size={17} />} color={C.npm} label="Likes" value={formatMeasured(data.summary?.likes)} sub={data.model?.pipeline_tag || ''} />
           </div>
           {data.series?.length > 1 ? (
             <Chart title="Cumulative Downloads" sub="Built from daily snapshots of HF's all-time counter" height={320}>
@@ -1205,7 +1216,7 @@ function HuggingFaceTab({ models, sel, setSel, data, loading }) {
                 <defs><linearGradient id="hf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.hf} stopOpacity={0.3} /><stop offset="100%" stopColor={C.hf} stopOpacity={0.02} /></linearGradient></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
                 <XAxis dataKey="date" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
-                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [fmtFull(v), 'Downloads']} />
+                <Tooltip {...tt} labelFormatter={fmtDate} formatter={v => [formatMeasured(v), 'Downloads']} />
                 <Area type="monotone" dataKey="downloadsAllTime" stroke={C.hf} fill="url(#hf)" strokeWidth={2} name="All-Time Downloads" />
               </AreaChart>
             </Chart>
