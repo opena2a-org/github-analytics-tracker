@@ -207,6 +207,7 @@ GET /api/npm-stats                   # npm package stats
 GET /api/pypi-stats                  # PyPI package stats
 GET /api/docker-stats                # Docker image stats
 GET /api/huggingface-stats           # HuggingFace model stats
+GET /api/huggingface-stats?model_id=1&days=30  # one model (days: a positive integer or all; other values are a 400)
 GET /api/telemetry                   # first-party CLI active users (coarse, public)
 GET /api/telemetry-detail            # fine-grained CLI usage (gated by ANALYTICS_TRACKER_PASSWORD)
 ```
