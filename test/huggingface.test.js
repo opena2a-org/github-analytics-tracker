@@ -323,10 +323,30 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
   assert.ok(tabBody.length > 0 && tabBody.includes('formatMeasured('), 'the Hugging Face tab formats through formatMeasured');
   assert.ok(!tabBody.includes('fmtFull('), 'the Hugging Face tab does not format a count with fmtFull');
   assert.ok(!tabBody.includes('|| 0'), 'the Hugging Face tab does not turn a null count into 0');
+
+  // The adoption table footer sums the measured counts and shows a null total
+  // as not measured. Its other cells use fmtFull and `|| 0`, so only the
+  // Hugging Face cell is checked.
+  const adoptionStart = index.indexOf('function AdoptionTable(');
+  assert.ok(adoptionStart >= 0, 'the dashboard has an AdoptionTable');
+  const adoption = index.slice(adoptionStart);
+  const adoptionBody = adoption.slice(0, adoption.indexOf('\n/* ====='));
+  assert.match(adoptionBody, /const hfTotal = sumMeasured\(/, 'the footer Hugging Face total sums measured counts only');
+  const hfCells = adoptionBody.split('\n').filter(line => line.includes('<td key="h"'));
+  assert.strictEqual(hfCells.length, 1, 'the footer has one Hugging Face cell');
+  assert.ok(hfCells[0].includes('formatMeasured(hfTotal)'), 'the footer Hugging Face total formats through formatMeasured');
+  assert.ok(!/fmtFull\(|\|\| 0/.test(hfCells[0]), `the footer Hugging Face total is not shown as 0: ${hfCells[0].trim()}`);
+
+  // The channel mix charts only values above 0, so an unmeasured count is left
+  // out, not drawn as 0. The filter must close the channelData statement itself.
+  const channelStart = index.indexOf('const channelData = [');
+  assert.ok(channelStart >= 0, 'the overview builds the channel mix as channelData');
+  const channelData = index.slice(channelStart, index.indexOf(';\n', channelStart) + 1);
+  assert.ok(channelData.includes("name: 'HF Models'"), 'the channel mix has a Hugging Face entry');
   index.split('\n').forEach((line, i) => {
     if (/totals\.hf\?\.(downloadsAllTime|downloads30d|likes) \|\| 0/.test(line)) {
-      // The channel mix charts only values above 0, so an unmeasured count is left out, not drawn as 0.
-      assert.ok(line.includes("name: 'HF Models'") && /\.filter\(d => d\.value > 0\)/.test(index),
+      assert.ok(line.includes("name: 'HF Models'") && channelData.includes(line)
+        && /\]\.filter\(d => d\.value > 0\);$/.test(channelData),
         `pages/index.js:${i + 1} shows an unmeasured Hugging Face count as 0: ${line.trim()}`);
     }
   });
@@ -379,6 +399,26 @@ test('one model\'s detail reads that model\'s last counts only, however many mod
       list.filter(m => m.id === target).map(m => [m.downloadsAllTime, m.downloads30d, m.likes]),
       [[50, 5, 2]], 'the list reads the same last measured counts');
     assert.deepStrictEqual(list.find(m => m.name === 'org/other-7').downloadsAllTime, 107);
+  } finally {
+    db.close();
+  }
+});
+
+test('the model list and one model\'s detail give every count as null on a database without huggingface_stats', () => {
+  const db = committedCopy();
+  try {
+    db.exec('DROP TABLE huggingface_stats');
+    const list = huggingfaceModelList(db);
+    assert.ok(list.length > 0, 'the committed database has Hugging Face models');
+    for (const m of list) {
+      assert.deepStrictEqual([m.downloadsAllTime, m.downloads30d, m.likes, m.last7Downloads],
+        [null, null, null, null], m.name);
+    }
+    const detail = huggingfaceModelDetail(db, list[0].id, '0000-00-00');
+    assert.deepStrictEqual(
+      [detail.summary.downloadsAllTime, detail.summary.downloads30d, detail.summary.likes, detail.summary.periodDownloads],
+      [null, null, null, null]);
+    assert.deepStrictEqual(detail.series, []);
   } finally {
     db.close();
   }
@@ -445,11 +485,13 @@ test('a model detail query gives the model id and the first date of its range', 
 });
 
 test('a model_id that is not an integer, or a days that is neither all nor a positive integer, is an error naming it', () => {
-  for (const model_id of ['abc', '1.5', '1abc', '', ' 1', ['1', '2']]) {
+  // A repeated parameter arrives as an array. A one-element array stringifies
+  // to a valid value, so only the type check rejects it.
+  for (const model_id of ['abc', '1.5', '1abc', '', ' 1', ['1', '2'], ['1']]) {
     assert.deepStrictEqual(parseModelDetailQuery({ model_id, days: '30' }), { error: 'model_id must be an integer' },
       `model_id ${JSON.stringify(model_id)}`);
   }
-  for (const days of ['zzz', '0', '-5', '1.5', '7d', '', ['7', '30']]) {
+  for (const days of ['zzz', '0', '-5', '1.5', '7d', '', ['7', '30'], ['7']]) {
     assert.deepStrictEqual(parseModelDetailQuery({ model_id: '1', days }), { error: 'days must be "all" or a positive integer' },
       `days ${JSON.stringify(days)}`);
   }
