@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-05",
+  "date": "2026-10-06",
   "reposDiscovered": 44,
   "repos": [
     "opena2a-org/agent-identity-management",
@@ -23,7 +23,6 @@
     "opena2a-org/ai-credential-safety",
     "opena2a-org/aicomply",
     "opena2a-org/dvaa-demo-captures",
-    "opena2a-org/crypto-census-data",
     "opena2a-standards/agent-governance-spec",
     "opena2a-standards/awesome-agent-souls",
     "opena2a-standards/agent-trust-protocol",
@@ -45,7 +44,8 @@
     "opena2a-standards/ai-safety-txt",
     "ecolibria/cryptoserve",
     "ecolibria/finops-agent-setup",
-    "ecolibria/enterprise-workforce-agents"
+    "ecolibria/enterprise-workforce-agents",
+    "ecolibria/crypto-census-data"
   ],
   "failed": [],
   "trafficDenied": []
