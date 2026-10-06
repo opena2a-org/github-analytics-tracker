@@ -527,6 +527,8 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
     { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.docker },
     { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
   ].filter(d => d.value > 0);
+  // An unmeasured HF count is left out of the mix and named, never a 0 share.
+  const hfUnmeasured = totals.hf?.models > 0 && totals.hf?.downloadsAllTime == null;
   const channelTotal = channelData.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -592,7 +594,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
       <SecLabel>Distribution</SecLabel>
       <div className="duo">
         {channelData.length > 0 && (
-          <Chart title="Channel Mix" sub="All-time adoption by install channel">
+          <Chart title="Channel Mix" sub={`All-time adoption by install channel${hfUnmeasured ? ' · Hugging Face not measured, left out' : ''}`}>
             <PieChart>
               <Pie data={channelData} cx="50%" cy="50%" innerRadius={68} outerRadius={108} dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
                 {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -623,11 +625,11 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
 
       {trends?.series?.length > 1 && (
         <div className="duo">
-          <Chart title="Install Trend" sub="npm + PyPI + Docker + HuggingFace">
+          <Chart title="Install Trend" sub="npm + PyPI + Docker + HuggingFace · a gap is a period Hugging Face did not measure">
             <ComposedChart data={trends.series}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
               <XAxis dataKey="periodStart" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
-              <Tooltip {...tt} labelFormatter={fmtDate} /><Legend wrapperStyle={{ fontSize: 11 }} />
+              <Tooltip {...tt} labelFormatter={fmtDate} filterNull={false} formatter={(v, name) => [formatMeasured(v), name]} /><Legend wrapperStyle={{ fontSize: 11 }} />
               <Area type="monotone" dataKey="npmDownloads" stackId="d" stroke={C.npm} fill={C.fill(C.npm)} name="npm" />
               <Area type="monotone" dataKey="pypiDownloads" stackId="d" stroke={C.pypi} fill={C.fill(C.pypi)} name="PyPI" />
               <Area type="monotone" dataKey="dockerPulls" stackId="d" stroke={C.docker} fill={C.fill(C.docker)} name="Docker" />

@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const { huggingfaceDownloadsByPeriod } = require('../../lib/huggingface');
 
 /**
  * Trends API: Returns aggregate time-series data across ALL repos/packages.
@@ -96,23 +97,10 @@ export default function handler(req, res) {
       `).all();
     }
 
-    // --- HuggingFace downloads (deltas of cumulative all-time per bucket) ---
-    const hfTableExists = db.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='huggingface_stats'"
-    ).get();
-
-    let hfData = [];
-    if (hfTableExists) {
-      hfData = db.prepare(`
-        SELECT period, SUM(delta) AS hfDownloads FROM (
-          SELECT ${bucketExpr} AS period,
-                 MAX(downloads_all_time) - MIN(downloads_all_time) AS delta
-          FROM huggingface_stats
-          WHERE 1=1 ${dateFilter}
-          GROUP BY model_id, period
-        ) GROUP BY period ORDER BY period
-      `).all();
-    }
+    // --- HuggingFace downloads (growth of each model's measured all-time count) ---
+    // null for a period that measured no growth, so the chart shows a gap
+    // there instead of a 0 (lib/huggingface.js).
+    const hfData = huggingfaceDownloadsByPeriod(db, { bucketExpr, days: daysParam });
 
     // --- Merge all series into unified timeline ---
     const merged = {};
@@ -150,8 +138,9 @@ export default function handler(req, res) {
         npmDownloads: s.npmDownloads || 0,
         pypiDownloads: s.pypiDownloads || 0,
         dockerPulls: s.dockerPulls || 0,
-        hfDownloads: s.hfDownloads || 0,
-        totalDownloads: (s.npmDownloads || 0) + (s.pypiDownloads || 0) + (s.dockerPulls || 0) + (s.hfDownloads || 0),
+        hfDownloads: s.hfDownloads ?? null,
+        // The total of what was measured: an unmeasured HF period adds nothing.
+        totalDownloads: (s.npmDownloads || 0) + (s.pypiDownloads || 0) + (s.dockerPulls || 0) + (s.hfDownloads ?? 0),
       }));
 
     // --- Star timeline ---
