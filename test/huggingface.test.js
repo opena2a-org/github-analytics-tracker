@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { mkdtempSync, rmSync, existsSync, readFileSync, copyFileSync } = require('node:fs');
+const { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, copyFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
 const Database = require('better-sqlite3');
@@ -9,7 +9,7 @@ const { computeOverview } = require('../lib/overview');
 const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
   huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
-  parseModelDetailQuery,
+  parseModelDetailQuery, huggingfaceDownloadsByPeriod,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -477,11 +477,11 @@ test('the collector migrates a database created before the nullable schema befor
   });
 });
 
-// The API handler, loaded as Next.js would serve it: its source rewritten from
-// an ES module default export to a CommonJS one.
-function loadStatsHandler() {
+// An API handler (pages/api/<name>.js), loaded as Next.js would serve it: its
+// source rewritten from an ES module default export to a CommonJS one.
+function loadApiHandler(name) {
   const Module = require('node:module');
-  const file = join(__dirname, '..', 'pages', 'api', 'huggingface-stats.js');
+  const file = join(__dirname, '..', 'pages', 'api', `${name}.js`);
   const source = readFileSync(file, 'utf8');
   const exportLine = 'export default function handler(';
   assert.ok(source.includes(exportLine), 'the handler is a default-exported function');
@@ -527,7 +527,7 @@ test('a model_id that is not an integer, or a days that is neither all nor a pos
 });
 
 test('/api/huggingface-stats answers a non-numeric model_id or days with 400, not 404 or 500', () => {
-  const handler = loadStatsHandler();
+  const handler = loadApiHandler('huggingface-stats');
   const badDays = callHandler(handler, { model_id: '1', days: 'zzz' });
   assert.strictEqual(badDays.statusCode, 400);
   assert.match(badDays.body.error, /^days /);
@@ -536,4 +536,98 @@ test('/api/huggingface-stats answers a non-numeric model_id or days with 400, no
   const badModel = callHandler(handler, { model_id: 'abc' });
   assert.strictEqual(badModel.statusCode, 400);
   assert.match(badModel.body.error, /^model_id /);
+});
+
+// org/gap has a first measurement, a measured snapshot, an absent snapshot and
+// a newest snapshot that measured only the all-time count; org/never has
+// nothing measured. `day(n)` is the date n days back.
+function gapFixture(db, day) {
+  db.exec("INSERT INTO huggingface_models (id, model_id, author) VALUES (1, 'org/gap', 'org'), (2, 'org/never', 'org')");
+  const ins = db.prepare(`
+    INSERT INTO huggingface_stats (model_id, date, downloads_30d, downloads_all_time, likes, absent_reason)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  ins.run(1, day(10), 40, 900, 3, null);
+  ins.run(1, day(2), 50, 1000, 4, null);
+  ins.run(1, day(1), null, null, null, 'downloads absent from the API response; downloadsAllTime absent from the API response; likes absent from the API response');
+  ins.run(1, day(0), null, 1100, null, 'downloads absent from the API response; likes absent from the API response');
+  ins.run(2, day(0), null, null, null, 'HTTP 503');
+}
+
+const daysBefore = (today) => (n) => {
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+
+const WEEKLY = "date(date, 'weekday 0', '-6 days')"; // the bucket /api/trends uses
+
+test('the install trend credits measured Hugging Face growth to its period and leaves an unmeasured period null, never 0', () => {
+  const db = freshDb();
+  try {
+    const day = daysBefore('2026-10-06');
+    gapFixture(db, day);
+    const daily = huggingfaceDownloadsByPeriod(db, { bucketExpr: 'date', days: 'all' });
+    assert.deepStrictEqual(daily.map(r => [r.period, r.hfDownloads]), [
+      [day(10), null],
+      [day(2), 100],
+      [day(1), null],
+      [day(0), 100],
+    ], 'a first measurement and an absent snapshot measure no growth; a daily period is not 0 for holding one snapshot');
+    assert.strictEqual(daily.reduce((s, r) => s + (r.hfDownloads ?? 0), 0), 200, 'growth across the gap is counted once');
+
+    const weekly = huggingfaceDownloadsByPeriod(db, { bucketExpr: WEEKLY, days: 'all' });
+    assert.deepStrictEqual(weekly.map(r => [r.period, r.hfDownloads]), [
+      ['2026-09-21', null],
+      ['2026-09-28', 100],
+      ['2026-10-05', 100],
+    ], 'growth since the previous week\'s measured count is credited to the newer week');
+
+    db.exec('UPDATE huggingface_stats SET downloads_all_time = NULL');
+    assert.ok(
+      huggingfaceDownloadsByPeriod(db, { bucketExpr: 'date', days: 'all' }).every(r => r.hfDownloads === null),
+      'nothing measured is null in every period'
+    );
+    db.exec('DROP TABLE huggingface_stats');
+    assert.deepStrictEqual(huggingfaceDownloadsByPeriod(db, { bucketExpr: 'date', days: 'all' }), []);
+  } finally {
+    db.close();
+  }
+});
+
+test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () => {
+  withTmp((dir) => {
+    mkdirSync(join(dir, 'data'));
+    const db = new Database(join(dir, 'data', 'analytics.db'));
+    try {
+      db.exec(`
+        CREATE TABLE traffic_views (date TEXT, count INTEGER);
+        CREATE TABLE traffic_clones (date TEXT, count INTEGER);
+        CREATE TABLE repositories (id INTEGER PRIMARY KEY, full_name TEXT, canonical_full_name TEXT);
+        CREATE TABLE stargazers (repo_id INTEGER, date TEXT, total_stars INTEGER);
+      ` + HF_MODELS_DDL + huggingfaceStatsDdl('huggingface_stats') + HF_STATS_INDEXES);
+      // Dated from the real today: the route reads its window from the clock.
+      gapFixture(db, daysBefore(new Date().toISOString().slice(0, 10)));
+    } finally {
+      db.close();
+    }
+
+    // The route opens data/analytics.db under the working directory.
+    const handler = loadApiHandler('trends');
+    const before = process.cwd();
+    process.chdir(dir);
+    try {
+      const all = callHandler(handler, { granularity: 'daily', days: 'all' });
+      assert.strictEqual(all.statusCode, 200);
+      assert.deepStrictEqual(all.body.series.map(r => r.hfDownloads), [null, 100, null, 100]);
+      assert.deepStrictEqual(all.body.series.map(r => r.totalDownloads), [0, 100, 0, 100]);
+
+      // The window's first period is measured against the last count before it.
+      const recent = callHandler(handler, { granularity: 'daily', days: '1' });
+      assert.strictEqual(recent.statusCode, 200);
+      assert.deepStrictEqual(recent.body.series.map(r => r.hfDownloads), [null, 100]);
+    } finally {
+      process.chdir(before);
+    }
+  });
 });
