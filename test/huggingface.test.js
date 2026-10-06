@@ -286,6 +286,19 @@ test('the API route and the overview keep each model\'s last measured counts, an
   }
 });
 
+// The channelData statement in the dashboard source, or null without one: from
+// `const channelData = [` through the line that closes the array at the
+// statement's own indentation, so a `;` in a comment inside it does not end it.
+function channelDataStatement(source) {
+  const start = source.indexOf('const channelData = [');
+  if (start < 0) return null;
+  const indent = source.slice(source.lastIndexOf('\n', start) + 1, start);
+  const close = source.indexOf(`\n${indent}]`, start);
+  if (close < 0) return null;
+  const end = source.indexOf('\n', close + 1);
+  return source.slice(start, end < 0 ? source.length : end);
+}
+
 test('the dashboard shows a never-measured count as not measured, never 0, and totals only measured values', () => {
   assert.strictEqual(formatMeasured(null), NOT_MEASURED);
   assert.strictEqual(formatMeasured(undefined), NOT_MEASURED);
@@ -339,9 +352,8 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
 
   // The channel mix charts only values above 0, so an unmeasured count is left
   // out, not drawn as 0. The filter must close the channelData statement itself.
-  const channelStart = index.indexOf('const channelData = [');
-  assert.ok(channelStart >= 0, 'the overview builds the channel mix as channelData');
-  const channelData = index.slice(channelStart, index.indexOf(';\n', channelStart) + 1);
+  const channelData = channelDataStatement(index);
+  assert.ok(channelData, 'the overview builds the channel mix as channelData');
   assert.ok(channelData.includes("name: 'HF Models'"), 'the channel mix has a Hugging Face entry');
   index.split('\n').forEach((line, i) => {
     if (/totals\.hf\?\.(downloadsAllTime|downloads30d|likes) \|\| 0/.test(line)) {
@@ -351,6 +363,23 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
     }
   });
   assert.ok(index.includes('<span className="v">{formatMeasured(v)}</span>'), 'overview source rows show a null count as not measured');
+});
+
+test('the channel-mix check reads the whole channelData statement when a comment inside it has a semicolon', () => {
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  const opening = 'const channelData = [\n';
+  assert.ok(index.includes(opening), 'the overview builds the channel mix as channelData');
+  for (const comment of ['// a; b', '// a;', '/* a;\n     b; */']) {
+    const statement = channelDataStatement(index.replace(opening, `${opening}    ${comment}\n`));
+    const label = JSON.stringify(comment);
+    assert.ok(statement.includes(comment), `the statement keeps the comment ${label}`);
+    assert.ok(statement.includes("name: 'HF Models'"), `the statement keeps the Hugging Face entry after ${label}`);
+    assert.match(statement, /\]\.filter\(d => d\.value > 0\);$/, `the statement runs to its filter after ${label}`);
+  }
+  // Without the filter the statement ends at the bare `];`, so the check still fails.
+  const unfiltered = channelDataStatement(index.replace('].filter(d => d.value > 0);', '];'));
+  assert.ok(unfiltered.includes("name: 'HF Models'"), 'the unfiltered statement keeps the Hugging Face entry');
+  assert.doesNotMatch(unfiltered, /\.filter\(/, 'the unfiltered statement has no filter to find');
 });
 
 test('one model\'s detail reads that model\'s last counts only, however many models are tracked', () => {
