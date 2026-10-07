@@ -116,8 +116,10 @@ This issues only BigQuery dry runs, which are not billed, prints each day's scan
 both caps, and writes nothing. It exits 0 only when the next run would clear both caps. When
 every day in the window is already fetched, the next run bills nothing; the dry run then
 measures yesterday as a sample and reports whether a new day of that size would clear both caps.
-`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run; any other
-argument is refused with a usage message and exit code 2.
+`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run. Any other
+argument after the `--` is refused with a usage message and exit code 2. A flag given without
+the `--` goes to npm, not to the collector's arguments, so a mistyped
+`npm run collect:pypi-countries --dryrun` is not refused: the run collects as normal.
 
 ## Automated daily collection
 
