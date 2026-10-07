@@ -2,12 +2,13 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
-const { join } = require('node:path');
+const { join, dirname } = require('node:path');
 const { tmpdir } = require('node:os');
 const Database = require('better-sqlite3');
 
 const {
   collect,
+  estimate,
   PER_QUERY_CAP_BYTES,
   MONTH_CAP_BYTES,
   BUDGET_FILE,
@@ -317,6 +318,30 @@ test('an unreadable billed total in the store is an error that bills nothing, ne
   }
 });
 
+for (const [label, figures] of [
+  ['a negative day', [5000, -1000]],
+  ['a non-numeric day', [5000, 'abc']],
+  ['a negative and a non-numeric day', [5000, -1000, 'abc']],
+]) {
+  test(`a month whose fetch records hold ${label} is an error, never a lower month-to-date`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1)) });
+      figures.forEach((bytes, i) => recordBilled(dbPath, [dayBefore(i + 2)], bytes, '2026-09-01T06:00:00.000Z'));
+      const client = fakeClient();
+      const res = await runCollect(dbPath, client);
+      assert.equal(res.status, 'error', 'the per-day figures must not sum to a total below the 5000 billed');
+      assert.equal(res.exitCode, 1);
+      assert.equal(client.calls.length, 0, 'nothing is estimated or billed against an unreadable month');
+      const dry = await estimate({ client, dbPath, now: NOW, env: {}, log: noop });
+      assert.equal(dry.status, 'error');
+      assert.equal(client.calls.length, 0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
 test('GAT-01.AC3 an unparseable ledger starts the month at 0 rather than failing', async () => {
   const dir = tmp();
   try {
@@ -485,18 +510,79 @@ test('GAT-01.AC5 a day 31 days old is excluded from the rollup sum', async () =>
   }
 });
 
+/**
+ * Client for a run over two missing days: D-1 bills and lands one row, then
+ * D-2 stops the run through `second` (its dry-run figure, or the error its
+ * billed call rejects with).
+ */
+function secondDayStops(second) {
+  return {
+    async query(options) {
+      const isSecond = callDay(options) === dayBefore(2);
+      if (options.dryRun) {
+        return { rows: [], totalBytesProcessed: isSecond && 'dryBytes' in second ? second.dryBytes : 1000 };
+      }
+      if (isSecond) throw second.billedError;
+      return { rows: [{ project: 'aim-sdk', country_code: 'DE', downloads: 7 }], totalBytesProcessed: 1000 };
+    },
+  };
+}
+
+const ceilingRefusal = () => Object.assign(new Error('Query exceeded limit for bytes billed'), {
+  code: 400, errors: [{ reason: 'bytesBilledLimitExceeded', message: 'Query exceeded limit for bytes billed' }],
+});
+
+for (const [label, status, second, ledger] of [
+  ['BigQuery refuses its billed job at the ceiling', 'refused_cap', { billedError: ceilingRefusal() }],
+  ['its dry run is over the per-query cap', 'refused_cap', { dryBytes: PER_QUERY_CAP_BYTES + 1 }],
+  ['its estimate would pass the monthly cap', 'capped_month', { dryBytes: 1000 }, MONTH_CAP_BYTES - 1500],
+  ['its dry run is unreadable', 'error', { dryBytes: 'abc' }],
+  ['its billed call fails', 'error', { billedError: new Error('backend error') }],
+]) {
+  test(`a run that lands D-1 and stops because ${label} still rolls D-1 into the 30-day total`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir, {
+        fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1) && d !== dayBefore(2)),
+      });
+      if (ledger !== undefined) {
+        writeFileSync(join(dir, BUDGET_FILE), JSON.stringify({ month: '2026-09', bytesBilled: ledger }));
+      }
+      const res = await runCollect(dbPath, secondDayStops(second));
+      assert.equal(res.status, status);
+      assert.equal(res.exitCode, 1);
+      assert.equal(res.daysFetched, 1);
+      assert.equal(res.asOf, dayBefore(1));
+      assert.equal(readStatus(dir).asOf, dayBefore(1));
+      const db = new Database(dbPath, { readonly: true });
+      const rows = db.prepare('SELECT package_id, date, country_code, downloads FROM pypi_country_downloads').all();
+      db.close();
+      assert.deepEqual(rows, [{ package_id: 5, date: dayBefore(1), country_code: 'DE', downloads: 7 }],
+        'the landed day is in the rollup, not only in pypi_country_daily');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
 // ---------------------------------------------------------------------------
 // AC7 — scheduled run without credentials exits 1; population needs no env
 // ---------------------------------------------------------------------------
 
+/**
+ * Run the collector CLI against the store in a temporary directory. The child
+ * runs in that directory, so the .env it loads is the test's, never the one
+ * at the repository root, which may hold real BigQuery credentials.
+ */
 function runScript(extraEnv, dbPath) {
   return new Promise((resolve) => {
     const env = { ...process.env, ANALYTICS_DB_PATH: dbPath, ...extraEnv };
     delete env.GOOGLE_APPLICATION_CREDENTIALS;
     delete env.GOOGLE_CLOUD_PROJECT;
     delete env.PYPI_PACKAGES;
+    delete env.npm_config_dry_run;
     if (!extraEnv.GITHUB_ACTIONS) delete env.GITHUB_ACTIONS;
-    const child = spawn(process.execPath, [SCRIPT], { env });
+    const child = spawn(process.execPath, [SCRIPT], { env, cwd: dirname(dbPath) });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (d) => (stdout += d));
@@ -511,6 +597,22 @@ test('GAT-01.AC7 a scheduled run without credentials persists skipped_no_credent
     const dbPath = makeStore(dir);
     const res = await runScript({ GITHUB_ACTIONS: '1' }, dbPath);
     assert.equal(res.status, 1, `expected exit 1; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.equal(readStatus(dir).status, 'skipped_no_credentials');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the spawned collector loads .env from the test directory, not the repository root', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    // A key path that does not exist: the collector names it and still
+    // never reaches BigQuery.
+    const missingKey = join(dir, 'no-such-key.json');
+    writeFileSync(join(dir, '.env'), `GOOGLE_APPLICATION_CREDENTIALS=${missingKey}\n`);
+    const res = await runScript({}, dbPath);
+    assert.ok(res.stdout.includes(missingKey), `the test directory's .env was not loaded; stdout:\n${res.stdout}`);
     assert.equal(readStatus(dir).status, 'skipped_no_credentials');
   } finally {
     rmSync(dir, { recursive: true, force: true });
