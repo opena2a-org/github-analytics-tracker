@@ -5,7 +5,9 @@
  * through an injectable BigQuery-like client and gated by two byte caps:
  *   - 128 GiB per query   (a dry run estimates first; the billed query carries
  *     maximumBytesBilled so BigQuery enforces the same ceiling server-side)
- *   - 768 GiB per month   (a persisted ledger of billed bytes, data/pypi-country-budget.json)
+ *   - 768 GiB per month   (a persisted ledger of billed bytes, data/pypi-country-budget.json,
+ *     floored by the bytes the store's fetch records show billed this month,
+ *     so a checkout that lacks the ledger file still counts the month's spend)
  *
  * Per run it fetches at most three missing closed days (newest first, from the
  * 30 most recent closed days; no backfill beyond that window), lands the rows
@@ -190,6 +192,41 @@ function readBudget(dataDir, month) {
   return 0;
 }
 
+/**
+ * Bytes the store records as billed in `month`: the per-day charges in
+ * pypi_country_fetch_days whose fetch ran that month. The store is committed
+ * with the collected days and the ledger file is not, so on a fresh checkout
+ * this is the month-to-date figure that survived. 0 before the table exists.
+ * Fail closed: a total that is not a non-negative integer throws rather than
+ * reading as 0.
+ */
+function storeMonthBytes(db, month) {
+  const table = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_fetch_days'"
+  ).get();
+  if (!table) return 0;
+  const { total } = db.prepare(`
+    SELECT COALESCE(SUM(bytes_billed), 0) AS total
+    FROM pypi_country_fetch_days
+    WHERE substr(fetched_at, 1, 7) = ?
+  `).get(month);
+  const bytes = readByteFigure(total);
+  if (bytes === null) {
+    throw new Error(`unreadable billed-bytes total in pypi_country_fetch_days (${String(total)})`);
+  }
+  return bytes;
+}
+
+/**
+ * Month-to-date billed bytes: the larger of the ledger file and the store.
+ * The ledger also holds the reservation of a billed call that failed, so it
+ * is the higher figure whenever it survived; the store is the floor when it
+ * did not.
+ */
+function monthToDate(db, dataDir, month) {
+  return Math.max(readBudget(dataDir, month), storeMonthBytes(db, month));
+}
+
 function writeBudget(dataDir, month, bytesBilled, now) {
   const record = { month, bytesBilled, updatedAt: now.toISOString() };
   fs.writeFileSync(path.join(dataDir, BUDGET_FILE), JSON.stringify(record, null, 2) + '\n');
@@ -334,7 +371,7 @@ async function collect({
     const packages = trackedPackages(db, env);
 
     const month = now.toISOString().slice(0, 7);
-    let monthBytes = readBudget(dataDir, month);
+    let monthBytes = monthToDate(db, dataDir, month);
 
     const missingDays = selectMissingDays(db, now);
     log('Fetching %d missing day(s) for %d packages', missingDays.length, packages.length);
@@ -463,7 +500,8 @@ async function estimate({
   dbPath = dbPath || env.ANALYTICS_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
   dataDir = dataDir || path.dirname(dbPath);
   const month = now.toISOString().slice(0, 7);
-  const monthToDateBytes = readBudget(dataDir, month);
+  // The ledger file alone until the store is open; then the figure collect() uses.
+  let monthToDateBytes = readBudget(dataDir, month);
   const days = [];
   const finish = (status) => {
     const measured = days.length > 0 && days.every(d => d.bytes !== null);
@@ -489,6 +527,7 @@ async function estimate({
   let db = null;
   try {
     db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    monthToDateBytes = monthToDate(db, dataDir, month);
     const packages = trackedPackages(db, env);
     const fetchTable = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_fetch_days'"

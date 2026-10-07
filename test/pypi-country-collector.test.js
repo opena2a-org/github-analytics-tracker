@@ -237,6 +237,86 @@ test('GAT-01.AC3 a prior-month ledger resets to this run\'s bytes instead of car
   }
 });
 
+/**
+ * Record `bytes` billed for each of `days` in the store's fetch records, as
+ * fetched at `fetchedAt`. This is what a checkout carries: the store is
+ * committed with the collected days, the ledger file is not.
+ */
+function recordBilled(dbPath, days, bytes, fetchedAt) {
+  const db = new Database(dbPath);
+  const set = db.prepare('UPDATE pypi_country_fetch_days SET bytes_billed = ?, fetched_at = ? WHERE date = ?');
+  for (const d of days) assert.equal(set.run(bytes, fetchedAt, d).changes, 1, `no fetch record for ${d}`);
+  db.close();
+}
+
+test('with no ledger file, bytes the store records as billed this month still count against 768 GiB', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1)) });
+    // Six days billed this month at 128 GiB each: the whole 768 GiB month.
+    recordBilled(dbPath, ALL_CANDIDATES.slice(1, 7), PER_QUERY_CAP_BYTES, '2026-09-01T06:00:00.000Z');
+    assert.equal(existsSync(join(dir, BUDGET_FILE)), false, 'precondition: a fresh checkout has no ledger file');
+    const client = fakeClient({ dryBytes: 1 });
+    const res = await runCollect(dbPath, client);
+    assert.equal(res.status, 'capped_month');
+    assert.equal(res.exitCode, 1);
+    assert.equal(client.billed().length, 0, 'a month already billed in full bills nothing more');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('with no ledger file the month total restarts from the store and the ledger is rewritten from it', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1)) });
+    recordBilled(dbPath, [dayBefore(2), dayBefore(3)], 5 * 1073741824, '2026-09-01T06:00:00.000Z');
+    // Billed in August: another month's spend, never this month's.
+    recordBilled(dbPath, [dayBefore(4)], PER_QUERY_CAP_BYTES, '2026-08-31T06:00:00.000Z');
+    const client = fakeClient({ billedBytes: 1000 });
+    const res = await runCollect(dbPath, client);
+    assert.equal(res.exitCode, 0);
+    assert.equal(client.billed().length, 1);
+    const budget = readBudgetFile(dir);
+    assert.equal(budget.month, '2026-09');
+    assert.equal(budget.bytesBilled, 10 * 1073741824 + 1000);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a ledger file above the store total is kept, so a reserved charge is never dropped', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1)) });
+    recordBilled(dbPath, [dayBefore(2)], 1000, '2026-09-01T06:00:00.000Z');
+    writeFileSync(join(dir, BUDGET_FILE), JSON.stringify({
+      month: '2026-09', bytesBilled: 50000, updatedAt: '2026-09-01T06:00:00.000Z',
+    }));
+    const client = fakeClient({ billedBytes: 7 });
+    const res = await runCollect(dbPath, client);
+    assert.equal(res.exitCode, 0);
+    assert.equal(readBudgetFile(dir).bytesBilled, 50007);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an unreadable billed total in the store is an error that bills nothing, never a 0', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(1)) });
+    recordBilled(dbPath, [dayBefore(2)], 1.5, '2026-09-01T06:00:00.000Z');
+    const client = fakeClient();
+    const res = await runCollect(dbPath, client);
+    assert.equal(res.status, 'error');
+    assert.equal(res.exitCode, 1);
+    assert.equal(client.calls.length, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('GAT-01.AC3 an unparseable ledger starts the month at 0 rather than failing', async () => {
   const dir = tmp();
   try {
