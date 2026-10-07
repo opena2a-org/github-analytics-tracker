@@ -860,9 +860,10 @@ test('the install trend tooltip shows an unmeasured Hugging Face period as not m
 });
 
 // Edits a formatter makes to the dashboard without changing what it does
-// (Prettier's defaults among them). Each swaps the form the source has for the
-// other one, so the checks read the committed layout and Prettier's default
-// output for these forms, not every layout the dashboard could take.
+// (Prettier's defaults among them). Each swaps the form the source has, either
+// one, for the other one, so the checks read the committed layout and
+// Prettier's default output for these forms, not every layout the dashboard
+// could take.
 const otherQuote = (q) => (q === "'" ? '"' : "'");
 const REFORMATS = [
   ['the Hugging Face mix entry on one line, or split over lines with a trailing comma', s => s.replace(
@@ -880,17 +881,18 @@ const REFORMATS = [
     (m, paren, jsx) => (paren ? `return ${jsx};` : `return (\n    ${jsx}\n  );`))],
   ['the formatter array with or without a trailing comma', s => s.replace(/\[\s*formatMeasured\(v\),\s*name(,?)\s*\]/,
     (m, comma) => (comma ? '[formatMeasured(v), name]' : '[\n  formatMeasured(v),\n  name,\n]'))],
-  ['the channel mix subtitle call split over lines', s => s.replace('channelMixSubtitle(totals.hf);',
-    'channelMixSubtitle(\n    totals.hf,\n  );')],
+  ['the channel mix subtitle call on one line, or split over lines with a trailing comma', s => s.replace(
+    /channelMixSubtitle\((\s*)totals\.hf,?\s*\);/,
+    (m, gap) => (gap ? 'channelMixSubtitle(totals.hf);' : 'channelMixSubtitle(\n    totals.hf,\n  );'))],
 ];
 
 // Edits that change what the dashboard shows for an unmeasured count.
 const MEANING_CHANGES = [
   ['the footer total formatted with fmtFull', s => s.replace('formatMeasured(hfTotal)', 'fmtFull(hfTotal)')],
   ['the channel mix without its filter', s => s.replace(MIX_FILTER, '];')],
-  ['the channel mix subtitle without its note', s => s.replace(/(const channelSub = )channelMixSubtitle\(totals\.hf\);/,
+  ['the channel mix subtitle without its note', s => s.replace(/(const channelSub = )channelMixSubtitle\(\s*totals\.hf,?\s*\);/,
     "$1'All-time adoption by install channel';")],
-  ['the channel mix subtitle cut to its first part', s => s.replace(/(const channelSub = channelMixSubtitle\(totals\.hf\));/,
+  ['the channel mix subtitle cut to its first part', s => s.replace(/(const channelSub = channelMixSubtitle\(\s*totals\.hf,?\s*\));/,
     "$1.split(' · ')[0];")],
   ['the install trend tooltip without filterNull={false}', s => s.replace(/\s+filterNull=\{false\}/, '')],
   ['the install trend tooltip formatting with fmtFull', s => s.replace(/\[\s*formatMeasured\(v\),/, '[fmtFull(v),')],
@@ -909,25 +911,31 @@ function checkSource(name, source) {
   }
 }
 
-test('the dashboard source checks read through a reformat and still fail a change in meaning', () => {
-  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
-  checkSource('the dashboard as committed', index);
+// The dashboard in `layout` passes the source checks after each reformat and
+// after all of them, and fails them after each change in meaning.
+function checkReformatsAndChanges(layout, index) {
+  checkSource(layout, index);
   for (const [name, reformat] of REFORMATS) {
     const reformatted = reformat(index);
-    assert.notStrictEqual(reformatted, index, `${name}: the reformat applies to the dashboard`);
-    checkSource(name, reformatted);
+    assert.notStrictEqual(reformatted, index, `${layout}, ${name}: the reformat applies to the dashboard`);
+    checkSource(`${layout}, ${name}`, reformatted);
   }
   const reformatted = REFORMATS.reduce((source, [name, reformat]) => {
     const next = reformat(source);
-    assert.notStrictEqual(next, source, `${name}: the reformat applies after the ones before it`);
+    assert.notStrictEqual(next, source, `${layout}, ${name}: the reformat applies after the ones before it`);
     return next;
   }, index);
-  checkSource('every reformat at once', reformatted);
+  checkSource(`${layout}, every reformat at once`, reformatted);
   for (const [name, change] of MEANING_CHANGES) {
     const changed = change(index);
-    assert.notStrictEqual(changed, index, `${name}: the change applies to the dashboard`);
-    assert.throws(() => checkSource(name, changed), assert.AssertionError, `${name} fails the source checks`);
+    assert.notStrictEqual(changed, index, `${layout}, ${name}: the change applies to the dashboard`);
+    assert.throws(() => checkSource(`${layout}, ${name}`, changed), assert.AssertionError, `${layout}, ${name} fails the source checks`);
   }
+}
+
+test('the dashboard source checks read through a reformat and still fail a change in meaning', () => {
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  checkReformatsAndChanges('the dashboard as committed', index);
 
   const component = 'functionMeasuredTooltipContent(props){return<DefaultTooltipContent{...props}payload={measuredTooltipPayload(props.payload)}/>;}';
   assert.match(component, MEASURED_TOOLTIP_CONTENT);
@@ -937,4 +945,13 @@ test('the dashboard source checks read through a reformat and still fail a chang
   assert.doesNotMatch(
     component.replace('{...props}payload={measuredTooltipPayload(props.payload)}', 'payload={measuredTooltipPayload(props.payload)}{...props}'),
     MEASURED_TOOLTIP_CONTENT);
+});
+
+// Each reformat swaps either form for the other, so the checks hold when the
+// dashboard is committed in the other layout: every reformat and every change
+// in meaning still applies to it.
+test('the dashboard source checks read through a reformat from the other layout too', () => {
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  const otherLayout = REFORMATS.reduce((source, [, reformat]) => reformat(source), index);
+  checkReformatsAndChanges('the dashboard in its other layout', otherLayout);
 });
