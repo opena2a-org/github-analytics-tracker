@@ -278,6 +278,7 @@ test('the API route and the overview keep each model\'s last measured counts, an
     const none = huggingfaceModelDetail(db, target.id, '0000-00-00').summary;
     assert.deepStrictEqual([none.downloadsAllTime, none.downloads30d, none.likes, none.periodDownloads], [null, null, null, null]);
     const empty = computeOverview(db, {});
+    assert.strictEqual(empty.totals.hf.downloadsAllTime, null);
     assert.strictEqual(empty.totals.hf.downloads30d, null);
     assert.strictEqual(empty.totals.hf.likes, null);
     assert.strictEqual(huggingfaceModelDetail(db, -1, '0000-00-00'), null, 'an unknown model is not found');
@@ -320,6 +321,8 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
       assert.strictEqual(formatMeasured(sumMeasured(models.map(m => m[key]))), NOT_MEASURED, `${key} total`);
     }
     const overview = computeOverview(db, {});
+    assert.strictEqual(overview.totals.hf.downloadsAllTime, null, 'the all-time total is null, never 0');
+    assert.strictEqual(formatMeasured(overview.totals.hf.downloadsAllTime), NOT_MEASURED);
     assert.strictEqual(formatMeasured(overview.totals.hf.downloads30d), NOT_MEASURED);
     assert.strictEqual(formatMeasured(overview.totals.hf.likes), NOT_MEASURED);
   } finally {
@@ -595,8 +598,61 @@ test('the install trend credits measured Hugging Face growth to its period and l
   }
 });
 
-test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () => {
-  withTmp((dir) => {
+test('the install trend does not count a dip and recovery of a model\'s all-time count as new downloads', () => {
+  const db = freshDb();
+  try {
+    db.exec("INSERT INTO huggingface_models (id, model_id, author) VALUES (1, 'org/dip', 'org')");
+    const ins = db.prepare('INSERT INTO huggingface_stats (model_id, date, downloads_all_time) VALUES (1, ?, ?)');
+    ins.run('2026-10-01', 1000);
+    ins.run('2026-10-02', 900);
+    ins.run('2026-10-03', 1000);
+    ins.run('2026-10-04', 1100);
+    const daily = huggingfaceDownloadsByPeriod(db, { bucketExpr: 'date', days: 'all' });
+    assert.deepStrictEqual(daily.map(r => [r.period, r.hfDownloads]), [
+      ['2026-10-01', null],
+      ['2026-10-02', 0],
+      ['2026-10-03', 0],
+      ['2026-10-04', 100],
+    ], 'a dip measures no growth, and its recovery adds nothing until the count passes its earlier high');
+    assert.strictEqual(daily.reduce((s, r) => s + (r.hfDownloads ?? 0), 0), 100, 'the growth is the count\'s rise above its first high');
+  } finally {
+    db.close();
+  }
+});
+
+test('the install trend lists Hugging Face periods in date order whatever order the models were measured in', () => {
+  const db = freshDb();
+  try {
+    // The higher model id has the earlier dates, so model order is not date order.
+    db.exec("INSERT INTO huggingface_models (id, model_id, author) VALUES (1, 'org/late', 'org'), (2, 'org/early', 'org')");
+    const ins = db.prepare('INSERT INTO huggingface_stats (model_id, date, downloads_all_time) VALUES (?, ?, ?)');
+    ins.run(1, '2026-10-02', 10);
+    ins.run(1, '2026-10-03', 20);
+    ins.run(2, '2026-10-01', 5);
+    ins.run(2, '2026-10-02', 7);
+    assert.deepStrictEqual(
+      huggingfaceDownloadsByPeriod(db, { bucketExpr: 'date', days: 'all' }).map(r => [r.period, r.hfDownloads]),
+      [['2026-10-01', null], ['2026-10-02', 2], ['2026-10-03', 10]]);
+  } finally {
+    db.close();
+  }
+});
+
+// Today's date as SQLite's date('now') gives it: the clock /api/trends reads
+// its window from.
+function sqliteToday() {
+  const db = new Database(':memory:');
+  try {
+    return db.prepare("SELECT date('now') AS d").get().d;
+  } finally {
+    db.close();
+  }
+}
+
+// /api/trends daily over all time and over the last day, answered from the
+// gap fixture dated back from `today`.
+function trendsFromGapFixture(today) {
+  return withTmp((dir) => {
     mkdirSync(join(dir, 'data'));
     const db = new Database(join(dir, 'data', 'analytics.db'));
     try {
@@ -606,8 +662,7 @@ test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () 
         CREATE TABLE repositories (id INTEGER PRIMARY KEY, full_name TEXT, canonical_full_name TEXT);
         CREATE TABLE stargazers (repo_id INTEGER, date TEXT, total_stars INTEGER);
       ` + HF_MODELS_DDL + huggingfaceStatsDdl('huggingface_stats') + HF_STATS_INDEXES);
-      // Dated from the real today: the route reads its window from the clock.
-      gapFixture(db, daysBefore(new Date().toISOString().slice(0, 10)));
+      gapFixture(db, daysBefore(today));
     } finally {
       db.close();
     }
@@ -617,19 +672,35 @@ test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () 
     const before = process.cwd();
     process.chdir(dir);
     try {
-      const all = callHandler(handler, { granularity: 'daily', days: 'all' });
-      assert.strictEqual(all.statusCode, 200);
-      assert.deepStrictEqual(all.body.series.map(r => r.hfDownloads), [null, 100, null, 100]);
-      assert.deepStrictEqual(all.body.series.map(r => r.totalDownloads), [0, 100, 0, 100]);
-
-      // The window's first period is measured against the last count before it.
-      const recent = callHandler(handler, { granularity: 'daily', days: '1' });
-      assert.strictEqual(recent.statusCode, 200);
-      assert.deepStrictEqual(recent.body.series.map(r => r.hfDownloads), [null, 100]);
+      return {
+        all: callHandler(handler, { granularity: 'daily', days: 'all' }),
+        recent: callHandler(handler, { granularity: 'daily', days: '1' }),
+      };
     } finally {
       process.chdir(before);
     }
   });
+}
+
+test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () => {
+  // The fixture is dated from the clock the route reads its window from. A run
+  // that crosses midnight UTC between dating the fixture and calling the route
+  // would see the window move by a day, so it is run again on the new date.
+  let today;
+  let responses;
+  do {
+    today = sqliteToday();
+    responses = trendsFromGapFixture(today);
+  } while (sqliteToday() !== today);
+  const { all, recent } = responses;
+
+  assert.strictEqual(all.statusCode, 200);
+  assert.deepStrictEqual(all.body.series.map(r => r.hfDownloads), [null, 100, null, 100]);
+  assert.deepStrictEqual(all.body.series.map(r => r.totalDownloads), [0, 100, 0, 100]);
+
+  // The window's first period is measured against the last count before it.
+  assert.strictEqual(recent.statusCode, 200);
+  assert.deepStrictEqual(recent.body.series.map(r => r.hfDownloads), [null, 100]);
 });
 
 // The install trend's Tooltip rendered by recharts, as [name, value] per row.
@@ -645,6 +716,40 @@ function tooltipRows(props) {
     item.match(/recharts-tooltip-item-value">([^<]*)</)?.[1],
   ]);
 }
+
+// Source with every whitespace character removed, so reformatting it (a line
+// split, a wrapped prop) does not read as a change.
+const squeeze = (source) => source.replace(/\s+/g, '');
+
+// The squeezed function that starts at `head`, through the brace that closes
+// its body; null when not found.
+function functionSource(source, head) {
+  const start = source.indexOf(head);
+  const open = start < 0 ? -1 : source.indexOf('{', start);
+  if (open < 0) return null;
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    else if (source[i] === '}' && --depth === 0) return source.slice(start, i + 1);
+  }
+  return null;
+}
+
+// The install trend's <Tooltip /> element and the MeasuredTooltipContent
+// function in the dashboard source, each squeezed; null when not found.
+function installTrendTooltipSource(index) {
+  const source = squeeze(index);
+  const start = source.indexOf('<Charttitle="InstallTrend"');
+  const chart = start < 0 ? '' : source.slice(start, source.indexOf('</Chart>', start));
+  return {
+    tooltip: chart.match(/<Tooltip(?![\w.])[^]*?\/>/)?.[0] ?? null,
+    component: functionSource(source, 'functionMeasuredTooltipContent('),
+  };
+}
+
+// MeasuredTooltipContent, squeezed: the default rows with every prop and the
+// payload rewritten by measuredTooltipPayload, set after the spread so it wins.
+const MEASURED_TOOLTIP_CONTENT = /^functionMeasuredTooltipContent\(props\)\{return\(?<DefaultTooltipContent\{\.\.\.props\}payload=\{measuredTooltipPayload\(props\.payload\)\}\/>\)?;?\}$/;
 
 test('the install trend tooltip shows an unmeasured Hugging Face period as not measured, never as an empty value', () => {
   const { createElement } = require('react');
@@ -676,12 +781,31 @@ test('the install trend tooltip shows an unmeasured Hugging Face period as not m
   assert.ok(!tooltipRows(withoutFilterNull).some(([name]) => name === 'HuggingFace'), 'without filterNull={false} the Hugging Face row is dropped');
 
   const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
-  const start = index.indexOf('<Chart title="Install Trend"');
-  assert.ok(start >= 0, 'the overview has an install trend');
-  const tooltip = index.slice(start, index.indexOf('</Chart>', start)).split('\n').find(line => line.includes('<Tooltip '));
+  const { tooltip, component } = installTrendTooltipSource(index);
+  assert.ok(tooltip, 'the overview has an install trend with a tooltip');
   for (const prop of ['filterNull={false}', 'formatter={(v, name) => [formatMeasured(v), name]}', 'content={MeasuredTooltipContent}']) {
-    assert.ok(tooltip && tooltip.includes(prop), `the install trend tooltip has ${prop}`);
+    assert.ok(tooltip.includes(squeeze(prop)), `the install trend tooltip has ${prop}`);
   }
-  assert.ok(index.includes('function MeasuredTooltipContent(props) {\n  return <DefaultTooltipContent {...props} payload={measuredTooltipPayload(props.payload)} />;\n}'),
+  assert.match(component || '', MEASURED_TOOLTIP_CONTENT,
     'MeasuredTooltipContent gives a null row NOT_MEASURED before the default rows render');
+});
+
+test('the install trend tooltip source check reads through a reformat of the dashboard', () => {
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  const original = installTrendTooltipSource(index);
+  assert.ok(original.tooltip && original.component, 'the dashboard has the install trend tooltip and its content');
+  // Every space a line break, and every line joined to the next.
+  for (const reformatted of [index.replace(/ /g, '\n'), index.replace(/\n\s*/g, ' ')]) {
+    assert.notStrictEqual(reformatted, index);
+    assert.deepStrictEqual(installTrendTooltipSource(reformatted), original);
+  }
+
+  const component = 'functionMeasuredTooltipContent(props){return<DefaultTooltipContent{...props}payload={measuredTooltipPayload(props.payload)}/>;}';
+  assert.match(component, MEASURED_TOOLTIP_CONTENT);
+  assert.match(component.replace('return<', 'return(<').replace('/>;}', '/>);}'), MEASURED_TOOLTIP_CONTENT, 'the JSX wrapped in parentheses');
+  assert.match(component.replace('/>;}', '/>}'), MEASURED_TOOLTIP_CONTENT, 'without the semicolon');
+  // The rewritten payload set before the spread, which then overrides it.
+  assert.doesNotMatch(
+    component.replace('{...props}payload={measuredTooltipPayload(props.payload)}', 'payload={measuredTooltipPayload(props.payload)}{...props}'),
+    MEASURED_TOOLTIP_CONTENT);
 });
