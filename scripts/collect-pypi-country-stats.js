@@ -20,7 +20,8 @@
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs.
  * Tests inject a fake; createBigQueryAdapter() wraps @google-cloud/bigquery
- * for real runs and is the only code paths tests never touch.
+ * for real runs, and tests drive it over a BigQuery instance with a stubbed
+ * transport so the ceiling is checked in the job request BigQuery receives.
  */
 const Database = require('better-sqlite3');
 const fs = require('fs');
@@ -216,10 +217,18 @@ function rollupCountryDownloads(db, now) {
   return asOf;
 }
 
-/** Thin adapter producing the client port over @google-cloud/bigquery. */
-function createBigQueryAdapter() {
-  const { BigQuery } = require('@google-cloud/bigquery');
-  const bigquery = new BigQuery();
+/**
+ * Thin adapter producing the client port over @google-cloud/bigquery. Options
+ * pass through to createQueryJob unchanged, so the billed call's
+ * maximumBytesBilled lands in the job's query configuration and BigQuery
+ * refuses a job that would bill past it. `bigquery` defaults to a client
+ * built from the environment's credentials.
+ */
+function createBigQueryAdapter(bigquery = null) {
+  if (!bigquery) {
+    const { BigQuery } = require('@google-cloud/bigquery');
+    bigquery = new BigQuery();
+  }
   return {
     async query(options) {
       const [job] = await bigquery.createQueryJob(options);
@@ -234,8 +243,6 @@ function createBigQueryAdapter() {
       const [rows] = await job.getQueryResults();
       const [metadata] = await job.getMetadata();
       const stats = metadata?.statistics || {};
-      // No `?? 0` fallback: an unreadable billed figure surfaces as NaN so the
-      // caller charges the dry-run estimate instead of under-counting.
       // No fallback to 0: an unreadable billed figure surfaces as null so the
       // caller charges the dry-run estimate instead of under-counting.
       return { rows, totalBytesProcessed: readByteFigure(stats.query?.totalBytesBilled ?? stats.totalBytesProcessed) };
