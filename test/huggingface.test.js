@@ -10,6 +10,7 @@ const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
   huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
   parseModelDetailQuery, huggingfaceDownloadsByPeriod, measuredTooltipPayload, hfChannelMixNote,
+  channelMixSubtitle,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -359,8 +360,10 @@ function checkDashboardSource(index) {
   }
   assert.ok(chartSource(source, 'Channel Mix').startsWith(squeeze('<Chart title="Channel Mix" sub={channelSub}>')),
     'the channel mix subtitle is channelSub');
-  assert.ok(source.match(/constchannelSub=([^;]*);/)?.[1]?.includes('hfChannelMixNote(totals.hf)'),
-    'the channel mix subtitle names an unmeasured Hugging Face count');
+  // The subtitle is built whole by channelMixSubtitle, whose output is tested
+  // directly, so the dashboard must render that call's result unchanged.
+  assert.strictEqual(source.match(/constchannelSub=([^;]*);/)?.[1], 'channelMixSubtitle(totals.hf)',
+    'the channel mix subtitle is channelMixSubtitle(totals.hf), unchanged');
 
   assert.ok(source.includes(squeeze('<span className="v">{formatMeasured(v)}</span>')), 'overview source rows show a null count as not measured');
 }
@@ -408,16 +411,21 @@ test('the channel mix names an unmeasured Hugging Face count it leaves out', () 
     const measured = computeOverview(db, {}).totals.hf;
     assert.ok(measured.models > 0 && measured.downloadsAllTime > 0, 'the committed database has a measured all-time count');
     assert.strictEqual(hfChannelMixNote(measured), null, 'a measured count is drawn, so nothing is named');
+    assert.strictEqual(channelMixSubtitle(measured), 'All-time adoption by install channel',
+      'the subtitle of a mix that leaves nothing out names nothing');
     db.exec('UPDATE huggingface_stats SET downloads_all_time = NULL');
     const unmeasured = computeOverview(db, {}).totals.hf;
     assert.strictEqual(unmeasured.downloadsAllTime, null);
     assert.strictEqual(hfChannelMixNote(unmeasured), 'Hugging Face not measured, left out');
+    assert.strictEqual(channelMixSubtitle(unmeasured), 'All-time adoption by install channel · Hugging Face not measured, left out',
+      'the rendered subtitle carries the note after what the mix shows');
   } finally {
     db.close();
   }
   assert.strictEqual(hfChannelMixNote({ models: 2, downloadsAllTime: 0 }), null, 'a measured 0 is not named as unmeasured');
   assert.strictEqual(hfChannelMixNote({ models: 0, downloadsAllTime: null }), null, 'no model is tracked, so nothing is left out');
   assert.strictEqual(hfChannelMixNote(undefined), null);
+  assert.strictEqual(channelMixSubtitle(undefined), 'All-time adoption by install channel');
 });
 
 test('the channel-mix check reads the whole channelData statement when a comment inside it has a semicolon', () => {
@@ -863,13 +871,18 @@ const REFORMATS = [
     (m, paren, jsx) => (paren ? `return ${jsx};` : `return (\n    ${jsx}\n  );`))],
   ['the formatter array with or without a trailing comma', s => s.replace(/\[\s*formatMeasured\(v\),\s*name(,?)\s*\]/,
     (m, comma) => (comma ? '[formatMeasured(v), name]' : '[\n  formatMeasured(v),\n  name,\n]'))],
+  ['the channel mix subtitle call split over lines', s => s.replace('channelMixSubtitle(totals.hf);',
+    'channelMixSubtitle(\n    totals.hf,\n  );')],
 ];
 
 // Edits that change what the dashboard shows for an unmeasured count.
 const MEANING_CHANGES = [
   ['the footer total formatted with fmtFull', s => s.replace('formatMeasured(hfTotal)', 'fmtFull(hfTotal)')],
   ['the channel mix without its filter', s => s.replace(MIX_FILTER, '];')],
-  ['the channel mix subtitle without its note', s => s.replace(/,\s*hfChannelMixNote\(totals\.hf\),?\s*\]/, ']')],
+  ['the channel mix subtitle without its note', s => s.replace(/(const channelSub = )channelMixSubtitle\(totals\.hf\);/,
+    "$1'All-time adoption by install channel';")],
+  ['the channel mix subtitle cut to its first part', s => s.replace(/(const channelSub = channelMixSubtitle\(totals\.hf\));/,
+    "$1.split(' · ')[0];")],
   ['the install trend tooltip without filterNull={false}', s => s.replace(/\s+filterNull=\{false\}/, '')],
   ['the install trend tooltip formatting with fmtFull', s => s.replace(/\[\s*formatMeasured\(v\),/, '[fmtFull(v),')],
   ['the rewritten payload set before the spread', s => s.replace(
