@@ -1,0 +1,160 @@
+const { test } = require('node:test');
+const assert = require('node:assert');
+const { mkdtempSync, rmSync } = require('node:fs');
+const { join } = require('node:path');
+const { tmpdir } = require('node:os');
+const Database = require('better-sqlite3');
+const { BigQuery } = require('@google-cloud/bigquery');
+
+const {
+  collect,
+  createBigQueryAdapter,
+  PER_QUERY_CAP_BYTES,
+} = require('../scripts/collect-pypi-country-stats');
+
+// Injected clock: D-1 is 2026-09-01.
+const NOW = new Date('2026-09-02T12:34:56Z');
+const DAY_MS = 86400000;
+const GIB = 1073741824;
+
+function dayBefore(offset) {
+  return new Date(Date.UTC(2026, 8, 2) - offset * DAY_MS).toISOString().slice(0, 10);
+}
+
+const tmp = () => mkdtempSync(join(tmpdir(), 'pypi-country-adapter-'));
+
+/** A store with one tracked package and every candidate day fetched except D-1. */
+function makeStore(dir) {
+  const p = join(dir, 'analytics.db');
+  const db = new Database(p);
+  db.exec(`
+    CREATE TABLE pypi_packages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE);
+    INSERT INTO pypi_packages (name) VALUES ('aim-sdk');
+    CREATE TABLE pypi_country_fetch_days (
+      date TEXT PRIMARY KEY, row_count INTEGER NOT NULL DEFAULT 0,
+      bytes_billed INTEGER NOT NULL DEFAULT 0, fetched_at TEXT NOT NULL);
+  `);
+  const insFetch = db.prepare('INSERT INTO pypi_country_fetch_days (date, fetched_at) VALUES (?, ?)');
+  for (let i = 2; i <= 30; i++) insFetch.run(dayBefore(i), NOW.toISOString());
+  db.close();
+  return p;
+}
+
+/**
+ * A real @google-cloud/bigquery client whose transport is replaced by a fake
+ * service. The library still builds every job request itself; the fake reads
+ * the request body as BigQuery would: a dry run reports `estimate`, a billed
+ * job scans `scanned` bytes and is refused with bytesBilledLimitExceeded when
+ * that passes the job's configuration.query.maximumBytesBilled.
+ */
+function stubbedBigQuery({ estimate, scanned, rows = [] }) {
+  const bigquery = new BigQuery({ projectId: 'test-project' });
+  const inserts = [];
+  const billed = [];
+  bigquery.request = (reqOpts, callback) => {
+    if (reqOpts.method === 'POST' && reqOpts.uri === '/jobs') {
+      const body = reqOpts.json;
+      inserts.push(body);
+      const { jobReference } = body;
+      if (body.configuration.dryRun) {
+        callback(null, { jobReference, status: { state: 'DONE' },
+          statistics: { totalBytesProcessed: String(estimate) } });
+        return;
+      }
+      const cap = body.configuration.query.maximumBytesBilled;
+      if (cap !== undefined && scanned > Number(cap)) {
+        const error = {
+          reason: 'bytesBilledLimitExceeded',
+          message: `Query exceeded limit for bytes billed: ${cap}. ${scanned} or higher required.`,
+        };
+        callback(null, { jobReference, status: { state: 'DONE', errorResult: error, errors: [error] } });
+        return;
+      }
+      billed.push(scanned);
+      callback(null, { jobReference, status: { state: 'DONE' } });
+      return;
+    }
+    if (reqOpts.uri.startsWith('/queries/')) {
+      callback(null, {
+        jobComplete: true,
+        schema: { fields: [
+          { name: 'project', type: 'STRING' },
+          { name: 'country_code', type: 'STRING' },
+          { name: 'downloads', type: 'INTEGER' },
+        ] },
+        rows: rows.map(r => ({ f: [{ v: r.project }, { v: r.country_code }, { v: String(r.downloads) }] })),
+      });
+      return;
+    }
+    if (/^\/?jobs\/[^/]+$/.test(reqOpts.uri)) {
+      callback(null, { status: { state: 'DONE' },
+        statistics: { query: { totalBytesBilled: String(scanned) } } });
+      return;
+    }
+    callback(new Error(`unexpected request ${reqOpts.method || 'GET'} ${reqOpts.uri}`));
+  };
+  return { bigquery, inserts, billed };
+}
+
+function runCollect(dbPath, bigquery) {
+  return collect({
+    client: createBigQueryAdapter(bigquery), dbPath, now: NOW, env: {}, log: () => {},
+  });
+}
+
+test('the adapter puts maximumBytesBilled in the billed job request and leaves it off the dry run', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    const service = stubbedBigQuery({
+      estimate: 5 * GIB, scanned: 4 * GIB,
+      rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
+    });
+    const res = await runCollect(dbPath, service.bigquery);
+    assert.equal(res.status, 'ok');
+    assert.equal(res.exitCode, 0);
+    assert.equal(service.inserts.length, 2, 'one dry run, one billed job');
+
+    const [dry, billed] = service.inserts;
+    assert.equal(dry.configuration.dryRun, true);
+    assert.equal(dry.configuration.query.maximumBytesBilled, undefined);
+    assert.equal(billed.configuration.dryRun, undefined, 'the billed job is not a dry run');
+    assert.equal(Number(billed.configuration.query.maximumBytesBilled), PER_QUERY_CAP_BYTES,
+      'BigQuery receives the per-query ceiling on the job it bills');
+
+    assert.equal(res.bytesBilled, 4 * GIB);
+    const db = new Database(dbPath, { readonly: true });
+    const landed = db.prepare('SELECT country_code, downloads FROM pypi_country_daily WHERE date = ?').all(dayBefore(1));
+    db.close();
+    assert.deepEqual(landed.map(r => ({ ...r })), [{ country_code: 'US', downloads: 42 }]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a scan over the ceiling that the dry run under-estimated is refused by BigQuery and bills nothing', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    const service = stubbedBigQuery({
+      estimate: 100 * GIB, scanned: 200 * GIB,
+      rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
+    });
+    assert.ok(100 * GIB < PER_QUERY_CAP_BYTES && 200 * GIB > PER_QUERY_CAP_BYTES);
+    const res = await runCollect(dbPath, service.bigquery);
+    assert.equal(res.status, 'error');
+    assert.equal(res.exitCode, 1);
+    assert.equal(res.bytesBilled, 0);
+    assert.equal(service.inserts.length, 2, 'the billed job reached BigQuery and was refused there');
+    assert.deepEqual(service.billed, [], 'no job scanned past the ceiling');
+
+    const db = new Database(dbPath, { readonly: true });
+    const fetched = db.prepare('SELECT 1 FROM pypi_country_fetch_days WHERE date = ?').get(dayBefore(1));
+    const landed = db.prepare('SELECT COUNT(*) AS n FROM pypi_country_daily').get().n;
+    db.close();
+    assert.equal(fetched, undefined, 'the refused day stays missing');
+    assert.equal(landed, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
