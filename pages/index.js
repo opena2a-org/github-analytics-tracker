@@ -531,8 +531,6 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
     { name: 'Docker', value: totals.docker?.totalPulls || 0, color: C.docker },
     { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
   ].filter(d => d.value > 0);
-  // An unmeasured HF count is left out of the mix and named, never a 0 share.
-  const hfUnmeasured = totals.hf?.models > 0 && totals.hf?.downloadsAllTime == null;
   const channelTotal = channelData.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -598,7 +596,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
       <SecLabel>Distribution</SecLabel>
       <div className="duo">
         {channelData.length > 0 && (
-          <Chart title="Channel Mix" sub={`All-time adoption by install channel${hfUnmeasured ? ' · Hugging Face not measured, left out' : ''}`}>
+          <Chart title="Channel Mix" sub="All-time adoption by install channel">
             <PieChart>
               <Pie data={channelData} cx="50%" cy="50%" innerRadius={68} outerRadius={108} dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
                 {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
