@@ -101,7 +101,8 @@ the committed database.
 table, one closed day per query and at most three days per run. It is not part of the
 scheduled workflow. Two caps bound what it can bill: 128 GiB per query (checked against a
 dry run first, then sent to BigQuery as `maximumBytesBilled`, so BigQuery refuses a job that
-would bill more) and 768 GiB per calendar month (a ledger in `data/pypi-country-budget.json`).
+would bill more; such a refusal bills nothing and ends the run with status `refused_cap`) and
+768 GiB per calendar month (a ledger in `data/pypi-country-budget.json`).
 The month-to-date figure is never lower than the bytes the database's fetch records show billed
 that month, so a checkout without the ledger file still counts the month's earlier queries.
 

@@ -4,7 +4,8 @@
  * One query per closed UTC day covering ALL tracked packages at once, issued
  * through an injectable BigQuery-like client and gated by two byte caps:
  *   - 128 GiB per query   (a dry run estimates first; the billed query carries
- *     maximumBytesBilled so BigQuery enforces the same ceiling server-side)
+ *     maximumBytesBilled so BigQuery enforces the same ceiling server-side,
+ *     and a job it refuses there ends the run as refused_cap)
  *   - 768 GiB per month   (a persisted ledger of billed bytes, data/pypi-country-budget.json,
  *     floored by the bytes the store's fetch records show billed this month,
  *     so a checkout that lacks the ledger file still counts the month's spend)
@@ -26,10 +27,13 @@
  * caps.
  *
  * The client port this module consumes: one async `query(options)` that
- * resolves to { rows, totalBytesProcessed } for both dry and billed runs.
- * Tests inject a fake; createBigQueryAdapter() wraps @google-cloud/bigquery
- * for real runs, and tests drive it over a BigQuery instance with a stubbed
- * transport so the ceiling is checked in the job request BigQuery receives.
+ * resolves to { rows, totalBytesProcessed } for both dry and billed runs. A
+ * billed query BigQuery refuses at maximumBytesBilled rejects with the
+ * library's API error, whose errors list carries the reason
+ * bytesBilledLimitExceeded. Tests inject a fake; createBigQueryAdapter()
+ * wraps @google-cloud/bigquery for real runs, and tests drive it over a
+ * BigQuery instance with a stubbed transport so the ceiling is checked in the
+ * job request BigQuery receives.
  */
 const Database = require('better-sqlite3');
 const fs = require('fs');
@@ -177,6 +181,17 @@ function readByteFigure(value) {
   if (typeof value === 'number') return Number.isInteger(value) && value >= 0 ? value : null;
   if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
   return null;
+}
+
+/**
+ * True when BigQuery refused a job at its maximumBytesBilled. The library
+ * raises that refusal as an API error whose errors list carries the reason
+ * bytesBilledLimitExceeded, whether the job insert or the results read
+ * reports it. BigQuery bills nothing for a job it refuses there.
+ */
+function isBytesBilledLimitRefusal(error) {
+  return Boolean(error) && Array.isArray(error.errors)
+    && error.errors.some(e => e && e.reason === 'bytesBilledLimitExceeded');
 }
 
 /** Month-to-date billed bytes; a missing/unparseable file or another month starts at 0. */
@@ -439,10 +454,26 @@ async function collect({
       // Reservation: charge the estimate to the ledger BEFORE the billed call.
       // If the call throws after the job may have run, the reservation stands,
       // so the month ledger can only over-count a billed query, never
-      // under-count one; on success it is rewritten with the actual figure.
+      // under-count one; on success it is rewritten with the actual figure,
+      // and on BigQuery's own ceiling refusal, which bills nothing, it is
+      // released.
       writeBudget(dataDir, month, monthBytes + estimate, now);
 
-      const billed = await client.query({ ...options, maximumBytesBilled: PER_QUERY_CAP_BYTES });
+      let billed;
+      try {
+        billed = await client.query({ ...options, maximumBytesBilled: PER_QUERY_CAP_BYTES });
+      } catch (error) {
+        if (!isBytesBilledLimitRefusal(error)) throw error;
+        // The ceiling held: BigQuery refused the job and billed nothing, so
+        // the reservation is released. Any other failure keeps it, since
+        // that job may have run.
+        writeBudget(dataDir, month, monthBytes, now);
+        log('Refusing %s: BigQuery refused the job at the %d byte ceiling; nothing was billed',
+          dayIso, PER_QUERY_CAP_BYTES);
+        return finish('refused_cap', {
+          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
+        });
+      }
       const billedBytes = readByteFigure(billed.totalBytesProcessed);
       // An unreadable, negative or non-integer billed figure charges the
       // estimate: never enter less than we reserved into the ledger for a

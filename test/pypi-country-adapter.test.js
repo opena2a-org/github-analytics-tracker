@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { mkdtempSync, rmSync } = require('node:fs');
+const { mkdtempSync, rmSync, readFileSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
 const Database = require('better-sqlite3');
@@ -11,6 +11,8 @@ const {
   estimate,
   createBigQueryAdapter,
   PER_QUERY_CAP_BYTES,
+  BUDGET_FILE,
+  RUN_FILE,
 } = require('../scripts/collect-pypi-country-stats');
 
 // Injected clock: D-1 is 2026-09-01.
@@ -51,11 +53,14 @@ function makeStore(dir, { missing = 1 } = {}) {
  * job scans `scanned` bytes and is refused with bytesBilledLimitExceeded when
  * that passes the job's configuration.query.maximumBytesBilled. An undefined
  * `estimate` leaves totalBytesProcessed out of the dry run's statistics.
+ * `refuseAt` picks where the refusal reaches the client: in the job insert
+ * response ('insert') or as the HTTP 400 the results read returns ('results').
  */
-function stubbedBigQuery({ estimate, scanned, rows = [] }) {
+function stubbedBigQuery({ estimate, scanned, rows = [], refuseAt = 'insert' }) {
   const bigquery = new BigQuery({ projectId: 'test-project' });
   const inserts = [];
   const billed = [];
+  const refused = new Map();
   bigquery.request = (reqOpts, callback) => {
     if (reqOpts.method === 'POST' && reqOpts.uri === '/jobs') {
       const body = reqOpts.json;
@@ -72,6 +77,11 @@ function stubbedBigQuery({ estimate, scanned, rows = [] }) {
           reason: 'bytesBilledLimitExceeded',
           message: `Query exceeded limit for bytes billed: ${cap}. ${scanned} or higher required.`,
         };
+        if (refuseAt === 'results') {
+          refused.set(jobReference.jobId, error);
+          callback(null, { jobReference, status: { state: 'RUNNING' } });
+          return;
+        }
         callback(null, { jobReference, status: { state: 'DONE', errorResult: error, errors: [error] } });
         return;
       }
@@ -80,6 +90,11 @@ function stubbedBigQuery({ estimate, scanned, rows = [] }) {
       return;
     }
     if (reqOpts.uri.startsWith('/queries/')) {
+      const error = refused.get(reqOpts.uri.slice('/queries/'.length));
+      if (error) {
+        callback(Object.assign(new Error(error.message), { code: 400, errors: [error] }));
+        return;
+      }
       callback(null, {
         jobComplete: true,
         schema: { fields: [
@@ -174,32 +189,40 @@ test('every billed job of a three-day run carries maximumBytesBilled, not only t
   }
 });
 
-test('a scan over the ceiling that the dry run under-estimated is refused by BigQuery and bills nothing', async () => {
-  const dir = tmp();
-  try {
-    const dbPath = makeStore(dir);
-    const service = stubbedBigQuery({
-      estimate: 100 * GIB, scanned: 200 * GIB,
-      rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
-    });
-    assert.ok(100 * GIB < PER_QUERY_CAP_BYTES && 200 * GIB > PER_QUERY_CAP_BYTES);
-    const res = await runCollect(dbPath, service.bigquery);
-    assert.equal(res.status, 'error');
-    assert.equal(res.exitCode, 1);
-    assert.equal(res.bytesBilled, 0);
-    assert.equal(service.inserts.length, 2, 'the billed job reached BigQuery and was refused there');
-    assert.deepEqual(service.billed, [], 'no job scanned past the ceiling');
+for (const refuseAt of ['insert', 'results']) {
+  test(`a scan over the ceiling that the dry run under-estimated is refused by BigQuery (${refuseAt}): refused_cap, nothing billed, nothing reserved`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir);
+      writeFileSync(join(dir, BUDGET_FILE), JSON.stringify({
+        month: '2026-09', bytesBilled: 3 * GIB, updatedAt: '2026-09-01T06:00:00.000Z',
+      }));
+      const service = stubbedBigQuery({
+        estimate: 100 * GIB, scanned: 200 * GIB, refuseAt,
+        rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
+      });
+      assert.ok(100 * GIB < PER_QUERY_CAP_BYTES && 200 * GIB > PER_QUERY_CAP_BYTES);
+      const res = await runCollect(dbPath, service.bigquery);
+      assert.equal(res.status, 'refused_cap', 'the ceiling held, and the run says so');
+      assert.equal(res.exitCode, 1);
+      assert.equal(res.bytesBilled, 0);
+      assert.equal(service.inserts.length, 2, 'the billed job reached BigQuery and was refused there');
+      assert.deepEqual(service.billed, [], 'no job scanned past the ceiling');
+      assert.equal(JSON.parse(readFileSync(join(dir, RUN_FILE), 'utf8')).status, 'refused_cap');
+      assert.equal(JSON.parse(readFileSync(join(dir, BUDGET_FILE), 'utf8')).bytesBilled, 3 * GIB,
+        'a refused job bills nothing, so its 100 GiB reservation is released');
 
-    const db = new Database(dbPath, { readonly: true });
-    const fetched = db.prepare('SELECT 1 FROM pypi_country_fetch_days WHERE date = ?').get(dayBefore(1));
-    const landed = db.prepare('SELECT COUNT(*) AS n FROM pypi_country_daily').get().n;
-    db.close();
-    assert.equal(fetched, undefined, 'the refused day stays missing');
-    assert.equal(landed, 0);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
+      const db = new Database(dbPath, { readonly: true });
+      const fetched = db.prepare('SELECT 1 FROM pypi_country_fetch_days WHERE date = ?').get(dayBefore(1));
+      const landed = db.prepare('SELECT COUNT(*) AS n FROM pypi_country_daily').get().n;
+      db.close();
+      assert.equal(fetched, undefined, 'the refused day stays missing');
+      assert.equal(landed, 0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
 
 test('a dry run whose statistics carry no totalBytesProcessed is refused by the adapter, before any billed job', async () => {
   const service = stubbedBigQuery({ estimate: undefined, scanned: 4 * GIB });
