@@ -9,7 +9,7 @@ const { computeOverview } = require('../lib/overview');
 const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
   huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
-  parseModelDetailQuery, huggingfaceDownloadsByPeriod, measuredTooltipPayload,
+  parseModelDetailQuery, huggingfaceDownloadsByPeriod, measuredTooltipPayload, hfChannelMixNote,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -300,6 +300,71 @@ function channelDataStatement(source) {
   return source.slice(start, end < 0 ? source.length : end);
 }
 
+// Dashboard source in a form a formatter does not change: whitespace removed,
+// a trailing comma before a closing bracket dropped, double quotes read as
+// single quotes and a lone arrow parameter's parentheses dropped, so a line
+// split, a wrapped prop, a quote style or `(d) =>` does not read as a change.
+function squeeze(source) {
+  return source.replace(/\s+/g, '').replace(/,(?=[\])}])/g, '').replace(/"/g, "'").replace(/\((\w+)\)=>/g, '$1=>');
+}
+
+// The squeezed <Chart> with this title, up to its closing tag; '' when not found.
+function chartSource(source, title) {
+  const start = source.indexOf(squeeze(`<Chart title="${title}"`));
+  return start < 0 ? '' : source.slice(start, source.indexOf('</Chart>', start));
+}
+
+// The channel mix's Hugging Face entry and the filter that ends the channelData
+// statement, squeezed; MIX_FILTER is that filter in the source as written.
+const HF_MIX_ENTRY = squeeze("name: 'HF Models'");
+const FILTERED_MIX = /\]\.filter\(d=>d\.value>0\);$/;
+const MIX_FILTER = /\]\.filter\(\(?d\)? => d\.value > 0\);/;
+
+// The dashboard source shows an unmeasured Hugging Face count as not measured,
+// never through fmtFull or `|| 0`, which turn null into 0, and the channel mix
+// leaves it out by name.
+function checkDashboardSource(index) {
+  const source = squeeze(index);
+  const tab = index.slice(index.indexOf('function HuggingFaceTab('));
+  const tabBody = squeeze(tab.slice(0, tab.indexOf('\n/* =====')));
+  assert.ok(tabBody.length > 0 && tabBody.includes('formatMeasured('), 'the Hugging Face tab formats through formatMeasured');
+  assert.ok(!tabBody.includes('fmtFull('), 'the Hugging Face tab does not format a count with fmtFull');
+  assert.ok(!tabBody.includes('||0'), 'the Hugging Face tab does not turn a null count into 0');
+
+  // The adoption table footer sums the measured counts and shows a null total
+  // as not measured. Its other cells use fmtFull and `|| 0`, so only the
+  // Hugging Face cell is checked.
+  const adoptionStart = index.indexOf('function AdoptionTable(');
+  assert.ok(adoptionStart >= 0, 'the dashboard has an AdoptionTable');
+  const adoption = index.slice(adoptionStart);
+  const adoptionBody = squeeze(adoption.slice(0, adoption.indexOf('\n/* =====')));
+  assert.ok(adoptionBody.includes(squeeze('const hfTotal = sumMeasured(')), 'the footer Hugging Face total sums measured counts only');
+  const hfCells = adoptionBody.split(squeeze('<td key="h"')).slice(1).map(cell => cell.slice(0, cell.indexOf('</td>')));
+  assert.strictEqual(hfCells.length, 1, 'the footer has one Hugging Face cell');
+  assert.ok(hfCells[0].includes('formatMeasured(hfTotal)'), 'the footer Hugging Face total formats through formatMeasured');
+  assert.ok(!/fmtFull\(|\|\|0/.test(hfCells[0]), `the footer Hugging Face total is not shown as 0: ${hfCells[0]}`);
+
+  // The channel mix charts only values above 0, so an unmeasured count is left
+  // out, not drawn as 0, and its subtitle names it. The filter must close the
+  // channelData statement itself.
+  const channelData = channelDataStatement(index);
+  assert.ok(channelData, 'the overview builds the channel mix as channelData');
+  const mix = squeeze(channelData);
+  assert.ok(mix.includes(HF_MIX_ENTRY), 'the channel mix has a Hugging Face entry');
+  const hfEntry = mix.slice(mix.indexOf(HF_MIX_ENTRY), mix.indexOf('}', mix.indexOf(HF_MIX_ENTRY)));
+  const zeroed = (s) => s.match(/totals\.hf\?\.(downloadsAllTime|downloads30d|likes)\|\|0/g) || [];
+  assert.deepStrictEqual(zeroed(source), zeroed(hfEntry), 'only the channel mix\'s Hugging Face entry turns an unmeasured count into 0');
+  if (zeroed(hfEntry).length) {
+    assert.match(mix, FILTERED_MIX, 'the channel mix drops the 0 its Hugging Face entry gives an unmeasured count');
+  }
+  assert.ok(chartSource(source, 'Channel Mix').startsWith(squeeze('<Chart title="Channel Mix" sub={channelSub}>')),
+    'the channel mix subtitle is channelSub');
+  assert.ok(source.match(/constchannelSub=([^;]*);/)?.[1]?.includes('hfChannelMixNote(totals.hf)'),
+    'the channel mix subtitle names an unmeasured Hugging Face count');
+
+  assert.ok(source.includes(squeeze('<span className="v">{formatMeasured(v)}</span>')), 'overview source rows show a null count as not measured');
+}
+
 test('the dashboard shows a never-measured count as not measured, never 0, and totals only measured values', () => {
   assert.strictEqual(formatMeasured(null), NOT_MEASURED);
   assert.strictEqual(formatMeasured(undefined), NOT_MEASURED);
@@ -333,39 +398,26 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
 
   // The dashboard renders those counts through formatMeasured, never through
   // fmtFull or `|| 0`, which turn null into 0.
-  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
-  const tab = index.slice(index.indexOf('function HuggingFaceTab('));
-  const tabBody = tab.slice(0, tab.indexOf('\n/* ====='));
-  assert.ok(tabBody.length > 0 && tabBody.includes('formatMeasured('), 'the Hugging Face tab formats through formatMeasured');
-  assert.ok(!tabBody.includes('fmtFull('), 'the Hugging Face tab does not format a count with fmtFull');
-  assert.ok(!tabBody.includes('|| 0'), 'the Hugging Face tab does not turn a null count into 0');
+  checkDashboardSource(readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8'));
+});
 
-  // The adoption table footer sums the measured counts and shows a null total
-  // as not measured. Its other cells use fmtFull and `|| 0`, so only the
-  // Hugging Face cell is checked.
-  const adoptionStart = index.indexOf('function AdoptionTable(');
-  assert.ok(adoptionStart >= 0, 'the dashboard has an AdoptionTable');
-  const adoption = index.slice(adoptionStart);
-  const adoptionBody = adoption.slice(0, adoption.indexOf('\n/* ====='));
-  assert.match(adoptionBody, /const hfTotal = sumMeasured\(/, 'the footer Hugging Face total sums measured counts only');
-  const hfCells = adoptionBody.split('\n').filter(line => line.includes('<td key="h"'));
-  assert.strictEqual(hfCells.length, 1, 'the footer has one Hugging Face cell');
-  assert.ok(hfCells[0].includes('formatMeasured(hfTotal)'), 'the footer Hugging Face total formats through formatMeasured');
-  assert.ok(!/fmtFull\(|\|\| 0/.test(hfCells[0]), `the footer Hugging Face total is not shown as 0: ${hfCells[0].trim()}`);
-
-  // The channel mix charts only values above 0, so an unmeasured count is left
-  // out, not drawn as 0. The filter must close the channelData statement itself.
-  const channelData = channelDataStatement(index);
-  assert.ok(channelData, 'the overview builds the channel mix as channelData');
-  assert.ok(channelData.includes("name: 'HF Models'"), 'the channel mix has a Hugging Face entry');
-  index.split('\n').forEach((line, i) => {
-    if (/totals\.hf\?\.(downloadsAllTime|downloads30d|likes) \|\| 0/.test(line)) {
-      assert.ok(line.includes("name: 'HF Models'") && channelData.includes(line)
-        && /\]\.filter\(d => d\.value > 0\);$/.test(channelData),
-        `pages/index.js:${i + 1} shows an unmeasured Hugging Face count as 0: ${line.trim()}`);
-    }
-  });
-  assert.ok(index.includes('<span className="v">{formatMeasured(v)}</span>'), 'overview source rows show a null count as not measured');
+test('the channel mix names an unmeasured Hugging Face count it leaves out', () => {
+  const db = committedCopy();
+  try {
+    migrateHuggingfaceStats(db);
+    const measured = computeOverview(db, {}).totals.hf;
+    assert.ok(measured.models > 0 && measured.downloadsAllTime > 0, 'the committed database has a measured all-time count');
+    assert.strictEqual(hfChannelMixNote(measured), null, 'a measured count is drawn, so nothing is named');
+    db.exec('UPDATE huggingface_stats SET downloads_all_time = NULL');
+    const unmeasured = computeOverview(db, {}).totals.hf;
+    assert.strictEqual(unmeasured.downloadsAllTime, null);
+    assert.strictEqual(hfChannelMixNote(unmeasured), 'Hugging Face not measured, left out');
+  } finally {
+    db.close();
+  }
+  assert.strictEqual(hfChannelMixNote({ models: 2, downloadsAllTime: 0 }), null, 'a measured 0 is not named as unmeasured');
+  assert.strictEqual(hfChannelMixNote({ models: 0, downloadsAllTime: null }), null, 'no model is tracked, so nothing is left out');
+  assert.strictEqual(hfChannelMixNote(undefined), null);
 });
 
 test('the channel-mix check reads the whole channelData statement when a comment inside it has a semicolon', () => {
@@ -376,12 +428,14 @@ test('the channel-mix check reads the whole channelData statement when a comment
     const statement = channelDataStatement(index.replace(opening, `${opening}    ${comment}\n`));
     const label = JSON.stringify(comment);
     assert.ok(statement.includes(comment), `the statement keeps the comment ${label}`);
-    assert.ok(statement.includes("name: 'HF Models'"), `the statement keeps the Hugging Face entry after ${label}`);
-    assert.match(statement, /\]\.filter\(d => d\.value > 0\);$/, `the statement runs to its filter after ${label}`);
+    assert.ok(squeeze(statement).includes(HF_MIX_ENTRY), `the statement keeps the Hugging Face entry after ${label}`);
+    assert.match(squeeze(statement), FILTERED_MIX, `the statement runs to its filter after ${label}`);
   }
   // Without the filter the statement ends at the bare `];`, so the check still fails.
-  const unfiltered = channelDataStatement(index.replace('].filter(d => d.value > 0);', '];'));
-  assert.ok(unfiltered.includes("name: 'HF Models'"), 'the unfiltered statement keeps the Hugging Face entry');
+  const unfilteredIndex = index.replace(MIX_FILTER, '];');
+  assert.notStrictEqual(unfilteredIndex, index, 'the channel mix has a filter to remove');
+  const unfiltered = channelDataStatement(unfilteredIndex);
+  assert.ok(squeeze(unfiltered).includes(HF_MIX_ENTRY), 'the unfiltered statement keeps the Hugging Face entry');
   assert.doesNotMatch(unfiltered, /\.filter\(/, 'the unfiltered statement has no filter to find');
 });
 
@@ -698,7 +752,7 @@ test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () 
   assert.deepStrictEqual(all.body.series.map(r => r.hfDownloads), [null, 100, null, 100]);
   assert.deepStrictEqual(all.body.series.map(r => r.totalDownloads), [0, 100, 0, 100]);
 
-  // The window's first period is measured against the last count before it.
+  // The window's first period is measured against the highest count measured before it.
   assert.strictEqual(recent.statusCode, 200);
   assert.deepStrictEqual(recent.body.series.map(r => r.hfDownloads), [null, 100]);
 });
@@ -716,10 +770,6 @@ function tooltipRows(props) {
     item.match(/recharts-tooltip-item-value">([^<]*)</)?.[1],
   ]);
 }
-
-// Source with every whitespace character removed, so reformatting it (a line
-// split, a wrapped prop) does not read as a change.
-const squeeze = (source) => source.replace(/\s+/g, '');
 
 // The squeezed function that starts at `head`, through the brace that closes
 // its body; null when not found.
@@ -739,10 +789,8 @@ function functionSource(source, head) {
 // function in the dashboard source, each squeezed; null when not found.
 function installTrendTooltipSource(index) {
   const source = squeeze(index);
-  const start = source.indexOf('<Charttitle="InstallTrend"');
-  const chart = start < 0 ? '' : source.slice(start, source.indexOf('</Chart>', start));
   return {
-    tooltip: chart.match(/<Tooltip(?![\w.])[^]*?\/>/)?.[0] ?? null,
+    tooltip: chartSource(source, 'Install Trend').match(/<Tooltip(?![\w.])[^]*?\/>/)?.[0] ?? null,
     component: functionSource(source, 'functionMeasuredTooltipContent('),
   };
 }
@@ -750,6 +798,18 @@ function installTrendTooltipSource(index) {
 // MeasuredTooltipContent, squeezed: the default rows with every prop and the
 // payload rewritten by measuredTooltipPayload, set after the spread so it wins.
 const MEASURED_TOOLTIP_CONTENT = /^functionMeasuredTooltipContent\(props\)\{return\(?<DefaultTooltipContent\{\.\.\.props\}payload=\{measuredTooltipPayload\(props\.payload\)\}\/>\)?;?\}$/;
+
+// The dashboard source keeps an unmeasured install trend row
+// (filterNull={false}) and shows it as not measured through MeasuredTooltipContent.
+function checkInstallTrendTooltip(index) {
+  const { tooltip, component } = installTrendTooltipSource(index);
+  assert.ok(tooltip, 'the overview has an install trend with a tooltip');
+  for (const prop of ['filterNull={false}', 'formatter={(v, name) => [formatMeasured(v), name]}', 'content={MeasuredTooltipContent}']) {
+    assert.ok(tooltip.includes(squeeze(prop)), `the install trend tooltip has ${prop}`);
+  }
+  assert.match(component || '', MEASURED_TOOLTIP_CONTENT,
+    'MeasuredTooltipContent gives a null row NOT_MEASURED before the default rows render');
+}
 
 test('the install trend tooltip shows an unmeasured Hugging Face period as not measured, never as an empty value', () => {
   const { createElement } = require('react');
@@ -780,24 +840,71 @@ test('the install trend tooltip shows an unmeasured Hugging Face period as not m
   const { filterNull, ...withoutFilterNull } = trendTooltip;
   assert.ok(!tooltipRows(withoutFilterNull).some(([name]) => name === 'HuggingFace'), 'without filterNull={false} the Hugging Face row is dropped');
 
-  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
-  const { tooltip, component } = installTrendTooltipSource(index);
-  assert.ok(tooltip, 'the overview has an install trend with a tooltip');
-  for (const prop of ['filterNull={false}', 'formatter={(v, name) => [formatMeasured(v), name]}', 'content={MeasuredTooltipContent}']) {
-    assert.ok(tooltip.includes(squeeze(prop)), `the install trend tooltip has ${prop}`);
-  }
-  assert.match(component || '', MEASURED_TOOLTIP_CONTENT,
-    'MeasuredTooltipContent gives a null row NOT_MEASURED before the default rows render');
+  checkInstallTrendTooltip(readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8'));
 });
 
-test('the install trend tooltip source check reads through a reformat of the dashboard', () => {
+// Edits a formatter makes to the dashboard without changing what it does
+// (Prettier's defaults among them). Each swaps the form the source has for the
+// other one, so it applies however the dashboard is formatted.
+const otherQuote = (q) => (q === "'" ? '"' : "'");
+const REFORMATS = [
+  ['the Hugging Face mix entry on one line, or split over lines with a trailing comma', s => s.replace(
+    /\{\s*name: (['"])HF Models\1,\s*value: totals\.hf\?\.downloadsAllTime \|\| 0,\s*color: C\.hf,?\s*\}/,
+    (entry, q) => (entry.includes('\n')
+      ? `{ name: ${q}HF Models${q}, value: totals.hf?.downloadsAllTime || 0, color: C.hf }`
+      : `{\n      name: ${q}HF Models${q},\n      value: totals.hf?.downloadsAllTime || 0,\n      color: C.hf,\n    }`))],
+  ['the other quote style', s => s.replace(/name: (['"])HF Models\1/, (m, q) => `name: ${otherQuote(q)}HF Models${otherQuote(q)}`)],
+  ['the other arrow parameter style', s => s.replace(/\]\.filter\((\(d\)|d) => d\.value > 0\);/,
+    (m, param) => `].filter(${param === 'd' ? '(d)' : 'd'} => d.value > 0);`)],
+  ['the footer cell on one line, or split over lines', s => s.replace(/(<td key="h" className="num">)(\s*)(\{[^\n]*\})\s*(<\/td>)/,
+    (m, open, gap, value, close) => (gap ? `${open}${value}${close}` : `${open}\n      ${value}\n    ${close}`))],
+  ['the JSX with or without parentheses', s => s.replace(
+    /return (\(\s*)?(<DefaultTooltipContent\s+\{\.\.\.props\}\s+payload=\{measuredTooltipPayload\(props\.payload\)\}\s*\/>)\s*\)?;/,
+    (m, paren, jsx) => (paren ? `return ${jsx};` : `return (\n    ${jsx}\n  );`))],
+  ['the formatter array with or without a trailing comma', s => s.replace(/\[\s*formatMeasured\(v\),\s*name(,?)\s*\]/,
+    (m, comma) => (comma ? '[formatMeasured(v), name]' : '[\n  formatMeasured(v),\n  name,\n]'))],
+];
+
+// Edits that change what the dashboard shows for an unmeasured count.
+const MEANING_CHANGES = [
+  ['the footer total formatted with fmtFull', s => s.replace('formatMeasured(hfTotal)', 'fmtFull(hfTotal)')],
+  ['the channel mix without its filter', s => s.replace(MIX_FILTER, '];')],
+  ['the channel mix subtitle without its note', s => s.replace(/,\s*hfChannelMixNote\(totals\.hf\),?\s*\]/, ']')],
+  ['the install trend tooltip without filterNull={false}', s => s.replace(/\s+filterNull=\{false\}/, '')],
+  ['the install trend tooltip formatting with fmtFull', s => s.replace(/\[\s*formatMeasured\(v\),/, '[fmtFull(v),')],
+  ['the rewritten payload set before the spread', s => s.replace(
+    /\{\.\.\.props\}(\s+)(payload=\{measuredTooltipPayload\(props\.payload\)\})/, '$2$1{...props}')],
+];
+
+// Both dashboard source checks, with `name` leading a failure's message.
+function checkSource(name, source) {
+  try {
+    checkDashboardSource(source);
+    checkInstallTrendTooltip(source);
+  } catch (err) {
+    err.message = `${name}: ${err.message}`;
+    throw err;
+  }
+}
+
+test('the dashboard source checks read through a reformat and still fail a change in meaning', () => {
   const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
-  const original = installTrendTooltipSource(index);
-  assert.ok(original.tooltip && original.component, 'the dashboard has the install trend tooltip and its content');
-  // Every space a line break, and every line joined to the next.
-  for (const reformatted of [index.replace(/ /g, '\n'), index.replace(/\n\s*/g, ' ')]) {
-    assert.notStrictEqual(reformatted, index);
-    assert.deepStrictEqual(installTrendTooltipSource(reformatted), original);
+  checkSource('the dashboard as committed', index);
+  for (const [name, reformat] of REFORMATS) {
+    const reformatted = reformat(index);
+    assert.notStrictEqual(reformatted, index, `${name}: the reformat applies to the dashboard`);
+    checkSource(name, reformatted);
+  }
+  const reformatted = REFORMATS.reduce((source, [name, reformat]) => {
+    const next = reformat(source);
+    assert.notStrictEqual(next, source, `${name}: the reformat applies after the ones before it`);
+    return next;
+  }, index);
+  checkSource('every reformat at once', reformatted);
+  for (const [name, change] of MEANING_CHANGES) {
+    const changed = change(index);
+    assert.notStrictEqual(changed, index, `${name}: the change applies to the dashboard`);
+    assert.throws(() => checkSource(name, changed), assert.AssertionError, `${name} fails the source checks`);
   }
 
   const component = 'functionMeasuredTooltipContent(props){return<DefaultTooltipContent{...props}payload={measuredTooltipPayload(props.payload)}/>;}';

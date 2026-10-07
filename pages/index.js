@@ -15,7 +15,7 @@ import {
 import { periodPick, hfPeriod, rowAdoption } from '../lib/adoption';
 // A Hugging Face count the API returns as null was never measured: it is shown
 // as not measured and left out of totals, never as 0.
-import { sumMeasured, formatMeasured, measuredTooltipPayload, NOT_MEASURED } from '../lib/huggingface';
+import { sumMeasured, formatMeasured, measuredTooltipPayload, hfChannelMixNote, NOT_MEASURED } from '../lib/huggingface';
 import { SERIES } from '../lib/series';
 
 /* ============================================================
@@ -532,6 +532,8 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
     { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
   ].filter(d => d.value > 0);
   const channelTotal = channelData.reduce((s, d) => s + d.value, 0);
+  // An unmeasured HF count is left out of the mix and named, never a 0 share.
+  const channelSub = ['All-time adoption by install channel', hfChannelMixNote(totals.hf)].filter(Boolean).join(' · ');
 
   return (
     <>
@@ -596,7 +598,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
       <SecLabel>Distribution</SecLabel>
       <div className="duo">
         {channelData.length > 0 && (
-          <Chart title="Channel Mix" sub="All-time adoption by install channel">
+          <Chart title="Channel Mix" sub={channelSub}>
             <PieChart>
               <Pie data={channelData} cx="50%" cy="50%" innerRadius={68} outerRadius={108} dataKey="value" nameKey="name" paddingAngle={3} strokeWidth={0}>
                 {channelData.map((d, i) => <Cell key={i} fill={d.color} />)}
