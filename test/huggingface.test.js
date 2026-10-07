@@ -323,7 +323,8 @@ const MIX_FILTER = /\]\.filter\(\(?d\)? => d\.value > 0\);/;
 
 // The dashboard source shows an unmeasured Hugging Face count as not measured,
 // never through fmtFull or `|| 0`, which turn null into 0, and the channel mix
-// leaves it out by name.
+// leaves it out, naming it when models are tracked and none has a measured
+// all-time count.
 function checkDashboardSource(index) {
   const source = squeeze(index);
   const tab = index.slice(index.indexOf('function HuggingFaceTab('));
@@ -346,8 +347,9 @@ function checkDashboardSource(index) {
   assert.ok(!/fmtFull\(|\|\|0/.test(hfCells[0]), `the footer Hugging Face total is not shown as 0: ${hfCells[0]}`);
 
   // The channel mix charts only values above 0, so an unmeasured count is left
-  // out, not drawn as 0, and its subtitle names it. The filter must close the
-  // channelData statement itself.
+  // out, not drawn as 0, and its subtitle names it when models are tracked and
+  // none has a measured all-time count. The filter must close the channelData
+  // statement itself.
   const channelData = channelDataStatement(index);
   assert.ok(channelData, 'the overview builds the channel mix as channelData');
   const mix = squeeze(channelData);
@@ -404,7 +406,7 @@ test('the dashboard shows a never-measured count as not measured, never 0, and t
   checkDashboardSource(readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8'));
 });
 
-test('the channel mix names an unmeasured Hugging Face count it leaves out', () => {
+test('the channel mix names an unmeasured Hugging Face count it leaves out when models are tracked', () => {
   const db = committedCopy();
   try {
     migrateHuggingfaceStats(db);
@@ -434,6 +436,35 @@ test('the README names the one case the channel-mix note covers', () => {
   assert.ok(sentence, 'the README describes the channel mix');
   // No model tracked and a measured 0 both give no note (see the test above).
   assert.match(sentence, /when models are tracked and none has a measured all-time count/);
+});
+
+// The `//` comment directly above the first line containing marker, its lines
+// joined into one; '' when the marker is missing or has no comment above it.
+function commentAbove(source, marker) {
+  const lines = source.split('\n');
+  const at = lines.findIndex(line => line.includes(marker));
+  const comment = [];
+  for (let i = at - 1; at >= 0 && i >= 0 && /^\s*\/\//.test(lines[i]); i--) {
+    comment.unshift(lines[i].replace(/^\s*\/\/\s?/, ''));
+  }
+  return comment.join(' ');
+}
+
+test('the channel-mix comments name the one case the note covers', () => {
+  const sites = [
+    ['pages/index.js', 'const channelSub = '],
+    ['lib/huggingface.js', 'function hfChannelMixNote('],
+    ['lib/huggingface.js', 'function channelMixSubtitle('],
+    ['test/huggingface.test.js', 'function checkDashboardSource('],
+    ['test/huggingface.test.js', 'const channelData = channelDataStatement(index);'],
+  ];
+  for (const [file, marker] of sites) {
+    const comment = commentAbove(readFileSync(join(__dirname, '..', file), 'utf8'), marker);
+    assert.ok(comment, `${file} has a comment above ${marker}`);
+    // No model tracked and a measured 0 both give no note, so a comment that
+    // says an unmeasured count is always named is wrong.
+    assert.match(comment, /when models are tracked and none has a measured all-time count/, `${file}: ${comment}`);
+  }
 });
 
 test('the channel-mix check reads the whole channelData statement when a comment inside it has a semicolon', () => {
