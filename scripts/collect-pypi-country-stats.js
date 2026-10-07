@@ -13,7 +13,9 @@
  * Per run it fetches at most three missing closed days (newest first, from the
  * 30 most recent closed days; no backfill beyond that window), lands the rows
  * in pypi_country_daily keyed by the closed day itself, then rewrites the
- * 30-day rollup in pypi_country_downloads as a local SUM — no query.
+ * 30-day rollup in pypi_country_downloads as a local SUM — no query. A run
+ * that stops early (a cap, a refusal, an error) still rewrites the rollup
+ * when it landed at least one day.
  *
  * Every run ends by persisting data/pypi-country-run.json with a status from
  * {ok, empty, skipped_no_credentials, refused_cap, capped_month, error}. A
@@ -24,7 +26,11 @@
  * only the dry runs for the days the next run would fetch, reports each scan
  * size against both caps, and bills nothing and writes nothing (no rows, no
  * ledger, no run status). It exits 0 only when the next run would clear both
- * caps.
+ * caps; when every candidate day is already fetched, it measures D-1 as a
+ * sample and exits 0 only when a new day of that size would clear them.
+ * npm_config_dry_run=true, which npm sets for
+ * `npm run collect:pypi-countries --dry-run`, selects it as well; any other
+ * argument exits 2 with a usage message before anything runs.
  *
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs. A
@@ -212,14 +218,24 @@ function readBudget(dataDir, month) {
  * pypi_country_fetch_days whose fetch ran that month. The store is committed
  * with the collected days and the ledger file is not, so on a fresh checkout
  * this is the month-to-date figure that survived. 0 before the table exists.
- * Fail closed: a total that is not a non-negative integer throws rather than
- * reading as 0.
+ * Fail closed: a day of the month whose figure is not a non-negative integer
+ * throws, since a negative or text figure would lower the sum, and so does a
+ * total that is not one, rather than reading as 0.
  */
 function storeMonthBytes(db, month) {
   const table = db.prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_fetch_days'"
   ).get();
   if (!table) return 0;
+  const { unreadable } = db.prepare(`
+    SELECT COUNT(*) AS unreadable
+    FROM pypi_country_fetch_days
+    WHERE substr(fetched_at, 1, 7) = ?
+      AND (typeof(bytes_billed) != 'integer' OR bytes_billed < 0)
+  `).get(month);
+  if (unreadable > 0) {
+    throw new Error(`unreadable billed-bytes figure on ${unreadable} day(s) of ${month} in pypi_country_fetch_days`);
+  }
   const { total } = db.prepare(`
     SELECT COALESCE(SUM(bytes_billed), 0) AS total
     FROM pypi_country_fetch_days
@@ -233,10 +249,11 @@ function storeMonthBytes(db, month) {
 }
 
 /**
- * Month-to-date billed bytes: the larger of the ledger file and the store.
- * The ledger also holds the reservation of a billed call that failed, so it
- * is the higher figure whenever it survived; the store is the floor when it
- * did not.
+ * Month-to-date billed bytes: the larger of the ledger file and the store,
+ * because either one can be stale. The ledger file is not committed, so a
+ * checkout may lack it or carry one older than the store's fetch records;
+ * the store never sees the reservation the ledger keeps for a billed call
+ * that failed. Taking the larger can over-count, never under-count.
  */
 function monthToDate(db, dataDir, month) {
   return Math.max(readBudget(dataDir, month), storeMonthBytes(db, month));
@@ -422,6 +439,12 @@ async function collect({
     });
 
     let rowsLanded = 0;
+    // A run that stops early still rolls up the days it already landed, so
+    // the 30-day total never lags the daily rows.
+    const stop = (status) => finish(status, {
+      asOf: daysFetched > 0 ? rollupCountryDownloads(db, now) : newestStoredDay(db),
+      daysFetched, bytesBilled: runBytes, exitCode: 1,
+    });
     for (const day of missingDays) {
       const dayIso = isoDay(day);
       const options = buildDayQueryOptions(packages, day);
@@ -433,22 +456,16 @@ async function collect({
       const estimate = readByteFigure(dry.totalBytesProcessed);
       if (estimate === null) {
         log('Refusing %s: unreadable dry-run estimate (%s)', dayIso, String(dry.totalBytesProcessed));
-        return finish('error', {
-          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
-        });
+        return stop('error');
       }
       if (estimate > PER_QUERY_CAP_BYTES) {
         log('Refusing %s: dry run estimates %d bytes, over the per-query cap', dayIso, estimate);
-        return finish('refused_cap', {
-          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
-        });
+        return stop('refused_cap');
       }
       if (monthBytes + estimate > MONTH_CAP_BYTES) {
         log('Refusing %s: month-to-date %d + estimate %d bytes would pass the monthly cap',
           dayIso, monthBytes, estimate);
-        return finish('capped_month', {
-          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
-        });
+        return stop('capped_month');
       }
 
       // Reservation: charge the estimate to the ledger BEFORE the billed call.
@@ -470,9 +487,7 @@ async function collect({
         writeBudget(dataDir, month, monthBytes, now);
         log('Refusing %s: BigQuery refused the job at the %d byte ceiling; nothing was billed',
           dayIso, PER_QUERY_CAP_BYTES);
-        return finish('refused_cap', {
-          asOf: newestStoredDay(db), daysFetched, bytesBilled: runBytes, exitCode: 1,
-        });
+        return stop('refused_cap');
       }
       const billedBytes = readByteFigure(billed.totalBytesProcessed);
       // An unreadable, negative or non-integer billed figure charges the
@@ -497,7 +512,14 @@ async function collect({
   } catch (error) {
     console.error('PyPI country collection failed: %s', error.message);
     let asOf = null;
-    try { if (db) asOf = newestStoredDay(db); } catch { /* keep null */ }
+    if (db) {
+      // Days that landed before the failure still reach the rollup.
+      try {
+        asOf = daysFetched > 0 ? rollupCountryDownloads(db, now) : newestStoredDay(db);
+      } catch {
+        try { asOf = newestStoredDay(db); } catch { /* keep null */ }
+      }
+    }
     return finish('error', { asOf, daysFetched, bytesBilled: runBytes, exitCode: 1 });
   } finally {
     if (db) db.close();
@@ -518,7 +540,9 @@ function gib(bytes) {
  * monthToDateBytes, perQueryCapBytes, monthCapBytes, exitCode } with status
  * from {estimated, refused_cap, capped_month, skipped_no_credentials, error};
  * exitCode is 0 only for estimated. When every candidate day is already
- * fetched, D-1 is measured as a sample with fetched: true.
+ * fetched, the next run bills nothing; D-1 is then measured as a sample with
+ * fetched: true, and the status and exitCode are the verdict for a new day
+ * of that size, not for the next run.
  */
 async function estimate({
   client = null,
@@ -594,11 +618,22 @@ async function estimate({
       monthBytes += bytes;
     }
     const result = finish(status);
-    log('Per-query cap %s GiB; month to date %s GiB billed, these queries add %s GiB of the %s GiB monthly cap.',
-      gib(PER_QUERY_CAP_BYTES), gib(monthToDateBytes), gib(result.estimatedBytes), gib(MONTH_CAP_BYTES));
-    log(status === 'estimated'
-      ? 'The next run would clear both caps.'
-      : `The next run would be refused (${status}).`);
+    log('Per-query cap %s GiB; month to date %s GiB billed, %s %s GiB of the %s GiB monthly cap.',
+      gib(PER_QUERY_CAP_BYTES), gib(monthToDateBytes),
+      sample ? 'a new day of this size would add' : 'these queries add',
+      gib(result.estimatedBytes), gib(MONTH_CAP_BYTES));
+    if (sample) {
+      // The next run selects no day, so no cap can refuse it; the verdict is
+      // a prediction for the next day that closes.
+      log('The next run would bill nothing: every candidate day is already fetched.');
+      log(status === 'estimated'
+        ? 'A new day of this size would clear both caps.'
+        : `A new day of this size would be refused (${status}).`);
+    } else {
+      log(status === 'estimated'
+        ? 'The next run would clear both caps.'
+        : `The next run would be refused (${status}).`);
+    }
     return result;
   } catch (error) {
     console.error('PyPI country dry run failed: %s', error.message);
@@ -608,11 +643,33 @@ async function estimate({
   }
 }
 
+const USAGE = 'Usage: npm run collect:pypi-countries -- [--dry-run]';
+
+/**
+ * Read the command line. `--dry-run` is the only argument; anything else is
+ * refused, never read as a request for a billed collection. Without the `--`
+ * separator, `npm run collect:pypi-countries --dry-run` keeps the flag for
+ * npm, which passes it on as npm_config_dry_run=true, so that is a dry run
+ * too. Returns { dryRun } or { error }.
+ */
+function parseArgs(argv, env = process.env) {
+  const unknown = argv.filter(arg => arg !== '--dry-run');
+  if (unknown.length > 0) {
+    return { error: `Unrecognised argument(s): ${unknown.join(' ')}` };
+  }
+  return { dryRun: argv.includes('--dry-run') || env.npm_config_dry_run === 'true' };
+}
+
 async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.error) {
+    console.error(args.error);
+    console.error(USAGE);
+    process.exit(2);
+  }
   require('dotenv').config();
   console.log('PyPI Country Download Stats Collector (BigQuery)');
-  const dryRun = process.argv.slice(2).includes('--dry-run');
-  const result = dryRun ? await estimate({}) : await collect({});
+  const result = args.dryRun ? await estimate({}) : await collect({});
   process.exit(result.exitCode);
 }
 

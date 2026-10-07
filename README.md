@@ -113,7 +113,11 @@ npm run collect:pypi-countries -- --dry-run
 ```
 
 This issues only BigQuery dry runs, which are not billed, prints each day's scan size against
-both caps, and writes nothing. It exits 0 only when the next run would clear both caps.
+both caps, and writes nothing. It exits 0 only when the next run would clear both caps. When
+every day in the window is already fetched, the next run bills nothing; the dry run then
+measures yesterday as a sample and reports whether a new day of that size would clear both caps.
+`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run; any other
+argument is refused with a usage message and exit code 2.
 
 ## Automated daily collection
 
@@ -121,8 +125,10 @@ The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:0
 
 1. Settings → Secrets and variables → Actions → New secret.
 2. Add `GH_STATS_TOKEN` (a Personal Access Token with `repo` or `public_repo` scope).
-3. Optionally set `GOOGLE_APPLICATION_CREDENTIALS_JSON` for BigQuery country stats.
-4. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection. Unset, the collector warns and skips.
+3. Optionally set the `REGISTRY_URL` Actions **variable** to enable first-party CLI telemetry collection. Unset, the collector warns and skips.
+
+The workflow does not collect BigQuery country stats, so it needs no Google Cloud credentials;
+run `npm run collect:pypi-countries` where your credentials are (see above).
 
 ### When telemetry collection stops
 

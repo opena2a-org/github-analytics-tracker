@@ -2,8 +2,9 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
-const { join } = require('node:path');
+const { join, dirname } = require('node:path');
 const { tmpdir } = require('node:os');
+const { format } = require('node:util');
 const Database = require('better-sqlite3');
 
 const {
@@ -246,14 +247,21 @@ test('PYPI_PACKAGES filters the estimated population the same way it filters a c
   }
 });
 
-function runScript(args, dbPath) {
+/**
+ * Run the collector CLI against the store in a temporary directory. The child
+ * runs in that directory, so the .env it loads is the test's, never the one
+ * at the repository root, which may hold real BigQuery credentials.
+ */
+function runScript(args, dbPath, extraEnv = {}) {
   return new Promise((resolve) => {
     const env = { ...process.env, ANALYTICS_DB_PATH: dbPath };
     delete env.GOOGLE_APPLICATION_CREDENTIALS;
     delete env.GOOGLE_CLOUD_PROJECT;
     delete env.PYPI_PACKAGES;
     delete env.GITHUB_ACTIONS;
-    const child = spawn(process.execPath, [SCRIPT, ...args], { env });
+    delete env.npm_config_dry_run;
+    Object.assign(env, extraEnv);
+    const child = spawn(process.execPath, [SCRIPT, ...args], { env, cwd: dirname(dbPath) });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (d) => (stdout += d));
@@ -272,6 +280,73 @@ test('--dry-run without credentials measures nothing, exits 1 and leaves the las
     assert.equal(res.status, 1, `expected exit 1; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
     assert.match(res.stdout, /nothing was measured/i);
     assert.deepEqual(snapshot(dir), before);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the spawned dry run loads .env from the test directory, not the repository root', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    // A key path that does not exist: the collector names it and still
+    // never reaches BigQuery.
+    const missingKey = join(dir, 'no-such-key.json');
+    writeFileSync(join(dir, '.env'), `GOOGLE_APPLICATION_CREDENTIALS=${missingKey}\n`);
+    const res = await runScript(['--dry-run'], dbPath);
+    assert.ok(res.stdout.includes(missingKey), `the test directory's .env was not loaded; stdout:\n${res.stdout}`);
+    assert.match(res.stdout, /nothing was measured/i);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+for (const args of [['--dryrun'], ['--dry-run', 'extra'], ['--dry-run=true']]) {
+  test(`the collector refuses \`${args.join(' ')}\` with a usage message and starts nothing`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir);
+      const before = snapshot(dir);
+      const res = await runScript(args, dbPath);
+      assert.equal(res.status, 2, `expected exit 2; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+      assert.match(res.stderr, /unrecognised argument/i);
+      assert.match(res.stderr, /usage:/i);
+      assert.doesNotMatch(res.stdout, /credentials not configured/i, 'no collection was started');
+      assert.deepEqual(snapshot(dir), before, 'no run status is written');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
+test('npm_config_dry_run=true, which `npm run collect:pypi-countries --dry-run` sets, is a dry run', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    writeFileSync(join(dir, RUN_FILE), JSON.stringify({ status: 'ok' }) + '\n');
+    const before = snapshot(dir);
+    const res = await runScript([], dbPath, { npm_config_dry_run: 'true' });
+    assert.equal(res.status, 1, `expected exit 1; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /nothing was measured/i);
+    assert.deepEqual(snapshot(dir), before, 'a dry run writes no run status');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('with every candidate fetched the verdict is worded for the next new day, not for the next run', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES });
+    writeFileSync(join(dir, BUDGET_FILE), JSON.stringify({ month: '2026-09', bytesBilled: MONTH_CAP_BYTES - 1 }) + '\n');
+    const lines = [];
+    const res = await runEstimate(dbPath, fakeClient(2), { log: (...a) => lines.push(format(...a)) });
+    assert.equal(res.status, 'capped_month', 'a new day of this size would pass the monthly cap');
+    assert.equal(res.exitCode, 1);
+    const out = lines.join('\n');
+    assert.doesNotMatch(out, /next run would be refused/i, 'the next run fetches nothing, so nothing refuses it');
+    assert.match(out, /next run would bill nothing/i);
+    assert.match(out, /a new day of this size would be refused \(capped_month\)/i);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
