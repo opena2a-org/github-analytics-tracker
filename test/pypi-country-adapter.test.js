@@ -8,6 +8,7 @@ const { BigQuery } = require('@google-cloud/bigquery');
 
 const {
   collect,
+  estimate,
   createBigQueryAdapter,
   PER_QUERY_CAP_BYTES,
 } = require('../scripts/collect-pypi-country-stats');
@@ -238,6 +239,24 @@ test('a dry run whose statistics carry no totalBytesProcessed is refused by the 
     assert.equal(fetched, undefined, 'the refused day stays missing');
   } finally {
     console.error = consoleError;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a dry-run estimate through the real library sends only dry-run jobs and bills nothing', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    const service = stubbedBigQuery({ estimate: 12 * GIB, scanned: 12 * GIB });
+    const res = await estimate({
+      client: createBigQueryAdapter(service.bigquery), dbPath, now: NOW, env: {}, log: () => {},
+    });
+    assert.equal(res.status, 'estimated');
+    assert.deepEqual(res.days, [{ date: dayBefore(1), bytes: 12 * GIB, fetched: false }]);
+    assert.equal(service.inserts.length, 1);
+    assert.equal(service.inserts[0].configuration.dryRun, true, 'BigQuery receives a dry-run job only');
+    assert.deepEqual(service.billed, []);
+  } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });

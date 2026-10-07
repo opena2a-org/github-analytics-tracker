@@ -95,6 +95,23 @@ view (command usage, reliability, by-day) is fetched live from the Registry's
 authenticated endpoint behind `ANALYTICS_TRACKER_PASSWORD` and is never written to
 the committed database.
 
+### BigQuery country stats and their byte caps
+
+`npm run collect:pypi-countries` queries the public `bigquery-public-data.pypi.file_downloads`
+table, one closed day per query and at most three days per run. It is not part of the
+scheduled workflow. Two caps bound what it can bill: 128 GiB per query (checked against a
+dry run first, then sent to BigQuery as `maximumBytesBilled`, so BigQuery refuses a job that
+would bill more) and 768 GiB per calendar month (a ledger in `data/pypi-country-budget.json`).
+
+To see what the next run would scan before paying for it:
+
+```bash
+npm run collect:pypi-countries -- --dry-run
+```
+
+This issues only BigQuery dry runs, which are not billed, prints each day's scan size against
+both caps, and writes nothing. It exits 0 only when the next run would clear both caps.
+
 ## Automated daily collection
 
 The included workflow (`.github/workflows/collect-stats.yml`) runs daily at `6:00 AM UTC`. To enable it:

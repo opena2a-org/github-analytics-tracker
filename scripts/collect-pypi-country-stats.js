@@ -17,6 +17,12 @@
  * scheduled run (GITHUB_ACTIONS set) that has no credentials exits 1 so the
  * workflow goes red instead of silently reading clean.
  *
+ * `--dry-run` (estimate()) measures before anything is paid for: it issues
+ * only the dry runs for the days the next run would fetch, reports each scan
+ * size against both caps, and bills nothing and writes nothing (no rows, no
+ * ledger, no run status). It exits 0 only when the next run would clear both
+ * caps.
+ *
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs.
  * Tests inject a fake; createBigQueryAdapter() wraps @google-cloud/bigquery
@@ -82,6 +88,20 @@ function selectMissingDays(db, now) {
   return candidateDays(now)
     .filter(day => !hasRecord.get(isoDay(day)))
     .slice(0, MAX_DAYS_PER_RUN);
+}
+
+/**
+ * Population: every tracked package. PYPI_PACKAGES, when set, filters by
+ * name; it is never required and never the source of the population.
+ */
+function trackedPackages(db, env) {
+  let packages = db.prepare('SELECT name FROM pypi_packages ORDER BY id').all().map(r => r.name);
+  const filter = (env.PYPI_PACKAGES || '').split(',').map(p => p.trim()).filter(Boolean);
+  if (filter.length > 0) packages = packages.filter(name => filter.includes(name));
+  if (packages.length === 0) {
+    throw new Error('no packages in pypi_packages (run collect-pypi first)');
+  }
+  return packages;
 }
 
 /**
@@ -311,14 +331,7 @@ async function collect({
     db = new Database(dbPath);
     ensureTables(db);
 
-    // Population: every tracked package. PYPI_PACKAGES, when set, filters by
-    // name; it is never required and never the source of the population.
-    let packages = db.prepare('SELECT name FROM pypi_packages ORDER BY id').all().map(r => r.name);
-    const filter = (env.PYPI_PACKAGES || '').split(',').map(p => p.trim()).filter(Boolean);
-    if (filter.length > 0) packages = packages.filter(name => filter.includes(name));
-    if (packages.length === 0) {
-      throw new Error('no packages in pypi_packages (run collect-pypi first)');
-    }
+    const packages = trackedPackages(db, env);
 
     const month = now.toISOString().slice(0, 7);
     let monthBytes = readBudget(dataDir, month);
@@ -423,10 +436,113 @@ async function collect({
   }
 }
 
+function gib(bytes) {
+  return (bytes / 1073741824).toFixed(2);
+}
+
+/**
+ * Dry-run entry point: what would the next run scan, and would it clear both
+ * caps? BigQuery dry runs are free, so every day is measured even after one
+ * fails a cap; the status is the refusal the run itself would hit first.
+ * Opens the store read-only and writes no file.
+ *
+ * Returns { status, days: [{ date, bytes, fetched }], estimatedBytes,
+ * monthToDateBytes, perQueryCapBytes, monthCapBytes, exitCode } with status
+ * from {estimated, refused_cap, capped_month, skipped_no_credentials, error};
+ * exitCode is 0 only for estimated. When every candidate day is already
+ * fetched, D-1 is measured as a sample with fetched: true.
+ */
+async function estimate({
+  client = null,
+  dbPath = null,
+  dataDir = null,
+  now = new Date(),
+  env = process.env,
+  log = console.log,
+} = {}) {
+  dbPath = dbPath || env.ANALYTICS_DB_PATH || path.join(__dirname, '..', 'data', 'analytics.db');
+  dataDir = dataDir || path.dirname(dbPath);
+  const month = now.toISOString().slice(0, 7);
+  const monthToDateBytes = readBudget(dataDir, month);
+  const days = [];
+  const finish = (status) => {
+    const measured = days.length > 0 && days.every(d => d.bytes !== null);
+    return {
+      status,
+      days,
+      estimatedBytes: measured ? days.reduce((sum, d) => sum + d.bytes, 0) : null,
+      monthToDateBytes,
+      perQueryCapBytes: PER_QUERY_CAP_BYTES,
+      monthCapBytes: MONTH_CAP_BYTES,
+      exitCode: status === 'estimated' ? 0 : 1,
+    };
+  };
+
+  if (!client) {
+    if (!isBigQueryAvailable(env, log)) {
+      log('BigQuery credentials not configured; nothing was measured.');
+      return finish('skipped_no_credentials');
+    }
+    client = createBigQueryAdapter();
+  }
+
+  let db = null;
+  try {
+    db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    const packages = trackedPackages(db, env);
+    const fetchTable = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='pypi_country_fetch_days'"
+    ).get();
+    let targets = fetchTable
+      ? selectMissingDays(db, now)
+      : candidateDays(now).slice(0, MAX_DAYS_PER_RUN);
+    const sample = targets.length === 0;
+    if (sample) targets = candidateDays(now).slice(0, 1);
+
+    log('Dry run only: nothing is billed and nothing is written.');
+    if (sample) log('Every candidate day is already fetched; measuring %s as a sample.', isoDay(targets[0]));
+
+    for (const day of targets) {
+      const dayIso = isoDay(day);
+      const dry = await client.query({ ...buildDayQueryOptions(packages, day), dryRun: true });
+      const bytes = readByteFigure(dry.totalBytesProcessed);
+      days.push({ date: dayIso, bytes, fetched: sample });
+      if (bytes === null) {
+        log('  %s: unreadable dry-run estimate (%s)', dayIso, String(dry.totalBytesProcessed));
+        return finish('error');
+      }
+      log('  %s: %d bytes (%s GiB) for %d packages', dayIso, bytes, gib(bytes), packages.length);
+    }
+
+    // The refusal the run would hit first, in the order it checks: each day's
+    // per-query cap, then month-to-date plus that day's estimate.
+    let status = 'estimated';
+    let monthBytes = monthToDateBytes;
+    for (const { bytes } of days) {
+      if (bytes > PER_QUERY_CAP_BYTES) { status = 'refused_cap'; break; }
+      if (monthBytes + bytes > MONTH_CAP_BYTES) { status = 'capped_month'; break; }
+      monthBytes += bytes;
+    }
+    const result = finish(status);
+    log('Per-query cap %s GiB; month to date %s GiB billed, these queries add %s GiB of the %s GiB monthly cap.',
+      gib(PER_QUERY_CAP_BYTES), gib(monthToDateBytes), gib(result.estimatedBytes), gib(MONTH_CAP_BYTES));
+    log(status === 'estimated'
+      ? 'The next run would clear both caps.'
+      : `The next run would be refused (${status}).`);
+    return result;
+  } catch (error) {
+    console.error('PyPI country dry run failed: %s', error.message);
+    return finish('error');
+  } finally {
+    if (db) db.close();
+  }
+}
+
 async function main() {
   require('dotenv').config();
   console.log('PyPI Country Download Stats Collector (BigQuery)');
-  const result = await collect({});
+  const dryRun = process.argv.slice(2).includes('--dry-run');
+  const result = dryRun ? await estimate({}) : await collect({});
   process.exit(result.exitCode);
 }
 
@@ -439,6 +555,7 @@ if (require.main === module) {
 
 module.exports = {
   collect,
+  estimate,
   rollupCountryDownloads,
   selectMissingDays,
   buildDayQueryOptions,
