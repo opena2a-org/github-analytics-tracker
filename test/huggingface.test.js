@@ -9,7 +9,7 @@ const { computeOverview } = require('../lib/overview');
 const {
   huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats, huggingfaceDownloads,
   huggingfaceModelList, huggingfaceModelDetail, sumMeasured, formatMeasured, NOT_MEASURED,
-  parseModelDetailQuery, huggingfaceDownloadsByPeriod,
+  parseModelDetailQuery, huggingfaceDownloadsByPeriod, measuredTooltipPayload,
 } = require('../lib/huggingface');
 // Requiring the collector must not run it (no exit, no database, no network).
 const { countsFor, recordModel, openDatabase } = require('../scripts/collect-huggingface-stats');
@@ -630,4 +630,58 @@ test('/api/trends plots an unmeasured Hugging Face period as null, never 0', () 
       process.chdir(before);
     }
   });
+});
+
+// The install trend's Tooltip rendered by recharts, as [name, value] per row.
+function tooltipRows(props) {
+  const { createElement } = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const { Tooltip } = require('recharts');
+  const html = renderToStaticMarkup(createElement(Tooltip, {
+    active: true, coordinate: { x: 0, y: 0 }, viewBox: { x: 0, y: 0, width: 400, height: 300 }, ...props,
+  }));
+  return [...html.matchAll(/<li class="recharts-tooltip-item"[^>]*>(.*?)<\/li>/g)].map(([, item]) => [
+    item.match(/recharts-tooltip-item-name">([^<]*)</)?.[1],
+    item.match(/recharts-tooltip-item-value">([^<]*)</)?.[1],
+  ]);
+}
+
+test('the install trend tooltip shows an unmeasured Hugging Face period as not measured, never as an empty value', () => {
+  const { createElement } = require('react');
+  const { DefaultTooltipContent } = require('recharts');
+  assert.deepStrictEqual(
+    measuredTooltipPayload([{ value: null }, { value: undefined }, { value: 0 }, { value: 5 }]).map(e => e.value),
+    [NOT_MEASURED, NOT_MEASURED, 0, 5], 'only a null row is given NOT_MEASURED; a measured 0 stays 0');
+  assert.deepStrictEqual(measuredTooltipPayload(undefined), []);
+
+  // A /api/trends period that measured no Hugging Face growth, and the rows
+  // the chart passes to its Tooltip for it.
+  const row = { periodStart: '2026-10-05', npmDownloads: 1200, pypiDownloads: 30, dockerPulls: 5, hfDownloads: null, totalDownloads: 1235 };
+  const payload = [['npmDownloads', 'npm'], ['pypiDownloads', 'PyPI'], ['dockerPulls', 'Docker'], ['hfDownloads', 'HuggingFace'], ['totalDownloads', 'Total']]
+    .map(([dataKey, name]) => ({ dataKey, name, value: row[dataKey], payload: row }));
+  // The props the dashboard gives the install trend's Tooltip (checked against pages/index.js below).
+  const trendTooltip = {
+    label: row.periodStart, payload, filterNull: false,
+    formatter: (v, name) => [formatMeasured(v), name],
+    content: (props) => createElement(DefaultTooltipContent, { ...props, payload: measuredTooltipPayload(props.payload) }),
+  };
+  assert.deepStrictEqual(tooltipRows(trendTooltip), [
+    ['npm', (1200).toLocaleString()], ['PyPI', '30'], ['Docker', '5'], ['HuggingFace', NOT_MEASURED], ['Total', (1235).toLocaleString()],
+  ]);
+  // Recharts calls a formatter only for a value that is not null: without the
+  // content the row has an empty value, and without filterNull it is dropped.
+  const { content, ...withoutContent } = trendTooltip;
+  assert.deepStrictEqual(tooltipRows(withoutContent)[3], ['HuggingFace', ''], 'without the content the Hugging Face row is empty');
+  const { filterNull, ...withoutFilterNull } = trendTooltip;
+  assert.ok(!tooltipRows(withoutFilterNull).some(([name]) => name === 'HuggingFace'), 'without filterNull={false} the Hugging Face row is dropped');
+
+  const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
+  const start = index.indexOf('<Chart title="Install Trend"');
+  assert.ok(start >= 0, 'the overview has an install trend');
+  const tooltip = index.slice(start, index.indexOf('</Chart>', start)).split('\n').find(line => line.includes('<Tooltip '));
+  for (const prop of ['filterNull={false}', 'formatter={(v, name) => [formatMeasured(v), name]}', 'content={MeasuredTooltipContent}']) {
+    assert.ok(tooltip && tooltip.includes(prop), `the install trend tooltip has ${prop}`);
+  }
+  assert.ok(index.includes('function MeasuredTooltipContent(props) {\n  return <DefaultTooltipContent {...props} payload={measuredTooltipPayload(props.payload)} />;\n}'),
+    'MeasuredTooltipContent gives a null row NOT_MEASURED before the default rows render');
 });
