@@ -48,7 +48,8 @@ function makeStore(dir, { missing = 1 } = {}) {
  * service. The library still builds every job request itself; the fake reads
  * the request body as BigQuery would: a dry run reports `estimate`, a billed
  * job scans `scanned` bytes and is refused with bytesBilledLimitExceeded when
- * that passes the job's configuration.query.maximumBytesBilled.
+ * that passes the job's configuration.query.maximumBytesBilled. An undefined
+ * `estimate` leaves totalBytesProcessed out of the dry run's statistics.
  */
 function stubbedBigQuery({ estimate, scanned, rows = [] }) {
   const bigquery = new BigQuery({ projectId: 'test-project' });
@@ -60,8 +61,8 @@ function stubbedBigQuery({ estimate, scanned, rows = [] }) {
       inserts.push(body);
       const { jobReference } = body;
       if (body.configuration.dryRun) {
-        callback(null, { jobReference, status: { state: 'DONE' },
-          statistics: { totalBytesProcessed: String(estimate) } });
+        const statistics = estimate === undefined ? {} : { totalBytesProcessed: String(estimate) };
+        callback(null, { jobReference, status: { state: 'DONE' }, statistics });
         return;
       }
       const cap = body.configuration.query.maximumBytesBilled;
@@ -195,6 +196,48 @@ test('a scan over the ceiling that the dry run under-estimated is refused by Big
     assert.equal(fetched, undefined, 'the refused day stays missing');
     assert.equal(landed, 0);
   } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a dry run whose statistics carry no totalBytesProcessed is refused by the adapter, before any billed job', async () => {
+  const service = stubbedBigQuery({ estimate: undefined, scanned: 4 * GIB });
+  await assert.rejects(
+    createBigQueryAdapter(service.bigquery).query({ query: 'SELECT 1', dryRun: true }),
+    /dry-run job statistics carry no readable totalBytesProcessed/,
+    'the adapter throws rather than hand collect() an estimate to read');
+
+  const dir = tmp();
+  const logged = [];
+  const errors = [];
+  const consoleError = console.error;
+  console.error = (...args) => errors.push(args.join(' '));
+  try {
+    const dbPath = makeStore(dir);
+    const run = stubbedBigQuery({
+      estimate: undefined, scanned: 4 * GIB,
+      rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
+    });
+    const res = await collect({
+      client: createBigQueryAdapter(run.bigquery), dbPath, now: NOW, env: {},
+      log: (...args) => logged.push(args.join(' ')),
+    });
+    assert.equal(res.status, 'error');
+    assert.equal(res.exitCode, 1);
+    assert.equal(res.bytesBilled, 0);
+    assert.equal(run.inserts.length, 1, 'only the dry run reached BigQuery');
+    assert.deepEqual(run.billed, []);
+    assert.ok(errors.some(line => /no readable totalBytesProcessed/.test(line)),
+      'the run fails on the adapter\'s refusal');
+    assert.ok(!logged.some(line => /unreadable dry-run estimate/.test(line)),
+      'collect() never received an estimate to refuse');
+
+    const db = new Database(dbPath, { readonly: true });
+    const fetched = db.prepare('SELECT 1 FROM pypi_country_fetch_days WHERE date = ?').get(dayBefore(1));
+    db.close();
+    assert.equal(fetched, undefined, 'the refused day stays missing');
+  } finally {
+    console.error = consoleError;
     rmSync(dir, { recursive: true, force: true });
   }
 });
