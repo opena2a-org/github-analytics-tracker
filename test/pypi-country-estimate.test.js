@@ -13,6 +13,7 @@ const {
   MONTH_CAP_BYTES,
   BUDGET_FILE,
   RUN_FILE,
+  parseArgs,
 } = require('../scripts/collect-pypi-country-stats');
 
 const SCRIPT = join(__dirname, '..', 'scripts', 'collect-pypi-country-stats.js');
@@ -318,6 +319,55 @@ for (const args of [['--dryrun'], ['--dry-run', 'extra'], ['--dry-run=true']]) {
     }
   });
 }
+
+for (const args of [['--help'], ['-h'], ['--help', '--dry-run']]) {
+  test(`\`${args.join(' ')}\` prints the usage and exits 0 without starting a run`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir);
+      const before = snapshot(dir);
+      const res = await runScript(args, dbPath);
+      assert.equal(res.status, 0, `expected exit 0; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+      assert.match(res.stdout, /usage:/i);
+      assert.match(res.stdout, /--dry-run/);
+      assert.equal(res.stderr, '');
+      assert.doesNotMatch(res.stdout, /credentials not configured/i, 'no collection was started');
+      assert.deepEqual(snapshot(dir), before, 'no run status is written');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
+// What npm 11 passes on for `npm run collect:pypi-countries --dryrun`,
+// `--dry_rn` and `--dyrrun`: an unknown flag given without the -- arrives as an
+// npm_config_ variable, never as an argument.
+for (const key of ['npm_config_dryrun', 'npm_config_dry_rn', 'npm_config_dyrrun']) {
+  test(`${key}=true, a mistyped dry-run flag that npm passed on, is refused and starts nothing`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = makeStore(dir);
+      const before = snapshot(dir);
+      const res = await runScript([], dbPath, { [key]: 'true' });
+      assert.equal(res.status, 2, `expected exit 2; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+      assert.ok(res.stderr.includes(key), `the refusal names ${key}; stderr:\n${res.stderr}`);
+      assert.match(res.stderr, /usage:/i);
+      assert.doesNotMatch(res.stdout, /credentials not configured/i, 'no collection was started');
+      assert.deepEqual(snapshot(dir), before, 'no run status is written');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
+test('the npm options npm 11 sets for every `npm run` are not read as a mistyped dry-run flag', () => {
+  const npmEnv = Object.fromEntries([
+    'allow_scripts', 'cache', 'global_prefix', 'globalconfig', 'init_module', 'local_prefix',
+    'loglevel', 'node_gyp', 'noproxy', 'npm_version', 'prefix', 'user_agent', 'userconfig',
+  ].map(name => [`npm_config_${name}`, 'x']));
+  assert.deepEqual(parseArgs([], npmEnv), { dryRun: false });
+  assert.deepEqual(parseArgs([], { ...npmEnv, npm_config_dry_run: 'true' }), { dryRun: true });
+});
 
 test('npm_config_dry_run=true, which `npm run collect:pypi-countries --dry-run` sets, is a dry run', async () => {
   const dir = tmp();

@@ -565,6 +565,40 @@ for (const [label, status, second, ledger] of [
   });
 }
 
+for (const [label, status, second, ledger] of [
+  ['its dry run is over the per-query cap', 'refused_cap', { dryBytes: PER_QUERY_CAP_BYTES + 1 }],
+  ['BigQuery refuses its billed job at the ceiling', 'refused_cap', { billedError: ceilingRefusal() }],
+  ['its estimate would pass the monthly cap', 'capped_month', { dryBytes: 1000 }, MONTH_CAP_BYTES - 500],
+  ['its dry run is unreadable', 'error', { dryBytes: 'abc' }],
+  ['its billed call fails', 'error', { billedError: new Error('backend error') }],
+]) {
+  test(`a run that lands nothing and stops because ${label} still rolls up the days already stored`, async () => {
+    const dir = tmp();
+    try {
+      // D-1 is stored and fetched but its rollup is empty; only D-2 is missing.
+      const dbPath = makeStore(dir, {
+        fetchedDays: ALL_CANDIDATES.filter(d => d !== dayBefore(2)),
+        daily: [{ pkg: 5, date: dayBefore(1), cc: 'DE', dl: 7 }],
+      });
+      if (ledger !== undefined) {
+        writeFileSync(join(dir, BUDGET_FILE), JSON.stringify({ month: '2026-09', bytesBilled: ledger }));
+      }
+      const res = await runCollect(dbPath, secondDayStops(second));
+      assert.equal(res.status, status);
+      assert.equal(res.exitCode, 1);
+      assert.equal(res.daysFetched, 0);
+      assert.equal(res.asOf, dayBefore(1));
+      const db = new Database(dbPath, { readonly: true });
+      const rows = db.prepare('SELECT package_id, date, country_code, downloads FROM pypi_country_downloads').all();
+      db.close();
+      assert.deepEqual(rows, [{ package_id: 5, date: dayBefore(1), country_code: 'DE', downloads: 7 }],
+        'the reported as-of day has its 30-day total');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
 // ---------------------------------------------------------------------------
 // AC7 — scheduled run without credentials exits 1; population needs no env
 // ---------------------------------------------------------------------------

@@ -8,14 +8,15 @@
  *     and a job it refuses there ends the run as refused_cap)
  *   - 768 GiB per month   (a persisted ledger of billed bytes, data/pypi-country-budget.json,
  *     floored by the bytes the store's fetch records show billed this month,
- *     so a checkout that lacks the ledger file still counts the month's spend)
+ *     so a checkout that lacks the ledger file still counts the days landed
+ *     this month, though not a billed call that failed)
  *
  * Per run it fetches at most three missing closed days (newest first, from the
  * 30 most recent closed days; no backfill beyond that window), lands the rows
  * in pypi_country_daily keyed by the closed day itself, then rewrites the
  * 30-day rollup in pypi_country_downloads as a local SUM — no query. A run
- * that stops early (a cap, a refusal, an error) still rewrites the rollup
- * when it landed at least one day.
+ * that stops early (a cap, a refusal, an error) still rewrites the rollup,
+ * whether or not it landed a day.
  *
  * Every run ends by persisting data/pypi-country-run.json with a status from
  * {ok, empty, skipped_no_credentials, refused_cap, capped_month, error}. A
@@ -29,8 +30,10 @@
  * caps; when every candidate day is already fetched, it measures D-1 as a
  * sample and exits 0 only when a new day of that size would clear them.
  * npm_config_dry_run=true, which npm sets for
- * `npm run collect:pypi-countries --dry-run`, selects it as well; any other
- * argument exits 2 with a usage message before anything runs.
+ * `npm run collect:pypi-countries --dry-run`, selects it as well. `--help`
+ * prints the usage and exits 0; any other argument, and an npm option that
+ * looks like a mistyped --dry-run (npm_config_dryrun from `--dryrun`), exits 2
+ * with a usage message before anything runs.
  *
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs. A
@@ -253,7 +256,9 @@ function storeMonthBytes(db, month) {
  * because either one can be stale. The ledger file is not committed, so a
  * checkout may lack it or carry one older than the store's fetch records;
  * the store never sees the reservation the ledger keeps for a billed call
- * that failed. Taking the larger can over-count, never under-count.
+ * that failed. Taking the larger never reads below either source, but it can
+ * still under-count: once the ledger file is gone, so is the reservation for
+ * a billed call that failed, since the store records only days that landed.
  */
 function monthToDate(db, dataDir, month) {
   return Math.max(readBudget(dataDir, month), storeMonthBytes(db, month));
@@ -439,10 +444,11 @@ async function collect({
     });
 
     let rowsLanded = 0;
-    // A run that stops early still rolls up the days it already landed, so
-    // the 30-day total never lags the daily rows.
+    // A run that stops early still rewrites the rollup, whether or not it
+    // landed a day: the daily rows may hold days an earlier run stored and
+    // never rolled up, and the asOf it reports must have its 30-day total.
     const stop = (status) => finish(status, {
-      asOf: daysFetched > 0 ? rollupCountryDownloads(db, now) : newestStoredDay(db),
+      asOf: rollupCountryDownloads(db, now),
       daysFetched, bytesBilled: runBytes, exitCode: 1,
     });
     for (const day of missingDays) {
@@ -513,9 +519,10 @@ async function collect({
     console.error('PyPI country collection failed: %s', error.message);
     let asOf = null;
     if (db) {
-      // Days that landed before the failure still reach the rollup.
+      // Stored days, including any this run landed before the failure, still
+      // reach the rollup.
       try {
-        asOf = daysFetched > 0 ? rollupCountryDownloads(db, now) : newestStoredDay(db);
+        asOf = rollupCountryDownloads(db, now);
       } catch {
         try { asOf = newestStoredDay(db); } catch { /* keep null */ }
       }
@@ -643,25 +650,79 @@ async function estimate({
   }
 }
 
-const USAGE = 'Usage: npm run collect:pypi-countries -- [--dry-run]';
+const USAGE = 'Usage: npm run collect:pypi-countries -- [--dry-run | --help]';
+
+const HELP = `${USAGE}
+
+Without an argument it collects up to ${MAX_DAYS_PER_RUN} missing closed days from BigQuery,
+within a ${PER_QUERY_CAP_BYTES / 1073741824} GiB per-query cap and a ${MONTH_CAP_BYTES / 1073741824} GiB monthly cap.
+
+  --dry-run  measure what the next run would scan against both caps;
+             bills nothing and writes nothing
+  --help     print this message`;
+
+/** Levenshtein distance between two short strings. */
+function editDistance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
 
 /**
- * Read the command line. `--dry-run` is the only argument; anything else is
- * refused, never read as a request for a billed collection. Without the `--`
- * separator, `npm run collect:pypi-countries --dry-run` keeps the flag for
- * npm, which passes it on as npm_config_dry_run=true, so that is a dry run
- * too. Returns { dryRun } or { error }.
+ * npm options in `env` that look like a mistyped --dry-run. A flag given
+ * without the `--` separator goes to npm, not to the collector's arguments,
+ * and npm passes even one it does not know on as npm_config_<name>, lowercased:
+ * `npm run collect:pypi-countries --dryrun` arrives only as
+ * npm_config_dryrun=true. Read as no argument, it would start the billed run
+ * the flag was meant to measure. npm_config_dry_run is the dry run itself.
+ */
+function mistypedDryRunOptions(env) {
+  return Object.keys(env).filter(key => {
+    if (!key.toLowerCase().startsWith('npm_config_')) return false;
+    const name = key.slice('npm_config_'.length).toLowerCase();
+    if (name === 'dry_run') return false;
+    const bare = name.replace(/[-_]/g, '');
+    return bare.startsWith('dry') || editDistance(bare, 'dryrun') <= 2;
+  });
+}
+
+/**
+ * Read the command line. `--dry-run` is the only argument besides `--help`
+ * (or `-h`); anything else is refused, never read as a request for a billed
+ * collection. Without the `--` separator, `npm run collect:pypi-countries
+ * --dry-run` keeps the flag for npm, which passes it on as
+ * npm_config_dry_run=true, so that is a dry run too, and an npm option that
+ * looks like a mistyped --dry-run is refused. Returns { help }, { dryRun } or
+ * { error }.
  */
 function parseArgs(argv, env = process.env) {
+  if (argv.includes('--help') || argv.includes('-h')) return { help: true };
   const unknown = argv.filter(arg => arg !== '--dry-run');
   if (unknown.length > 0) {
     return { error: `Unrecognised argument(s): ${unknown.join(' ')}` };
+  }
+  const mistyped = mistypedDryRunOptions(env);
+  if (mistyped.length > 0) {
+    return {
+      error: `Unrecognised npm option(s): ${mistyped.join(' ')}. A flag given without the -- separator `
+        + 'goes to npm, which passed it on under that name; the dry-run flag is --dry-run.',
+    };
   }
   return { dryRun: argv.includes('--dry-run') || env.npm_config_dry_run === 'true' };
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(HELP);
+    return;
+  }
   if (args.error) {
     console.error(args.error);
     console.error(USAGE);
@@ -696,4 +757,5 @@ module.exports = {
   BUDGET_FILE,
   RUN_FILE,
   readByteFigure,
+  parseArgs,
 };

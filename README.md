@@ -104,7 +104,9 @@ dry run first, then sent to BigQuery as `maximumBytesBilled`, so BigQuery refuse
 would bill more; such a refusal bills nothing and ends the run with status `refused_cap`) and
 768 GiB per calendar month (a ledger in `data/pypi-country-budget.json`).
 The month-to-date figure is never lower than the bytes the database's fetch records show billed
-that month, so a checkout without the ledger file still counts the month's earlier queries.
+that month, so a checkout without the ledger file still counts the days landed earlier that month.
+Without the ledger file it does not count a billed query that failed, since only the ledger
+records that charge.
 
 To see what the next run would scan before paying for it:
 
@@ -116,10 +118,14 @@ This issues only BigQuery dry runs, which are not billed, prints each day's scan
 both caps, and writes nothing. It exits 0 only when the next run would clear both caps. When
 every day in the window is already fetched, the next run bills nothing; the dry run then
 measures yesterday as a sample and reports whether a new day of that size would clear both caps.
-`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run. Any other
-argument after the `--` is refused with a usage message and exit code 2. A flag given without
-the `--` goes to npm, not to the collector's arguments, so a mistyped
-`npm run collect:pypi-countries --dryrun` is not refused: the run collects as normal.
+`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run, and
+`npm run collect:pypi-countries -- --help` prints the usage and exits 0. Any other argument after
+the `--` is refused with a usage message and exit code 2. A flag given without the `--` goes to
+npm, which passes it on as an `npm_config_` variable rather than as an argument; one that looks
+like a mistyped `--dry-run`, such as `npm run collect:pypi-countries --dryrun`, is refused the
+same way before anything runs. Any other flag given without the `--` is left to npm, and the
+run collects as normal. npm 11 warns that the next major version of npm will stop accepting unknown
+flags, which would change how these arrive.
 
 ## Automated daily collection
 

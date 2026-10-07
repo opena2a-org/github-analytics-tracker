@@ -1,5 +1,6 @@
 const { execSync } = require('child_process');
 const path = require('path');
+const { CRON_COLLECTORS, collectorEnv } = require('../../../lib/cron');
 
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
@@ -10,33 +11,9 @@ export default async function handler(req, res) {
   const results = { timestamp: new Date().toISOString(), collectors: {} };
   const scriptsDir = path.join(process.cwd(), 'scripts');
 
-  // Pass only the variables the collectors actually need to the child processes,
-  // rather than spreading the entire environment (which would leak unrelated
-  // secrets into every subprocess). Add new collector config keys here.
-  const ALLOWED_ENV = [
-    'PATH', 'NODE_ENV', 'HOME',
-    'GITHUB_TOKEN', 'GITHUB_ORG', 'REPOS_TO_TRACK',
-    'NPM_AUTHOR', 'NPM_PACKAGES',
-    'PYPI_PACKAGES',
-    'DOCKER_IMAGES',
-    'HF_AUTHOR', 'HF_MODELS', 'HF_TOKEN',
-    'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_APPLICATION_CREDENTIALS_JSON',
-    'REGISTRY_URL',
-  ];
-  const childEnv = Object.fromEntries(
-    ALLOWED_ENV.filter(k => process.env[k] !== undefined).map(k => [k, process.env[k]])
-  );
+  const childEnv = collectorEnv();
 
-  const collectors = [
-    { name: 'github', script: 'collect-stats.js', needsToken: true },
-    { name: 'npm', script: 'collect-npm-stats.js', needsToken: false },
-    { name: 'pypi', script: 'collect-pypi-stats.js', needsToken: false },
-    { name: 'docker', script: 'collect-docker-stats.js', needsToken: false },
-    { name: 'huggingface', script: 'collect-huggingface-stats.js', needsToken: false },
-    { name: 'telemetry', script: 'collect-telemetry-stats.js', needsToken: false },
-  ];
-
-  for (const collector of collectors) {
+  for (const collector of CRON_COLLECTORS) {
     if (collector.needsToken && !process.env.GITHUB_TOKEN) {
       results.collectors[collector.name] = { status: 'skipped', reason: 'no GITHUB_TOKEN' };
       continue;

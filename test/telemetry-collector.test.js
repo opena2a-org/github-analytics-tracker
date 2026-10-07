@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
 const { mkdtempSync, rmSync, writeFileSync } = require('node:fs');
-const { join } = require('node:path');
+const { join, dirname } = require('node:path');
 const { tmpdir } = require('node:os');
 const http = require('node:http');
 const Database = require('better-sqlite3');
@@ -45,6 +45,10 @@ function makeDb(dir, rows = []) {
  * Async on purpose: spawnSync blocks this process's event loop, so the
  * in-process fixture server below could never accept the child's connection —
  * the child would hang until its feed timeout. Use spawn and await.
+ *
+ * The child runs in the fixture database's temporary directory, so the .env it
+ * loads is the test's, never the one at the repository root, which may name a
+ * real Registry. An `env` value of undefined drops that variable.
  */
 function run(env, dbFile) {
   return new Promise((resolve) => {
@@ -59,6 +63,7 @@ function run(env, dbFile) {
         TELEMETRY_FEED_TIMEOUT_MS: '5000',
         ...env,
       },
+      cwd: dirname(dbFile),
     });
     let stdout = '';
     let stderr = '';
@@ -263,6 +268,30 @@ test('a brand-new deployment reporting zero is not an outage', async () => {
         // No prior live snapshot -> nothing has died -> not an outage.
         const res = await run({ REGISTRY_URL: url }, makeDb(dir));
         assert.equal(res.status, 0, `a first run with no users must not error; stdout:\n${res.stdout}`);
+      }
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the spawned collector loads .env from the test directory, not the repository root', async () => {
+  const dir = tmp();
+  try {
+    let requests = 0;
+    await withServer(
+      (req, res) => {
+        requests += 1;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ totalInstalls: 0, wau: 0, mau: 0, tools: [], byCountry: [] }));
+      },
+      async (url) => {
+        // REGISTRY_URL is dropped from the child's environment, so only the
+        // test directory's .env can point the collector at this server.
+        writeFileSync(join(dir, '.env'), `REGISTRY_URL=${url}\n`);
+        const res = await run({ REGISTRY_URL: undefined }, makeDb(dir));
+        assert.equal(requests, 1, `the test directory's .env was not loaded; stdout:\n${res.stdout}`);
+        assert.equal(res.status, 0, `expected exit 0; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
       }
     );
   } finally {
