@@ -23,8 +23,11 @@ function dayBefore(offset) {
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'pypi-country-adapter-'));
 
-/** A store with one tracked package and every candidate day fetched except D-1. */
-function makeStore(dir) {
+/**
+ * A store with one tracked package and every candidate day fetched except the
+ * newest `missing` ones (D-1 by default).
+ */
+function makeStore(dir, { missing = 1 } = {}) {
   const p = join(dir, 'analytics.db');
   const db = new Database(p);
   db.exec(`
@@ -35,7 +38,7 @@ function makeStore(dir) {
       bytes_billed INTEGER NOT NULL DEFAULT 0, fetched_at TEXT NOT NULL);
   `);
   const insFetch = db.prepare('INSERT INTO pypi_country_fetch_days (date, fetched_at) VALUES (?, ?)');
-  for (let i = 2; i <= 30; i++) insFetch.run(dayBefore(i), NOW.toISOString());
+  for (let i = missing + 1; i <= 30; i++) insFetch.run(dayBefore(i), NOW.toISOString());
   db.close();
   return p;
 }
@@ -127,6 +130,43 @@ test('the adapter puts maximumBytesBilled in the billed job request and leaves i
     const landed = db.prepare('SELECT country_code, downloads FROM pypi_country_daily WHERE date = ?').all(dayBefore(1));
     db.close();
     assert.deepEqual(landed.map(r => ({ ...r })), [{ country_code: 'US', downloads: 42 }]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('every billed job of a three-day run carries maximumBytesBilled, not only the first', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { missing: 3 });
+    const service = stubbedBigQuery({
+      estimate: 5 * GIB, scanned: 4 * GIB,
+      rows: [{ project: 'aim-sdk', country_code: 'US', downloads: 42 }],
+    });
+    const res = await runCollect(dbPath, service.bigquery);
+    assert.equal(res.status, 'ok');
+    assert.equal(res.exitCode, 0);
+    assert.equal(res.daysFetched, 3);
+    assert.equal(service.inserts.length, 6, 'a dry run and a billed job for each of three days');
+
+    const dryRuns = service.inserts.filter(body => body.configuration.dryRun);
+    const billedJobs = service.inserts.filter(body => !body.configuration.dryRun);
+    assert.equal(dryRuns.length, 3);
+    assert.equal(billedJobs.length, 3);
+    for (const dry of dryRuns) {
+      assert.equal(dry.configuration.query.maximumBytesBilled, undefined);
+    }
+    billedJobs.forEach((billed, i) => {
+      assert.equal(Number(billed.configuration.query.maximumBytesBilled), PER_QUERY_CAP_BYTES,
+        `billed job ${i + 1} of 3 carries the per-query ceiling`);
+    });
+
+    assert.deepEqual(service.billed, [4 * GIB, 4 * GIB, 4 * GIB]);
+    assert.equal(res.bytesBilled, 12 * GIB);
+    const db = new Database(dbPath, { readonly: true });
+    const landed = db.prepare('SELECT date FROM pypi_country_daily ORDER BY date DESC').all().map(r => r.date);
+    db.close();
+    assert.deepEqual(landed, [dayBefore(1), dayBefore(2), dayBefore(3)]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
