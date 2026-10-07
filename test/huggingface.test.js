@@ -428,6 +428,14 @@ test('the channel mix names an unmeasured Hugging Face count it leaves out', () 
   assert.strictEqual(channelMixSubtitle(undefined), 'All-time adoption by install channel');
 });
 
+test('the README names the one case the channel-mix note covers', () => {
+  const readme = readFileSync(join(__dirname, '..', 'README.md'), 'utf8');
+  const sentence = readme.match(/The overview's channel mix [^.]*\./)?.[0];
+  assert.ok(sentence, 'the README describes the channel mix');
+  // No model tracked and a measured 0 both give no note (see the test above).
+  assert.match(sentence, /when models are tracked and none has a measured all-time count/);
+});
+
 test('the channel-mix check reads the whole channelData statement when a comment inside it has a semicolon', () => {
   const index = readFileSync(join(__dirname, '..', 'pages', 'index.js'), 'utf8');
   const opening = 'const channelData = [\n';
@@ -853,7 +861,8 @@ test('the install trend tooltip shows an unmeasured Hugging Face period as not m
 
 // Edits a formatter makes to the dashboard without changing what it does
 // (Prettier's defaults among them). Each swaps the form the source has for the
-// other one, so it applies however the dashboard is formatted.
+// other one, so the checks read the committed layout and Prettier's default
+// output for these forms, not every layout the dashboard could take.
 const otherQuote = (q) => (q === "'" ? '"' : "'");
 const REFORMATS = [
   ['the Hugging Face mix entry on one line, or split over lines with a trailing comma', s => s.replace(
