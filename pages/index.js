@@ -3,7 +3,7 @@ import Head from 'next/head';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ComposedChart, PieChart, Pie, Cell,
+  ComposedChart, PieChart, Pie, Cell, DefaultTooltipContent,
 } from 'recharts';
 import {
   GitFork, Star, Eye, GitPullRequest, Users, Download, Heart,
@@ -15,7 +15,7 @@ import {
 import { periodPick, hfPeriod, rowAdoption } from '../lib/adoption';
 // A Hugging Face count the API returns as null was never measured: it is shown
 // as not measured and left out of totals, never as 0.
-import { sumMeasured, formatMeasured, NOT_MEASURED } from '../lib/huggingface';
+import { sumMeasured, formatMeasured, measuredTooltipPayload, NOT_MEASURED } from '../lib/huggingface';
 import { SERIES } from '../lib/series';
 
 /* ============================================================
@@ -89,6 +89,10 @@ function fmtFull(n) { return (n || 0).toLocaleString(); }
 /* A table cell for a count that may be unmeasured (null): muted dash, never 0 */
 function measuredCell(n) {
   return n == null ? <span className="muted">{NOT_MEASURED}</span> : formatMeasured(n);
+}
+/* Tooltip rows for a series that may be unmeasured (null): not measured, never empty */
+function MeasuredTooltipContent(props) {
+  return <DefaultTooltipContent {...props} payload={measuredTooltipPayload(props.payload)} />;
 }
 function fmtBytes(b) {
   if (!b) return '0 B';
@@ -629,7 +633,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
             <ComposedChart data={trends.series}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
               <XAxis dataKey="periodStart" {...axDate} /><YAxis {...ax} tickFormatter={fmtNum} />
-              <Tooltip {...tt} labelFormatter={fmtDate} filterNull={false} formatter={(v, name) => [formatMeasured(v), name]} /><Legend wrapperStyle={{ fontSize: 11 }} />
+              <Tooltip {...tt} labelFormatter={fmtDate} filterNull={false} formatter={(v, name) => [formatMeasured(v), name]} content={MeasuredTooltipContent} /><Legend wrapperStyle={{ fontSize: 11 }} />
               <Area type="monotone" dataKey="npmDownloads" stackId="d" stroke={C.npm} fill={C.fill(C.npm)} name="npm" />
               <Area type="monotone" dataKey="pypiDownloads" stackId="d" stroke={C.pypi} fill={C.fill(C.pypi)} name="PyPI" />
               <Area type="monotone" dataKey="dockerPulls" stackId="d" stroke={C.docker} fill={C.fill(C.docker)} name="Docker" />
