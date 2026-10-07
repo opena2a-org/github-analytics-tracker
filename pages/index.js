@@ -532,7 +532,8 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
     { name: 'HF Models', value: totals.hf?.downloadsAllTime || 0, color: C.hf },
   ].filter(d => d.value > 0);
   const channelTotal = channelData.reduce((s, d) => s + d.value, 0);
-  // An unmeasured HF count is left out of the mix and named, never a 0 share.
+  // An unmeasured HF count is left out of the mix, never a 0 share, and named
+  // when models are tracked and none has a measured all-time count.
   const channelSub = channelMixSubtitle(totals.hf);
 
   return (
