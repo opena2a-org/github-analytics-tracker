@@ -145,6 +145,25 @@ test('estimates that would carry the month past its ceiling report capped_month 
   }
 });
 
+test('with no ledger file the dry run counts the bytes the store records as billed this month', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, { fetchedDays: ALL_CANDIDATES.slice(3) });
+    const db = new Database(dbPath);
+    db.prepare('UPDATE pypi_country_fetch_days SET bytes_billed = ?, fetched_at = ? WHERE date = ?')
+      .run(MONTH_CAP_BYTES - 150 * GIB, '2026-09-01T06:00:00.000Z', dayBefore(4));
+    db.close();
+    const before = snapshot(dir);
+    const res = await runEstimate(dbPath, fakeClient(100 * GIB));
+    assert.equal(res.monthToDateBytes, MONTH_CAP_BYTES - 150 * GIB);
+    assert.equal(res.status, 'capped_month', 'the run would be refused on its second day, as collect() is');
+    assert.equal(res.exitCode, 1);
+    assert.deepEqual(snapshot(dir), before);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('a per-query refusal on an earlier day outranks a month refusal on a later one', async () => {
   const dir = tmp();
   try {
