@@ -70,14 +70,15 @@ function makeStore(dir, { fetchedDays = [], daily = [], rollup = [] } = {}) {
 /**
  * Fake client for the collector's port. dryBytes may be any value (including
  * the unreadable ones AC9 exercises); billedBytes likewise; billedThrows makes
- * every billed call reject; onBilled observes the moment a billed call runs.
+ * every billed call reject (with billedError when given); onBilled observes
+ * the moment a billed call runs.
  */
 function fakeClient(opts = {}) {
   // `in` checks, not destructuring defaults: AC9 passes dryBytes: undefined
   // on purpose and the fake must return it verbatim.
   const dryBytes = 'dryBytes' in opts ? opts.dryBytes : 1000;
   const billedBytes = 'billedBytes' in opts ? opts.billedBytes : 1000;
-  const { rows = [], billedThrows = false, onBilled = null } = opts;
+  const { rows = [], billedThrows = false, billedError = null, onBilled = null } = opts;
   const calls = [];
   return {
     calls,
@@ -87,7 +88,7 @@ function fakeClient(opts = {}) {
       calls.push(options);
       if (options.dryRun) return { rows: [], totalBytesProcessed: dryBytes };
       if (onBilled) onBilled(options);
-      if (billedThrows) throw new Error('injected billed-call failure');
+      if (billedThrows) throw billedError || new Error('injected billed-call failure');
       return { rows, totalBytesProcessed: billedBytes };
     },
   };
@@ -181,6 +182,65 @@ test('GAT-01.AC10 a billed call that throws leaves the ledger at prior month-to-
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+/** The library's API error for a job BigQuery refused at maximumBytesBilled. */
+function ceilingRefusal() {
+  const reason = { reason: 'bytesBilledLimitExceeded', message: 'Query exceeded limit for bytes billed: 137438953472.' };
+  return Object.assign(new Error(reason.message), { code: 400, errors: [reason] });
+}
+
+test('a billed call BigQuery refuses at the ceiling ends the run refused_cap and releases its reservation', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    seedBudget(dir, 1000);
+    let ledgerAtBilledCall = null;
+    const client = fakeClient({
+      dryBytes: 5000,
+      billedThrows: true,
+      billedError: ceilingRefusal(),
+      onBilled: () => { ledgerAtBilledCall = readBudgetFile(dir).bytesBilled; },
+    });
+    const res = await collect({ client, dbPath, now: NOW, env: {}, log: noop });
+    assert.equal(res.exitCode, 1);
+    assert.equal(res.status, 'refused_cap');
+    assert.equal(res.bytesBilled, 0);
+    assert.equal(readStatus(dir).status, 'refused_cap');
+    assert.equal(ledgerAtBilledCall, 6000, 'the estimate was reserved before the billed call');
+    assert.equal(readBudgetFile(dir).bytesBilled, 1000,
+      'a job refused at maximumBytesBilled bills nothing, so the reservation is released');
+    assert.equal(client.dry().length, 1, 'the run stops at the refused day');
+    assert.equal(client.billed().length, 1);
+    const db = new Database(dbPath, { readonly: true });
+    const fetchRecords = db.prepare('SELECT COUNT(*) AS n FROM pypi_country_fetch_days').get().n;
+    db.close();
+    assert.equal(fetchRecords, 0, 'the refused day stays missing');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+for (const [label, error] of [
+  ['another reason in its errors list', Object.assign(new Error('Exceeded rate limits'), {
+    code: 403, errors: [{ reason: 'rateLimitExceeded', message: 'Exceeded rate limits' }] })],
+  ['the ceiling reason only in its message', new Error('bytesBilledLimitExceeded: Query exceeded limit for bytes billed')],
+]) {
+  test(`a billed call failing with ${label} keeps the reservation and persists error`, async () => {
+    const dir = tmp();
+    try {
+      const dbPath = oneMissingDay(dir);
+      seedBudget(dir, 1000);
+      const client = fakeClient({ dryBytes: 5000, billedThrows: true, billedError: error });
+      const res = await collect({ client, dbPath, now: NOW, env: {}, log: noop });
+      assert.equal(res.exitCode, 1);
+      assert.equal(res.status, 'error');
+      assert.equal(readBudgetFile(dir).bytesBilled, 6000,
+        'only BigQuery\'s own ceiling refusal releases a reservation');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
 
 for (const [label, badBilled] of [['-500', -500], ['"abc"', 'abc']]) {
   test(`GAT-01.AC10 a billed figure of ${label} charges the estimate, never less`, async () => {
