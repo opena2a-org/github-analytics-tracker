@@ -260,7 +260,7 @@ function runScript(args, dbPath, extraEnv = {}) {
     delete env.GOOGLE_CLOUD_PROJECT;
     delete env.PYPI_PACKAGES;
     delete env.GITHUB_ACTIONS;
-    delete env.npm_config_dry_run;
+    for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_dry_run') delete env[key];
     Object.assign(env, extraEnv);
     const child = spawn(process.execPath, [SCRIPT, ...args], { env, cwd: dirname(dbPath) });
     let stdout = '';
@@ -320,7 +320,7 @@ for (const args of [['--dryrun'], ['--dry-run', 'extra'], ['--dry-run=true']]) {
   });
 }
 
-for (const args of [['--help'], ['-h'], ['--help', '--dry-run']]) {
+for (const args of [['--help'], ['-h'], ['--help', '--dry-run'], ['--dryrun', '-h']]) {
   test(`\`${args.join(' ')}\` prints the usage and exits 0 without starting a run`, async () => {
     const dir = tmp();
     try {
@@ -330,6 +330,7 @@ for (const args of [['--help'], ['-h'], ['--help', '--dry-run']]) {
       assert.equal(res.status, 0, `expected exit 0; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
       assert.match(res.stdout, /usage:/i);
       assert.match(res.stdout, /--dry-run/);
+      assert.match(res.stdout, /-h, --help/);
       assert.equal(res.stderr, '');
       assert.doesNotMatch(res.stdout, /credentials not configured/i, 'no collection was started');
       assert.deepEqual(snapshot(dir), before, 'no run status is written');
@@ -360,13 +361,49 @@ for (const key of ['npm_config_dryrun', 'npm_config_dry_rn', 'npm_config_dyrrun'
   });
 }
 
-test('the npm options npm 11 sets for every `npm run` are not read as a mistyped dry-run flag', () => {
+test('the npm options npm 11 sets for every `npm run`, and the loglevel a flag such as --silent adds, are not read as a mistyped dry-run flag', () => {
   const npmEnv = Object.fromEntries([
     'allow_scripts', 'cache', 'global_prefix', 'globalconfig', 'init_module', 'local_prefix',
     'loglevel', 'node_gyp', 'noproxy', 'npm_version', 'prefix', 'user_agent', 'userconfig',
   ].map(name => [`npm_config_${name}`, 'x']));
   assert.deepEqual(parseArgs([], npmEnv), { dryRun: false });
   assert.deepEqual(parseArgs([], { ...npmEnv, npm_config_dry_run: 'true' }), { dryRun: true });
+});
+
+// Each is caught by one clause of the check alone: dry_running only by the
+// `dry` prefix (it is 3 edits from dryrun), NPM_CONFIG_DRYRUN only by reading
+// the npm_config_ prefix in any letter case, and npm_config_dryrun beside
+// --dry-run only because the check also runs when --dry-run is given.
+for (const [argv, key] of [
+  [[], 'npm_config_dry_running'],
+  [[], 'NPM_CONFIG_DRYRUN'],
+  [['--dry-run'], 'npm_config_dryrun'],
+]) {
+  test(`${key}=true${argv.length ? ` with ${argv.join(' ')}` : ''} is refused as a mistyped dry-run flag`, () => {
+    const res = parseArgs(argv, { [key]: 'true' });
+    assert.ok(res.error && res.error.includes(key), `expected a refusal naming ${key}; got ${JSON.stringify(res)}`);
+  });
+}
+
+test('npm_config_dru=true, 3 edits from dryrun and without its prefix, is left to npm', () => {
+  assert.deepEqual(parseArgs([], { npm_config_dru: 'true' }), { dryRun: false });
+});
+
+test('NPM_CONFIG_DRY_RUN=true, which npm reads as its dry-run option, is a dry run and starts nothing billed', async () => {
+  assert.deepEqual(parseArgs([], { NPM_CONFIG_DRY_RUN: 'true' }), { dryRun: true });
+  assert.deepEqual(parseArgs([], { Npm_Config_Dry_Run: 'true', npm_config_dry_run: 'false' }), { dryRun: true });
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir);
+    writeFileSync(join(dir, RUN_FILE), JSON.stringify({ status: 'ok' }) + '\n');
+    const before = snapshot(dir);
+    const res = await runScript([], dbPath, { NPM_CONFIG_DRY_RUN: 'true' });
+    assert.equal(res.status, 1, `expected exit 1; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /nothing was measured/i);
+    assert.deepEqual(snapshot(dir), before, 'a dry run writes no run status');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('npm_config_dry_run=true, which `npm run collect:pypi-countries --dry-run` sets, is a dry run', async () => {

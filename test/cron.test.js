@@ -1,11 +1,16 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { readFileSync } = require('node:fs');
+const { readFileSync, mkdtempSync, rmSync } = require('node:fs');
 const { join } = require('node:path');
+const { tmpdir } = require('node:os');
+const { pathToFileURL } = require('node:url');
 
-const { CRON_COLLECTORS, COLLECTOR_ENV_KEYS, collectorEnv } = require('../lib/cron');
+const {
+  CRON_COLLECTORS, COLLECTOR_ENV_KEYS, SUMMARY_ENV_KEYS, collectorEnv, isAuthorized, runCron,
+} = require('../lib/cron');
 
 const SCRIPTS = join(__dirname, '..', 'scripts');
+const ROUTE = join(__dirname, '..', 'pages', 'api', 'cron', 'collect.js');
 const PROCESS_KEYS = ['PATH', 'NODE_ENV', 'HOME'];
 
 test('the cron route hands its collectors no Google Cloud credential variable', () => {
@@ -30,4 +35,77 @@ test('every config variable the cron route passes on is read by a collector it r
 
 test('the cron route does not run the BigQuery country collector', () => {
   assert.ok(!CRON_COLLECTORS.some(c => c.script === 'collect-pypi-country-stats.js'));
+});
+
+
+for (const [label, env, header] of [
+  ['unset', {}, 'Bearer undefined'],
+  ['empty', { CRON_SECRET: '' }, 'Bearer '],
+]) {
+  test(`with CRON_SECRET ${label} the cron route answers 401 and runs nothing`, async () => {
+    assert.equal(isAuthorized(header, env), false);
+    const { default: handler } = await import(pathToFileURL(ROUTE).href);
+    const prevSecret = process.env.CRON_SECRET;
+    const prevCwd = process.cwd();
+    // An empty directory holds no collector, so a route that let the request
+    // through would fail to start one rather than collect for real.
+    const dir = mkdtempSync(join(tmpdir(), 'cron-route-'));
+    process.chdir(dir);
+    if (env.CRON_SECRET === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = env.CRON_SECRET;
+    try {
+      const res = { statusCode: null, body: null };
+      res.status = (code) => { res.statusCode = code; return res; };
+      res.json = (obj) => { res.body = obj; return res; };
+      await handler({ headers: { authorization: header } }, res);
+      assert.equal(res.statusCode, 401);
+      assert.deepEqual(res.body, { error: 'Unauthorized' });
+    } finally {
+      process.chdir(prevCwd);
+      if (prevSecret === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = prevSecret;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
+
+test('the cron route accepts only the bearer token in CRON_SECRET', () => {
+  const env = { CRON_SECRET: 's3cret' };
+  assert.equal(isAuthorized('Bearer s3cret', env), true);
+  assert.equal(isAuthorized('Bearer other', env), false);
+  assert.equal(isAuthorized('s3cret', env), false);
+  assert.equal(isAuthorized(undefined, env), false);
+});
+
+test('each cron child process receives only its allowlisted environment', () => {
+  const env = {
+    PATH: '/usr/bin', HOME: '/home/cron', GITHUB_TOKEN: 'gh-token', NPM_PACKAGES: 'hackmyagent',
+    SUMMARY_OUT: '/tmp/summary.json', COLLECTOR_OUTCOMES: '{}',
+    CRON_SECRET: 'not-for-children', GOOGLE_APPLICATION_CREDENTIALS: '/keys/service-account.json',
+    UNRELATED_SECRET: 'not-for-children',
+  };
+  const calls = [];
+  const results = runCron({
+    env, cwd: '/app', now: new Date('2026-09-02T00:00:00Z'),
+    exec: (command, options) => calls.push({ command, options }),
+  });
+  const collectorEnvExpected = { PATH: '/usr/bin', HOME: '/home/cron', GITHUB_TOKEN: 'gh-token', NPM_PACKAGES: 'hackmyagent' };
+  const collectorCalls = calls.filter(c => !c.command.endsWith('generate-summary.js'));
+  assert.deepEqual(collectorCalls.map(c => c.command),
+    CRON_COLLECTORS.map(c => `node ${join('/app', 'scripts', c.script)}`));
+  for (const { options } of collectorCalls) {
+    assert.deepEqual(options.env, collectorEnvExpected);
+    assert.equal(options.cwd, '/app');
+  }
+  const summary = calls.filter(c => c.command.endsWith('generate-summary.js'));
+  assert.equal(summary.length, 1);
+  assert.deepEqual(summary[0].options.env,
+    { ...collectorEnvExpected, SUMMARY_OUT: '/tmp/summary.json', COLLECTOR_OUTCOMES: '{}' });
+  assert.equal(results.summary, 'regenerated');
+  assert.deepEqual(Object.values(results.collectors).map(r => r.status), CRON_COLLECTORS.map(() => 'success'));
+});
+
+test('every variable the summary step adds is read by the summary generator', () => {
+  const sources = ['scripts/generate-summary.js', 'lib/summary.js']
+    .map(file => readFileSync(join(__dirname, '..', file), 'utf8'));
+  const unread = SUMMARY_ENV_KEYS.filter(key => !sources.some(source => source.includes(key)));
+  assert.deepEqual(unread, []);
 });
