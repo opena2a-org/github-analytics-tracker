@@ -118,14 +118,16 @@ This issues only BigQuery dry runs, which are not billed, prints each day's scan
 both caps, and writes nothing. It exits 0 only when the next run would clear both caps. When
 every day in the window is already fetched, the next run bills nothing; the dry run then
 measures yesterday as a sample and reports whether a new day of that size would clear both caps.
-`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run, and
-`npm run collect:pypi-countries -- --help` prints the usage and exits 0. Any other argument after
-the `--` is refused with a usage message and exit code 2. A flag given without the `--` goes to
-npm, which passes it on as an `npm_config_` variable rather than as an argument; one that looks
-like a mistyped `--dry-run`, such as `npm run collect:pypi-countries --dryrun`, is refused the
-same way before anything runs. Any other flag given without the `--` is left to npm, and the
-run collects as normal. npm 11 warns that the next major version of npm will stop accepting unknown
-flags, which would change how these arrive.
+`npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run, as is
+`npm_config_dry_run=true` set in the environment in any letter case.
+`npm run collect:pypi-countries -- --help` (or `-h`) prints the usage and exits 0, even when other
+arguments are given with it. Without the `--`, `--help` goes to npm, which prints its own usage
+and runs nothing. Any other argument after the `--` is refused with a usage message and exit
+code 2. A flag given without the `--` goes to npm. npm 8 through 11 pass an unknown one on as an
+`npm_config_` variable rather than as an argument; one that looks like a mistyped `--dry-run`,
+such as `npm run collect:pypi-countries --dryrun`, is refused the same way before anything runs,
+and any other is left to npm, so the run collects as normal. npm 12 refuses an unknown flag
+itself and exits 1 before the script starts.
 
 ## Automated daily collection
 

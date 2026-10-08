@@ -37,7 +37,7 @@ const ALL_CANDIDATES = Array.from({ length: 30 }, (_, i) => dayBefore(i + 1));
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'pypi-country-'));
 
-function makeStore(dir, { packages = SEVEN, fetchedDays = [], daily = [] } = {}) {
+function makeStore(dir, { packages = SEVEN, fetchedDays = [], daily = [], rollup = [] } = {}) {
   const p = join(dir, 'analytics.db');
   const db = new Database(p);
   db.exec(`
@@ -60,6 +60,8 @@ function makeStore(dir, { packages = SEVEN, fetchedDays = [], daily = [] } = {})
   for (const d of fetchedDays) insFetch.run(d, NOW.toISOString());
   const insDaily = db.prepare('INSERT INTO pypi_country_daily (package_id, date, country_code, downloads) VALUES (?, ?, ?, ?)');
   for (const r of daily) insDaily.run(r.pkg, r.date, r.cc, r.dl);
+  const insRollup = db.prepare('INSERT INTO pypi_country_downloads (package_id, date, country_code, downloads) VALUES (?, ?, ?, ?)');
+  for (const r of rollup) insRollup.run(r.pkg, r.date, r.cc, r.dl);
   db.close();
   return p;
 }
@@ -599,6 +601,63 @@ for (const [label, status, second, ledger] of [
   });
 }
 
+/** 35 consecutive stored days of 10 downloads ending `newest` days before NOW, rolled up as 300. */
+function staleStore(dir, newest, extra = {}) {
+  return makeStore(dir, {
+    ...extra,
+    daily: Array.from({ length: 35 }, (_, i) => ({ pkg: 1, date: dayBefore(newest + i), cc: 'US', dl: 10 })),
+    rollup: [{ pkg: 1, date: dayBefore(newest), cc: 'US', dl: 300 }],
+  });
+}
+
+for (const newest of [11, 32]) {
+  for (const [label, client, extra, status] of [
+    ['stops at the per-query cap', () => fakeClient({ dryBytes: PER_QUERY_CAP_BYTES + 1 }), {}, 'refused_cap'],
+    ['has no day to fetch', () => fakeClient(), { fetchedDays: ALL_CANDIDATES }, 'ok'],
+  ]) {
+    test(`a run that ${label} with the newest stored day D-${newest} keeps that day's 30-day total`, async () => {
+      const dir = tmp();
+      try {
+        const dbPath = staleStore(dir, newest, extra);
+        const res = await runCollect(dbPath, client());
+        assert.equal(res.status, status);
+        assert.equal(res.asOf, dayBefore(newest));
+        const db = new Database(dbPath, { readonly: true });
+        const rows = db.prepare('SELECT package_id, date, country_code, downloads FROM pypi_country_downloads').all();
+        db.close();
+        assert.deepEqual(rows, [{ package_id: 1, date: dayBefore(newest), country_code: 'US', downloads: 300 }],
+          'the rollup sums the 30 days ending at its own date, not the days since the run date');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  }
+}
+
+test('a stopped run whose rollup write fails keeps its own status and the previous rollup', async () => {
+  const dir = tmp();
+  try {
+    const dbPath = makeStore(dir, {
+      daily: [{ pkg: 1, date: dayBefore(1), cc: 'US', dl: 10 }],
+      rollup: [{ pkg: 1, date: dayBefore(2), cc: 'US', dl: 99 }],
+    });
+    const db = new Database(dbPath);
+    db.exec("CREATE TRIGGER abort_ins BEFORE INSERT ON pypi_country_downloads BEGIN SELECT RAISE(ABORT, 'injected'); END");
+    db.close();
+    const res = await runCollect(dbPath, fakeClient({ dryBytes: PER_QUERY_CAP_BYTES + 1 }));
+    assert.equal(res.status, 'refused_cap', 'a failed rollup does not turn the refusal into an error');
+    assert.equal(res.exitCode, 1);
+    assert.equal(res.asOf, dayBefore(1), 'the as-of falls back to the newest stored day');
+    assert.equal(readStatus(dir).status, 'refused_cap');
+    const after = new Database(dbPath, { readonly: true });
+    const rows = after.prepare('SELECT date, downloads FROM pypi_country_downloads').all();
+    after.close();
+    assert.deepEqual(rows, [{ date: dayBefore(2), downloads: 99 }], 'the previous rollup is left in place');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // AC7 — scheduled run without credentials exits 1; population needs no env
 // ---------------------------------------------------------------------------
@@ -614,7 +673,7 @@ function runScript(extraEnv, dbPath) {
     delete env.GOOGLE_APPLICATION_CREDENTIALS;
     delete env.GOOGLE_CLOUD_PROJECT;
     delete env.PYPI_PACKAGES;
-    delete env.npm_config_dry_run;
+    for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_dry_run') delete env[key];
     if (!extraEnv.GITHUB_ACTIONS) delete env.GITHUB_ACTIONS;
     const child = spawn(process.execPath, [SCRIPT], { env, cwd: dirname(dbPath) });
     let stdout = '';

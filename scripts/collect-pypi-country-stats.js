@@ -29,11 +29,12 @@
  * ledger, no run status). It exits 0 only when the next run would clear both
  * caps; when every candidate day is already fetched, it measures D-1 as a
  * sample and exits 0 only when a new day of that size would clear them.
- * npm_config_dry_run=true, which npm sets for
+ * npm_config_dry_run=true (in any letter case), which npm sets for
  * `npm run collect:pypi-countries --dry-run`, selects it as well. `--help`
- * prints the usage and exits 0; any other argument, and an npm option that
- * looks like a mistyped --dry-run (npm_config_dryrun from `--dryrun`), exits 2
- * with a usage message before anything runs.
+ * or `-h` prints the usage and exits 0, whatever else is given; any other
+ * argument, and an npm option that looks like a mistyped --dry-run
+ * (npm_config_dryrun from `--dryrun`), exits 2 with a usage message before
+ * anything runs.
  *
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs. A
@@ -285,18 +286,20 @@ function newestStoredDay(db) {
 /**
  * Rewrite pypi_country_downloads for the as-of date (the newest stored closed
  * day) as the per-(package_id, country_code) SUM of pypi_country_daily over
- * the stored days inside the 30 most recent closed days. Purely local: no
+ * the stored days among the 30 days ending at the as-of day. Purely local: no
  * client call; fewer than 30 stored days simply sum over what is stored.
+ * The window is anchored on the as-of day, not on the run date, so the total
+ * always covers the 30 days its date names, even when the newest stored day
+ * is weeks old.
  * The whole table is replaced, not just the as-of rows: a stale snapshot at
  * any other date would otherwise shadow the rollup through the consumers'
  * MAX(date) reads.
  */
-function rollupCountryDownloads(db, now) {
+function rollupCountryDownloads(db) {
   const asOf = newestStoredDay(db);
   if (!asOf) return null;
-  const today = utcMidnight(now);
-  const windowStart = isoDay(addDays(today, -WINDOW_DAYS));
-  const windowEnd = isoDay(addDays(today, -1));
+  const windowEnd = asOf;
+  const windowStart = isoDay(addDays(new Date(`${asOf}T00:00:00Z`), -(WINDOW_DAYS - 1)));
   // One transaction: an insert that aborts must not leave the table empty.
   db.transaction(() => {
     db.prepare('DELETE FROM pypi_country_downloads').run();
@@ -309,6 +312,21 @@ function rollupCountryDownloads(db, now) {
     `).run(asOf, windowStart, windowEnd);
   })();
   return asOf;
+}
+
+/**
+ * The rollup for a run that is ending anyway. A failed rewrite leaves the
+ * previous rollup in place (one transaction) and must not replace the run's
+ * own status, so it is logged and the as-of falls back to the newest stored
+ * day, or null when even that cannot be read.
+ */
+function rollupOrNewestStoredDay(db) {
+  try {
+    return rollupCountryDownloads(db);
+  } catch (error) {
+    console.error('PyPI country rollup failed: %s', error.message);
+    try { return newestStoredDay(db); } catch { return null; }
+  }
 }
 
 /**
@@ -446,9 +464,11 @@ async function collect({
     let rowsLanded = 0;
     // A run that stops early still rewrites the rollup, whether or not it
     // landed a day: the daily rows may hold days an earlier run stored and
-    // never rolled up, and the asOf it reports must have its 30-day total.
+    // never rolled up. The rewrite gives the as-of day it reports the 30-day
+    // total ending there; if the rewrite fails, the previous rollup stays and
+    // the run keeps the status it stopped with.
     const stop = (status) => finish(status, {
-      asOf: rollupCountryDownloads(db, now),
+      asOf: rollupOrNewestStoredDay(db),
       daysFetched, bytesBilled: runBytes, exitCode: 1,
     });
     for (const day of missingDays) {
@@ -511,22 +531,15 @@ async function collect({
       log('  %s: %d rows, %d bytes billed', dayIso, rows.length, charge);
     }
 
-    const asOf = rollupCountryDownloads(db, now);
+    const asOf = rollupCountryDownloads(db);
     const status = daysFetched > 0 && rowsLanded === 0 ? 'empty' : 'ok';
     log('Country stats collection complete (%s, as of %s).', status, asOf || 'never');
     return finish(status, { asOf, daysFetched, bytesBilled: runBytes, exitCode: 0 });
   } catch (error) {
     console.error('PyPI country collection failed: %s', error.message);
-    let asOf = null;
-    if (db) {
-      // Stored days, including any this run landed before the failure, still
-      // reach the rollup.
-      try {
-        asOf = rollupCountryDownloads(db, now);
-      } catch {
-        try { asOf = newestStoredDay(db); } catch { /* keep null */ }
-      }
-    }
+    // Stored days, including any this run landed before the failure, still
+    // reach the rollup.
+    const asOf = db ? rollupOrNewestStoredDay(db) : null;
     return finish('error', { asOf, daysFetched, bytesBilled: runBytes, exitCode: 1 });
   } finally {
     if (db) db.close();
@@ -650,16 +663,16 @@ async function estimate({
   }
 }
 
-const USAGE = 'Usage: npm run collect:pypi-countries -- [--dry-run | --help]';
+const USAGE = 'Usage: npm run collect:pypi-countries -- [--dry-run | -h | --help]';
 
 const HELP = `${USAGE}
 
 Without an argument it collects up to ${MAX_DAYS_PER_RUN} missing closed days from BigQuery,
 within a ${PER_QUERY_CAP_BYTES / 1073741824} GiB per-query cap and a ${MONTH_CAP_BYTES / 1073741824} GiB monthly cap.
 
-  --dry-run  measure what the next run would scan against both caps;
-             bills nothing and writes nothing
-  --help     print this message`;
+  --dry-run   measure what the next run would scan against both caps;
+              bills nothing and writes nothing
+  -h, --help  print this message and exit, whatever else is given`;
 
 /** Levenshtein distance between two short strings. */
 function editDistance(a, b) {
@@ -676,11 +689,12 @@ function editDistance(a, b) {
 
 /**
  * npm options in `env` that look like a mistyped --dry-run. A flag given
- * without the `--` separator goes to npm, not to the collector's arguments,
- * and npm passes even one it does not know on as npm_config_<name>, lowercased:
- * `npm run collect:pypi-countries --dryrun` arrives only as
+ * without the `--` separator goes to npm, not to the collector's arguments.
+ * npm 8 to 11 pass even one they do not know on as npm_config_<name>,
+ * lowercased: `npm run collect:pypi-countries --dryrun` arrives only as
  * npm_config_dryrun=true. Read as no argument, it would start the billed run
- * the flag was meant to measure. npm_config_dry_run is the dry run itself.
+ * the flag was meant to measure. npm 12 exits 1 on an unknown flag before the
+ * script starts. npm_config_dry_run, in any letter case, is the dry run itself.
  */
 function mistypedDryRunOptions(env) {
   return Object.keys(env).filter(key => {
@@ -693,13 +707,22 @@ function mistypedDryRunOptions(env) {
 }
 
 /**
+ * True when npm_config_dry_run is 'true'. npm reads its npm_config_ variables
+ * without regard to letter case, so NPM_CONFIG_DRY_RUN=true asks for a dry run
+ * as well; read as no argument, it would start a billed run.
+ */
+function npmDryRun(env) {
+  return Object.keys(env).some(key => key.toLowerCase() === 'npm_config_dry_run' && env[key] === 'true');
+}
+
+/**
  * Read the command line. `--dry-run` is the only argument besides `--help`
- * (or `-h`); anything else is refused, never read as a request for a billed
- * collection. Without the `--` separator, `npm run collect:pypi-countries
- * --dry-run` keeps the flag for npm, which passes it on as
- * npm_config_dry_run=true, so that is a dry run too, and an npm option that
- * looks like a mistyped --dry-run is refused. Returns { help }, { dryRun } or
- * { error }.
+ * (or `-h`), which wins over anything else given; anything else is refused,
+ * never read as a request for a billed collection. Without the `--`
+ * separator, `npm run collect:pypi-countries --dry-run` keeps the flag for
+ * npm, which passes it on as npm_config_dry_run=true, so that is a dry run
+ * too, and an npm option that looks like a mistyped --dry-run is refused,
+ * even alongside --dry-run. Returns { help }, { dryRun } or { error }.
  */
 function parseArgs(argv, env = process.env) {
   if (argv.includes('--help') || argv.includes('-h')) return { help: true };
@@ -714,7 +737,7 @@ function parseArgs(argv, env = process.env) {
         + 'goes to npm, which passed it on under that name; the dry-run flag is --dry-run.',
     };
   }
-  return { dryRun: argv.includes('--dry-run') || env.npm_config_dry_run === 'true' };
+  return { dryRun: argv.includes('--dry-run') || npmDryRun(env) };
 }
 
 async function main() {
