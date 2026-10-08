@@ -3,10 +3,10 @@ const assert = require('node:assert');
 const { readFileSync, mkdtempSync, rmSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
-const { pathToFileURL } = require('node:url');
+const crypto = require('node:crypto');
 
 const {
-  CRON_COLLECTORS, COLLECTOR_ENV_KEYS, SUMMARY_ENV_KEYS, collectorEnv, isAuthorized, runCron,
+  CRON_COLLECTORS, COLLECTOR_ENV_KEYS, SUMMARY_ENV_KEYS, collectorEnv, isAuthorized, runCron, cronHandler,
 } = require('../lib/cron');
 
 const SCRIPTS = join(__dirname, '..', 'scripts');
@@ -44,7 +44,6 @@ for (const [label, env, header] of [
 ]) {
   test(`with CRON_SECRET ${label} the cron route answers 401 and runs nothing`, async () => {
     assert.equal(isAuthorized(header, env), false);
-    const { default: handler } = await import(pathToFileURL(ROUTE).href);
     const prevSecret = process.env.CRON_SECRET;
     const prevCwd = process.cwd();
     // An empty directory holds no collector, so a route that let the request
@@ -56,7 +55,7 @@ for (const [label, env, header] of [
       const res = { statusCode: null, body: null };
       res.status = (code) => { res.statusCode = code; return res; };
       res.json = (obj) => { res.body = obj; return res; };
-      await handler({ headers: { authorization: header } }, res);
+      await cronHandler({ headers: { authorization: header } }, res);
       assert.equal(res.statusCode, 401);
       assert.deepEqual(res.body, { error: 'Unauthorized' });
     } finally {
@@ -66,6 +65,32 @@ for (const [label, env, header] of [
     }
   });
 }
+
+// The route file is ES-module syntax in a package without "type": "module";
+// importing it from a test fails on Node before 20.19 and warns after, so the
+// tests load its handler from lib/cron.js and check the route serves that one.
+test('the cron route serves the handler in lib/cron.js', () => {
+  const source = readFileSync(ROUTE, 'utf8');
+  assert.match(source, /^import \{ cronHandler \} from '\.\.\/\.\.\/\.\.\/lib\/cron\.js';$/m);
+  assert.match(source, /^export default cronHandler;$/m);
+});
+
+test('the cron route compares the Authorization header in constant time', () => {
+  const env = { CRON_SECRET: 's3cret' };
+  const original = crypto.timingSafeEqual;
+  const lengths = [];
+  crypto.timingSafeEqual = (a, b) => { lengths.push([a.length, b.length]); return original(a, b); };
+  try {
+    assert.equal(isAuthorized('Bearer s3cret', env), true);
+    assert.equal(isAuthorized('Bearer s3cres', env), false);
+    assert.equal(isAuthorized('Bearer a-much-longer-wrong-token', env), false);
+    assert.equal(isAuthorized(['Bearer s3cret'], env), false);
+  } finally {
+    crypto.timingSafeEqual = original;
+  }
+  assert.equal(lengths.length, 3, 'every string header goes through crypto.timingSafeEqual');
+  for (const [a, b] of lengths) assert.equal(a, b, 'the buffers compared are of equal length');
+});
 
 test('the cron route accepts only the bearer token in CRON_SECRET', () => {
   const env = { CRON_SECRET: 's3cret' };

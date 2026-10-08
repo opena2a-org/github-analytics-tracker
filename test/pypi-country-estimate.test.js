@@ -371,7 +371,7 @@ test('the npm options npm 11 sets for every `npm run`, and the loglevel a flag s
 });
 
 // Each is caught by one clause of the check alone: dry_running only by the
-// `dry` prefix (it is 3 edits from dryrun), NPM_CONFIG_DRYRUN only by reading
+// `dry` prefix (it is 4 edits from dryrun), NPM_CONFIG_DRYRUN only by reading
 // the npm_config_ prefix in any letter case, and npm_config_dryrun beside
 // --dry-run only because the check also runs when --dry-run is given.
 for (const [argv, key] of [
@@ -405,6 +405,30 @@ test('NPM_CONFIG_DRY_RUN=true, which npm reads as its dry-run option, is a dry r
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('npm_config_dry_run set to anything but false, 0 or empty, in any letter case, is a dry run', () => {
+  for (const value of ['true', 'TRUE', 'True', '1', 'yes']) {
+    assert.deepEqual(parseArgs([], { NPM_CONFIG_DRY_RUN: value }), { dryRun: true }, `NPM_CONFIG_DRY_RUN=${value}`);
+    assert.deepEqual(parseArgs([], { npm_config_dry_run: value }), { dryRun: true }, `npm_config_dry_run=${value}`);
+  }
+  for (const value of ['false', 'FALSE', 'False', '0', '']) {
+    assert.deepEqual(parseArgs([], { NPM_CONFIG_DRY_RUN: value }), { dryRun: false }, `NPM_CONFIG_DRY_RUN=${value}`);
+  }
+});
+
+for (const value of ['TRUE', '1']) {
+  test(`NPM_CONFIG_DRY_RUN=${value} without credentials takes the dry-run path and writes no run status`, async () => {
+    const dir = tmp();
+    try {
+      const res = await runScript([], join(dir, 'analytics.db'), { NPM_CONFIG_DRY_RUN: value });
+      assert.equal(res.status, 1, `expected exit 1; stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+      assert.match(res.stdout, /nothing was measured/i);
+      assert.ok(!existsSync(join(dir, RUN_FILE)), 'a dry run writes no run status');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+}
 
 test('npm_config_dry_run=true, which `npm run collect:pypi-countries --dry-run` sets, is a dry run', async () => {
   const dir = tmp();

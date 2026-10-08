@@ -119,7 +119,8 @@ both caps, and writes nothing. It exits 0 only when the next run would clear bot
 every day in the window is already fetched, the next run bills nothing; the dry run then
 measures yesterday as a sample and reports whether a new day of that size would clear both caps.
 `npm run collect:pypi-countries --dry-run` (without the `--`) is also a dry run, as is
-`npm_config_dry_run=true` set in the environment in any letter case.
+`npm_config_dry_run` set in the environment to any value but `false`, `0` or empty, with the
+name and the value in any letter case.
 `npm run collect:pypi-countries -- --help` (or `-h`) prints the usage and exits 0, even when other
 arguments are given with it. Without the `--`, `--help` goes to npm, which prints its own usage
 and runs nothing. Any other argument after the `--` is refused with a usage message and exit

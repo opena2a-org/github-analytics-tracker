@@ -29,12 +29,12 @@
  * ledger, no run status). It exits 0 only when the next run would clear both
  * caps; when every candidate day is already fetched, it measures D-1 as a
  * sample and exits 0 only when a new day of that size would clear them.
- * npm_config_dry_run=true (in any letter case), which npm sets for
- * `npm run collect:pypi-countries --dry-run`, selects it as well. `--help`
- * or `-h` prints the usage and exits 0, whatever else is given; any other
- * argument, and an npm option that looks like a mistyped --dry-run
- * (npm_config_dryrun from `--dryrun`), exits 2 with a usage message before
- * anything runs.
+ * npm_config_dry_run (in any letter case) set to anything but false, 0 or
+ * empty, as npm sets it for `npm run collect:pypi-countries --dry-run`,
+ * selects it as well. `--help` or `-h` prints the usage and exits 0, whatever
+ * else is given; any other argument, and an npm option that looks like a
+ * mistyped --dry-run (npm_config_dryrun from `--dryrun`), exits 2 with a usage
+ * message before anything runs.
  *
  * The client port this module consumes: one async `query(options)` that
  * resolves to { rows, totalBytesProcessed } for both dry and billed runs. A
@@ -706,13 +706,18 @@ function mistypedDryRunOptions(env) {
   });
 }
 
+// The npm_config_dry_run values, in any letter case, that do not ask for a dry run.
+const NOT_DRY_RUN = ['', 'false', '0'];
+
 /**
- * True when npm_config_dry_run is 'true'. npm reads its npm_config_ variables
- * without regard to letter case, so NPM_CONFIG_DRY_RUN=true asks for a dry run
- * as well; read as no argument, it would start a billed run.
+ * True when npm_config_dry_run is set to anything but false, 0 or empty. npm
+ * reads its npm_config_ variables without regard to letter case, so
+ * NPM_CONFIG_DRY_RUN=true asks for a dry run as well, and so do TRUE and 1;
+ * read as no argument, any of them would start a billed run.
  */
 function npmDryRun(env) {
-  return Object.keys(env).some(key => key.toLowerCase() === 'npm_config_dry_run' && env[key] === 'true');
+  return Object.keys(env).some(key => key.toLowerCase() === 'npm_config_dry_run'
+    && !NOT_DRY_RUN.includes(String(env[key]).trim().toLowerCase()));
 }
 
 /**
