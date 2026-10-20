@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-19T06:07:52.234Z",
+  "lastUpdated": "2026-10-20T06:06:26.605Z",
   "repository": "opena2a-standards/agent-authorization-protocol",
   "stats": {
     "allTime": {
-      "views": 596,
-      "clones": 2637
+      "views": 646,
+      "clones": 2783
     },
     "recent14Days": {
-      "views": 327,
+      "views": 376,
       "viewsUnique": 12,
-      "clones": 1897,
-      "clonesUnique": 377
+      "clones": 2033,
+      "clonesUnique": 396
     },
     "stars": 1,
     "forks": 0
