@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-23T06:06:14.692Z",
+  "lastUpdated": "2026-10-24T06:07:04.498Z",
   "repository": "ecolibria/crypto-census-data",
   "stats": {
     "allTime": {
       "views": 162,
-      "clones": 667
+      "clones": 669
     },
     "recent14Days": {
-      "views": 142,
+      "views": 130,
       "viewsUnique": 4,
-      "clones": 231,
-      "clonesUnique": 70
+      "clones": 165,
+      "clonesUnique": 53
     },
     "stars": 2,
     "forks": 0
