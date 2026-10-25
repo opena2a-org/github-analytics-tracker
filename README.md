@@ -1,16 +1,14 @@
 # GitHub Analytics Tracker
 
-[![Status: experimental](https://img.shields.io/badge/status-experimental-orange)](./STATUS.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](./package.json)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
-[![Collect Analytics](https://github.com/opena2a-org/github-analytics-tracker/actions/workflows/collect-stats.yml/badge.svg)](https://github.com/opena2a-org/github-analytics-tracker/actions/workflows/collect-stats.yml)
+[![Status: experimental](https://img.shields.io/badge/status-experimental-orange)](STATUS.md)
+[![CI](https://github.com/opena2a-org/github-analytics-tracker/actions/workflows/test.yml/badge.svg)](https://github.com/opena2a-org/github-analytics-tracker/actions/workflows/test.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-> **GitHub deletes your traffic data every 14 days. This doesn't.**
->
-> A self-hosted multi-source analytics tracker that preserves GitHub
-> traffic beyond the 14-day retention limit and aggregates download
-> stats from npm, PyPI, and Docker Hub into a single dashboard.
+> **[OpenA2A](https://github.com/opena2a-org)**: [CLI](https://github.com/opena2a-org/opena2a) · [HackMyAgent](https://github.com/opena2a-org/hackmyagent) · [Secretless](https://github.com/opena2a-org/secretless-ai) · [AIM](https://github.com/opena2a-org/agent-identity-management) · [Browser Guard](https://github.com/opena2a-org/ai-browserguard) · [DVAA](https://github.com/opena2a-org/damn-vulnerable-ai-agent)
+
+[Website](https://github-analytics-tracker.vercel.app) · [Discord](https://discord.gg/uRZa3KXgEn)
+
+A self-hosted analytics tracker that keeps a copy of GitHub repository traffic, which the [GitHub traffic API](https://docs.github.com/en/rest/metrics/traffic) returns for the last 14 days only, and collects download statistics from npm, PyPI and Docker Hub into one dashboard.
 
 ## Why this exists
 
