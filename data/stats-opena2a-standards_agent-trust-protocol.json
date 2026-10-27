@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-26T06:07:25.053Z",
+  "lastUpdated": "2026-10-27T06:06:31.954Z",
   "repository": "opena2a-standards/agent-trust-protocol",
   "stats": {
     "allTime": {
-      "views": 613,
-      "clones": 2627
+      "views": 615,
+      "clones": 2681
     },
     "recent14Days": {
-      "views": 322,
+      "views": 287,
       "viewsUnique": 4,
-      "clones": 1541,
-      "clonesUnique": 253
+      "clones": 1124,
+      "clonesUnique": 206
     },
     "stars": 2,
     "forks": 0
