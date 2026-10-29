@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-28T06:05:17.650Z",
+  "lastUpdated": "2026-10-29T06:05:15.441Z",
   "repository": "opena2a-org/agent-identity-management",
   "stats": {
     "allTime": {
-      "views": 11224,
-      "clones": 53382
+      "views": 11235,
+      "clones": 53464
     },
     "recent14Days": {
-      "views": 611,
-      "viewsUnique": 172,
-      "clones": 13268,
-      "clonesUnique": 1337
+      "views": 571,
+      "viewsUnique": 178,
+      "clones": 12765,
+      "clonesUnique": 1294
     },
     "stars": 67,
     "forks": 21
