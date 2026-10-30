@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-29T06:05:15.450Z",
+  "lastUpdated": "2026-10-30T06:05:24.213Z",
   "repository": "opena2a-standards/aap-conformance",
   "stats": {
     "allTime": {
       "views": 207,
-      "clones": 1747
+      "clones": 1750
     },
     "recent14Days": {
-      "views": 8,
-      "viewsUnique": 2,
-      "clones": 745,
-      "clonesUnique": 69
+      "views": 3,
+      "viewsUnique": 1,
+      "clones": 665,
+      "clonesUnique": 62
     },
     "stars": 1,
     "forks": 1
