@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-10-30T06:05:24.214Z",
+  "lastUpdated": "2026-10-31T06:04:11.297Z",
   "repository": "opena2a-standards/atp-conformance",
   "stats": {
     "allTime": {
-      "views": 134,
-      "clones": 2392
+      "views": 139,
+      "clones": 2441
     },
     "recent14Days": {
-      "views": 1,
-      "viewsUnique": 1,
-      "clones": 1010,
-      "clonesUnique": 157
+      "views": 6,
+      "viewsUnique": 6,
+      "clones": 941,
+      "clonesUnique": 148
     },
     "stars": 1,
     "forks": 0
