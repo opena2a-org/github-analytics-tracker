@@ -231,16 +231,15 @@ test('the API route and the overview keep each model\'s last measured counts, an
   const db = committedCopy();
   try {
     migrateHuggingfaceStats(db);
-    const target = db.prepare(`
-      SELECT model_id AS id, MAX(date) AS last FROM huggingface_stats
-      GROUP BY model_id ORDER BY MAX(downloads_all_time) DESC LIMIT 1
-    `).get();
-    const measured = db.prepare(`
-      SELECT downloads_all_time AS downloadsAllTime, downloads_30d AS downloads30d, likes
-      FROM huggingface_stats WHERE model_id = ? AND date = ?
-    `).get(target.id, target.last);
-    assert.ok(measured.downloadsAllTime > 0 && measured.downloads30d > 0 && measured.likes > 0,
-      'the committed database has a model with non-zero counts');
+    // The committed snapshot may hold a model whose newest counts are null or 0, so the test measures a model of its own.
+    db.prepare("INSERT INTO huggingface_models (model_id, author) VALUES ('fixture/last-measured-counts', 'fixture')").run();
+    const target = db.prepare("SELECT id FROM huggingface_models WHERE model_id = 'fixture/last-measured-counts'").get();
+    const snapshot = db.prepare(`
+      INSERT INTO huggingface_stats (model_id, date, downloads_30d, downloads_all_time, likes) VALUES (?, ?, ?, ?, ?)
+    `);
+    snapshot.run(target.id, '2026-01-01', 300, 1200, 4); // an earlier measured day, so the period growth is 50, not 0
+    const measured = { downloadsAllTime: 1250, downloads30d: 320, likes: 5 };
+    snapshot.run(target.id, '2026-01-02', measured.downloads30d, measured.downloadsAllTime, measured.likes);
     const baseEntry = huggingfaceModelList(db).find(m => m.id === target.id);
     const baseDetail = huggingfaceModelDetail(db, target.id, '0000-00-00');
     const baseOverview = computeOverview(db, {});
