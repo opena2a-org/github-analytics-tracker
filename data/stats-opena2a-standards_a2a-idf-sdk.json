@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-01T06:04:50.637Z",
+  "lastUpdated": "2026-11-02T06:05:31.610Z",
   "repository": "opena2a-standards/a2a-idf-sdk",
   "stats": {
     "allTime": {
       "views": 35,
-      "clones": 261
+      "clones": 264
     },
     "recent14Days": {
       "views": 1,
       "viewsUnique": 1,
-      "clones": 83,
-      "clonesUnique": 38
+      "clones": 30,
+      "clonesUnique": 12
     },
     "stars": 1,
     "forks": 0
