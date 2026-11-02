@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const { byMeasuredDesc, floorCount, WITHHELD } = require('../../lib/telemetry-withheld');
 const { toolDisplayName } = require('../../lib/telemetry');
 
 /**
@@ -49,24 +50,30 @@ export default async function handler(req, res) {
     const versionRows = db.prepare(
       'SELECT tool, version, installs FROM telemetry_version_snapshots WHERE date = ? ORDER BY tool, installs DESC, version'
     ).all(latest.date);
+    // Only floored counts are served: a count under ten, zero included, is
+    // null (withheld) and keeps its row, never 0 and never dropped. Rows are
+    // ordered on the floored count, so a withheld one follows every measured
+    // one, by name, and its place says nothing about the count it hides.
     const versionsByTool = {};
     for (const v of versionRows) {
-      (versionsByTool[v.tool] ||= []).push({ version: v.version, installs: v.installs });
+      (versionsByTool[v.tool] ||= []).push({ version: v.version, installs: floorCount(v.installs) });
     }
+    for (const list of Object.values(versionsByTool)) list.sort(byMeasuredDesc('installs', 'version'));
 
     const tools = toolRows.map(t => ({
       tool: t.tool,
       product: toolDisplayName(t.tool),
-      totalInstalls: t.total_installs,
-      wau: t.wau,
-      mau: t.mau,
-      engagedMau: t.engaged_mau ?? 0,
+      totalInstalls: floorCount(t.total_installs),
+      wau: floorCount(t.wau),
+      mau: floorCount(t.mau),
+      engagedMau: floorCount(t.engaged_mau),
       versions: versionsByTool[t.tool] || [],
-    }));
+    })).sort(byMeasuredDesc('mau', 'tool'));
 
     const byCountry = db.prepare(
       'SELECT country_code, installs FROM telemetry_country_snapshots WHERE date = ? ORDER BY installs DESC, country_code'
-    ).all(latest.date).map(c => ({ countryCode: c.country_code, installs: c.installs }));
+    ).all(latest.date).map(c => ({ countryCode: c.country_code, installs: floorCount(c.installs) }))
+      .sort(byMeasuredDesc('installs', 'countryCode'));
 
     return res.status(200).json({
       available: true,
@@ -77,10 +84,10 @@ export default async function handler(req, res) {
         retentionDays: latest.retention_days,
         wauWindowDays: latest.wau_window_days,
         mauWindowDays: latest.mau_window_days,
-        totalInstalls: latest.total_installs,
-        wau: latest.wau,
-        mau: latest.mau,
-        engagedMau: latest.engaged_mau ?? 0,
+        totalInstalls: floorCount(latest.total_installs),
+        wau: floorCount(latest.wau),
+        mau: floorCount(latest.mau),
+        engagedMau: floorCount(latest.engaged_mau),
         engagedMinDays: latest.engaged_min_days ?? 0,
         wauGrowth7d: prior7 ? latest.wau - prior7.wau : 0,
         mauGrowth30d: prior30 ? latest.mau - prior30.mau : 0,
@@ -88,6 +95,7 @@ export default async function handler(req, res) {
       },
       tools,
       byCountry,
+      withheld: WITHHELD,
     });
   } catch (err) {
     return res.status(500).json({ error: 'telemetry read failed' });

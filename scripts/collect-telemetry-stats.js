@@ -4,6 +4,8 @@ const { URL } = require('url');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { formatTelemetryCount } = require('../lib/telemetry-withheld');
+const { cleanTelemetryStore } = require('./floor-telemetry-counts');
 
 require('dotenv').config();
 
@@ -274,11 +276,12 @@ function persist(db, feed) {
 
 function writeBadge(feed) {
   // Headline is monthly active users (the honest "how many people use this"
-  // number), mirroring the docker/hf badge convention.
+  // number), mirroring the docker/hf badge convention. A withheld MAU (under
+  // ten) reads "fewer than 10", never a number.
   const badge = {
     schemaVersion: 1,
     label: 'active CLI users (MAU)',
-    message: feed.mau.toLocaleString(),
+    message: formatTelemetryCount(feed.mau),
     color: 'brightgreen',
     style: 'flat',
   };
@@ -312,15 +315,21 @@ async function main() {
 
   const db = new Database(dbPath);
   try {
+    // The feed is floored by normalizeAdoptionFeed. The store step makes the
+    // count columns nullable before a withheld (NULL) count is written, and
+    // floors any count under ten an earlier run stored.
+    cleanTelemetryStore(db);
     persist(db, feed);
     writeBadge(feed);
   } finally {
     db.close();
   }
 
+  // Floored figures only: this line lands in a public workflow log.
   console.log(
-    '  Installs: %d | WAU: %d | MAU: %d | engaged(MAU): %d | tools: %d | countries: %d',
-    feed.totalInstalls, feed.wau, feed.mau, feed.engagedMau, feed.tools.length, feed.byCountry.length
+    '  Installs: %s | WAU: %s | MAU: %s | engaged(MAU): %s | tools: %d | countries: %d',
+    formatTelemetryCount(feed.totalInstalls), formatTelemetryCount(feed.wau), formatTelemetryCount(feed.mau),
+    formatTelemetryCount(feed.engagedMau), feed.tools.length, feed.byCountry.length
   );
 
   // A retrieval check cannot see a feed that answers 200 with drained numbers,

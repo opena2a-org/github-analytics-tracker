@@ -191,7 +191,9 @@ test('a drained feed (mau=0, installs still live) errors — the shape a broken 
         const res = await run({ REGISTRY_URL: url }, dbFile);
         assert.equal(res.status, 1, `expected an outage exit; stdout:\n${res.stdout}`);
         assert.match(res.stdout, /::error::/);
-        assert.match(res.stdout, /mau=0/);
+        // The feed's 0 is floored: the log names it withheld, never prints it.
+        assert.match(res.stdout, /mau fewer than 10/);
+        assert.doesNotMatch(res.stdout, /mau=0/);
         assert.match(res.stdout, /333 install/);
       }
     );
