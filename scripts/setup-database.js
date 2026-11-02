@@ -2,6 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const { huggingfaceStatsDdl, HF_STATS_INDEXES, migrateHuggingfaceStats } = require('../lib/huggingface');
+const { telemetrySchemaDdl, cleanTelemetryStore } = require('./floor-telemetry-counts');
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, '..', 'data');
@@ -395,57 +396,10 @@ ${huggingfaceStatsDdl('huggingface_stats')}
   -- cohorts, error rates) is fetched live behind ANALYTICS_TRACKER_PASSWORD from the
   -- Registry's authenticated internal endpoint and is never persisted.
   -- Daily snapshots (one row per collection day), like Chrome and HuggingFace.
-  CREATE TABLE IF NOT EXISTS telemetry_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,                        -- collection day (UTC)
-    generated_at TEXT,                         -- feed's measured-at timestamp (RFC3339)
-    provenance TEXT,                           -- honest basis + limits, carried from the feed (best-effort, not sybil-verified)
-    retention_days INTEGER NOT NULL DEFAULT 0, -- events retention backing the counts
-    wau_window_days INTEGER NOT NULL DEFAULT 0,
-    mau_window_days INTEGER NOT NULL DEFAULT 0,
-    total_installs INTEGER NOT NULL DEFAULT 0, -- fleet-wide distinct installs (retention window)
-    wau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide weekly active installs
-    mau INTEGER NOT NULL DEFAULT 0,            -- fleet-wide monthly active installs
-    engaged_mau INTEGER NOT NULL DEFAULT 0,    -- sybil-dampened floor (>=2 active days + a command); <= mau
-    engaged_min_days INTEGER NOT NULL DEFAULT 0, -- active-days threshold behind engaged_mau
-    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date)
-  );
-
-  CREATE TABLE IF NOT EXISTS telemetry_tool_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    tool TEXT NOT NULL,                        -- Registry tool id (e.g. "hackmyagent")
-    total_installs INTEGER NOT NULL DEFAULT 0,
-    wau INTEGER NOT NULL DEFAULT 0,
-    mau INTEGER NOT NULL DEFAULT 0,
-    engaged_mau INTEGER NOT NULL DEFAULT 0,    -- sybil-dampened floor for this tool; <= mau
-    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date, tool)
-  );
-
-  CREATE TABLE IF NOT EXISTS telemetry_version_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    tool TEXT NOT NULL,
-    version TEXT NOT NULL,
-    installs INTEGER NOT NULL DEFAULT 0,       -- distinct installs active on this version (MAU window)
-    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date, tool, version)
-  );
-
-  CREATE TABLE IF NOT EXISTS telemetry_country_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    country_code TEXT NOT NULL,
-    installs INTEGER NOT NULL DEFAULT 0,       -- distinct installs by country (retention window)
-    collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date, country_code)
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_telemetry_tool_date ON telemetry_tool_snapshots(date);
-  CREATE INDEX IF NOT EXISTS idx_telemetry_version_date ON telemetry_version_snapshots(date);
-  CREATE INDEX IF NOT EXISTS idx_telemetry_country_date ON telemetry_country_snapshots(date);
+  -- Count columns are nullable: a count under ten, zero included, is stored as
+  -- NULL (withheld), never as 0. The tables are defined in
+  -- scripts/floor-telemetry-counts.js, which also brings an older store to them.
+${telemetrySchemaDdl()}
 `);
 
 // --- Idempotent migrations for pre-existing databases ---
@@ -472,8 +426,9 @@ if (telSnapExists) {
     console.log('Migration: added telemetry_snapshots.provenance');
   }
   // engagedMau (sybil-dampened floor) was added after the table first shipped.
+  // Rows from before it have no engaged count: NULL, never a 0.
   if (!telCols.includes('engaged_mau')) {
-    db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN engaged_mau INTEGER NOT NULL DEFAULT 0');
+    db.exec('ALTER TABLE telemetry_snapshots ADD COLUMN engaged_mau INTEGER');
     console.log('Migration: added telemetry_snapshots.engaged_mau');
   }
   if (!telCols.includes('engaged_min_days')) {
@@ -488,9 +443,21 @@ const telToolExists = db.prepare(
 if (telToolExists) {
   const cols = db.prepare('PRAGMA table_info(telemetry_tool_snapshots)').all().map(c => c.name);
   if (!cols.includes('engaged_mau')) {
-    db.exec('ALTER TABLE telemetry_tool_snapshots ADD COLUMN engaged_mau INTEGER NOT NULL DEFAULT 0');
+    db.exec('ALTER TABLE telemetry_tool_snapshots ADD COLUMN engaged_mau INTEGER');
     console.log('Migration: added telemetry_tool_snapshots.engaged_mau');
   }
+}
+
+// Telemetry counts are floored: a table whose counts are still NOT NULL is
+// rebuilt with nullable counts, and every stored count under ten, zero
+// included, is set to NULL (withheld). Idempotent; prints row counts only.
+const telemetryFloor = cleanTelemetryStore(db);
+if (telemetryFloor.rebuilt.length > 0) {
+  console.log('Migration: rebuilt %s with nullable counts', telemetryFloor.rebuilt.join(', '));
+}
+const telemetryWithheldRows = Object.values(telemetryFloor.floored).reduce((a, b) => a + b, 0);
+if (telemetryWithheldRows > 0) {
+  console.log('Telemetry floor: %d stored row(s) had a count under ten set to withheld', telemetryWithheldRows);
 }
 
 // huggingface_stats counts became nullable (an absent API count is NULL with

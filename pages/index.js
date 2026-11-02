@@ -17,6 +17,9 @@ import { periodPick, hfPeriod, rowAdoption } from '../lib/adoption';
 // as not measured and left out of totals, never as 0.
 import { sumMeasured, formatMeasured, measuredTooltipPayload, channelMixSubtitle, NOT_MEASURED } from '../lib/huggingface';
 import { SERIES } from '../lib/series';
+// A first-party telemetry count under ten, zero included, is withheld: the API
+// serves it as null and it reads "fewer than 10" here, never 0.
+import { floorCount, formatTelemetryCount, topMeasuredVersion, withWithheldNote, WITHHELD_LABEL } from '../lib/telemetry-withheld';
 
 /* ============================================================
    Source identity — one place defines color + icon per source
@@ -578,12 +581,7 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
         {totals.chrome?.extensions > 0 && (
           <Kpi icon={<Chrome size={17} />} color={C.chrome} label="Chrome Users" value={fmtFull(totals.chrome?.users || 0)} sub={`weekly active · ${totals.chrome?.extensions} ext`} />
         )}
-        {tel?.snapshot && (
-          <Kpi icon={<Users size={17} />} color={C.green} label="Active CLI Users"
-            value={fmtFull(tel.snapshot.engagedMau)}
-            sub={`engaged monthly · ${fmtFull(tel.snapshot.mau)} reported`}
-            delta={tel.snapshot.engagedGrowth30d ? pctChange(tel.snapshot.engagedMau, tel.snapshot.engagedMau - tel.snapshot.engagedGrowth30d) : null} />
-        )}
+        {tel?.snapshot && <ActiveCliUsersKpi snapshot={tel.snapshot} />}
       </div>
 
       <Panel
@@ -701,6 +699,37 @@ function OverviewTab({ overview, loading, trends, granularity, setGranularity, p
 /* ============================================================
    First-party CLI telemetry (active users)
    ============================================================ */
+/* A telemetry count, or the withheld label where the number would be: a count
+   under ten, zero included, is never shown as a number. */
+function TelemetryCount({ value }) {
+  const n = floorCount(value);
+  return n === null ? <span className="muted">{WITHHELD_LABEL}</span> : n.toLocaleString();
+}
+/* Change against the earlier snapshot, or null. A withheld figure takes no
+   part in it: no percentage is computed from a withheld cell. */
+function telemetryDelta(current, growth) {
+  const curr = floorCount(current);
+  if (curr === null || !growth) return null;
+  return pctChange(curr, floorCount(curr - growth));
+}
+/* The version with the most installs among those measured. When every
+   version's count is withheld, none is named as the top one. */
+function TopVersion({ versions }) {
+  const list = versions || [];
+  const top = topMeasuredVersion(list);
+  if (top) return <span className="muted">{top.version} · {top.installs.toLocaleString()}</span>;
+  if (list.length > 0) return <span className="muted">each version {WITHHELD_LABEL}</span>;
+  return <span className="muted">—</span>;
+}
+function ActiveCliUsersKpi({ snapshot: s }) {
+  return (
+    <Kpi icon={<Users size={17} />} color={C.green} label="Active CLI Users"
+      value={<TelemetryCount value={s.engagedMau} />}
+      sub={`engaged monthly · ${formatTelemetryCount(s.mau)} reported`}
+      delta={telemetryDelta(s.engagedMau, s.engagedGrowth30d)} />
+  );
+}
+
 function TelemetrySection({ data }) {
   const s = data.snapshot;
   const tools = data.tools || [];
@@ -737,9 +766,9 @@ function TelemetrySection({ data }) {
         title="Active users, measured first-party"
         sub={`Distinct installs of the CLIs, reported by the tools themselves — active users, not downloads (a download is not a user), so they are shown separately and never summed into adoption. "Engaged" is the honest headline: installs active on ≥${s.engagedMinDays || 2} distinct days with real usage — a sybil-dampened floor that a burst of fabricated installs can't inflate. "Reported" WAU/MAU come from anonymous, unauthenticated telemetry and are best-effort/forgeable. As of ${s.asOf}.`}>
         <div className="cards" style={{ marginBottom: 16 }}>
-          <Kpi icon={<Users size={17} />} color={C.green} label="Engaged monthly users" value={fmtFull(s.engagedMau)} sub={`≥${s.engagedMinDays || 2}-day footprint · sybil-dampened floor`} delta={s.engagedGrowth30d ? pctChange(s.engagedMau, s.engagedMau - s.engagedGrowth30d) : null} />
-          <Kpi icon={<Activity size={17} />} color={C.accent} label="Reported MAU" value={fmtFull(s.mau)} sub={`${s.mauWindowDays || 30}-day distinct · best-effort`} delta={s.mauGrowth30d ? pctChange(s.mau, s.mau - s.mauGrowth30d) : null} />
-          <Kpi icon={<Download size={17} />} color={C.npm} label="Reported WAU" value={fmtFull(s.wau)} sub={`${s.wauWindowDays || 7}-day distinct · best-effort`} delta={s.wauGrowth7d ? pctChange(s.wau, s.wau - s.wauGrowth7d) : null} />
+          <Kpi icon={<Users size={17} />} color={C.green} label="Engaged monthly users" value={<TelemetryCount value={s.engagedMau} />} sub={`≥${s.engagedMinDays || 2}-day footprint · sybil-dampened floor`} delta={telemetryDelta(s.engagedMau, s.engagedGrowth30d)} />
+          <Kpi icon={<Activity size={17} />} color={C.accent} label="Reported MAU" value={<TelemetryCount value={s.mau} />} sub={`${s.mauWindowDays || 30}-day distinct · best-effort`} delta={telemetryDelta(s.mau, s.mauGrowth30d)} />
+          <Kpi icon={<Download size={17} />} color={C.npm} label="Reported WAU" value={<TelemetryCount value={s.wau} />} sub={`${s.wauWindowDays || 7}-day distinct · best-effort`} delta={telemetryDelta(s.wau, s.wauGrowth7d)} />
         </div>
 
         {tools.length > 0 && (
@@ -749,11 +778,11 @@ function TelemetrySection({ data }) {
               {tools.map(t => (
                 <tr key={t.tool}>
                   <td><div className="cell-name">{t.product}</div>{t.product !== t.tool && <div className="cell-desc">{t.tool}</div>}</td>
-                  <td className="num">{fmtFull(t.totalInstalls)}</td>
-                  <td className="num">{fmtFull(t.engagedMau)}</td>
-                  <td className="num">{fmtFull(t.mau)}</td>
-                  <td className="num">{fmtFull(t.wau)}</td>
-                  <td>{t.versions?.[0] ? <span className="muted">{t.versions[0].version} · {fmtFull(t.versions[0].installs)}</span> : <span className="muted">—</span>}</td>
+                  <td className="num"><TelemetryCount value={t.totalInstalls} /></td>
+                  <td className="num"><TelemetryCount value={t.engagedMau} /></td>
+                  <td className="num"><TelemetryCount value={t.mau} /></td>
+                  <td className="num"><TelemetryCount value={t.wau} /></td>
+                  <td><TopVersion versions={t.versions} /></td>
                 </tr>
               ))}
             </tbody>
@@ -764,16 +793,17 @@ function TelemetrySection({ data }) {
           <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {byCountry.slice(0, 12).map(c => (
               <span key={c.countryCode} className="chip" style={{ fontSize: '.72rem' }}>
-                <i style={{ background: C.green }} />{c.countryCode} · {fmtFull(c.installs)}
+                <i style={{ background: C.green }} />{c.countryCode} · <TelemetryCount value={c.installs} />
               </span>
             ))}
           </div>
         )}
 
         {/* Honest provenance, carried from the feed — these are self-reported over
-            anonymous telemetry, a best-effort signal, not a sybil-verified count. */}
+            anonymous telemetry, a best-effort signal, not a sybil-verified count.
+            The withheld note says once what "fewer than 10" means. */}
         <div className="panel-sub" style={{ marginTop: 14, fontStyle: 'italic' }}>
-          {s.provenance || 'Self-reported by the CLIs over anonymous telemetry — a best-effort adoption signal, not a sybil-verified count.'}
+          {withWithheldNote(s.provenance || 'Self-reported by the CLIs over anonymous telemetry — a best-effort adoption signal, not a sybil-verified count.')}
         </div>
       </Panel>
 

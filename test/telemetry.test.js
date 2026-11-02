@@ -76,7 +76,7 @@ test('normalizeAdoptionFeed passes a valid feed through', () => {
 test('normalizeAdoptionFeed defaults provenance + engagedMau when absent (never fabricated)', () => {
   const n = normalizeAdoptionFeed({ totalInstalls: 10, wau: 5, mau: 8 });
   assert.equal(n.provenance, '');
-  assert.equal(n.engagedMau, 0); // absent → 0, not invented
+  assert.strictEqual(n.engagedMau, null); // absent → withheld (null), never a 0
   assert.equal(n.tools.length, 0);
 });
 
