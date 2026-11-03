@@ -1,6 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const { byMeasuredDesc, floorCount, WITHHELD } = require('../../lib/telemetry-withheld');
+const { byMeasuredDesc, floorCount, measuredChange, WITHHELD } = require('../../lib/telemetry-withheld');
 const { toolDisplayName } = require('../../lib/telemetry');
 
 /**
@@ -89,9 +89,9 @@ export default async function handler(req, res) {
         mau: floorCount(latest.mau),
         engagedMau: floorCount(latest.engaged_mau),
         engagedMinDays: latest.engaged_min_days ?? 0,
-        wauGrowth7d: prior7 ? latest.wau - prior7.wau : 0,
-        mauGrowth30d: prior30 ? latest.mau - prior30.mau : 0,
-        engagedGrowth30d: prior30 && prior30.engaged_mau != null ? (latest.engaged_mau ?? 0) - prior30.engaged_mau : 0,
+        wauGrowth7d: measuredChange(latest.wau, prior7?.wau),
+        mauGrowth30d: measuredChange(latest.mau, prior30?.mau),
+        engagedGrowth30d: measuredChange(latest.engaged_mau, prior30?.engaged_mau),
       },
       tools,
       byCountry,

@@ -424,6 +424,65 @@ test('/api/telemetry serves only floored counts, keeps every row, and orders a w
   }
 });
 
+// The growth figures /api/telemetry serves from a store holding these
+// telemetry snapshots. A count a row leaves out is stored as NULL, as a
+// floored store holds a withheld one.
+async function servedGrowth(rows) {
+  const dir = tmp('growth');
+  try {
+    mkdirSync(join(dir, 'data'));
+    storeAt(join(dir, 'data', 'analytics.db'), NULLABLE_SCHEMA, (db) => {
+      const insert = db.prepare('INSERT INTO telemetry_snapshots (date, wau, mau, engaged_mau) VALUES (@date, @wau, @mau, @engaged_mau)');
+      for (const row of rows) insert.run({ wau: null, mau: null, engaged_mau: null, ...row });
+    });
+    const { wauGrowth7d, mauGrowth30d, engagedGrowth30d } = (await serveTelemetry(dir)).snapshot;
+    return { wauGrowth7d, mauGrowth30d, engagedGrowth30d };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// Each growth figure is taken against the snapshot on or before the latest
+// one less its window: wau over 7 days, mau and engaged_mau over 30. Every
+// date follows 2026-10-11, the last day before the feed's counts changed
+// basis, so no pair here spans that change.
+const LATEST = '2026-12-02';
+const GROWTH = [
+  { field: 'wauGrowth7d', column: 'wau', prior: '2026-11-25' },
+  { field: 'mauGrowth30d', column: 'mau', prior: '2026-11-02' },
+  { field: 'engagedGrowth30d', column: 'engaged_mau', prior: '2026-11-02' },
+];
+const shown = (v) => (v === null ? 'NULL' : String(v));
+
+for (const { field, column, prior } of GROWTH) {
+  // NULL is a withheld count as a floored store holds it, and 9 a count under
+  // ten as an unfloored store holds it: on either side, the change is null.
+  for (const [now, before] of [[null, 25], [9, 25], [138, null], [138, 9]]) {
+    test(`/api/telemetry serves ${field} as null, never 0 and never the raw difference, for a latest ${column} of ${shown(now)} beside a prior of ${shown(before)}`, async () => {
+      const served = await servedGrowth([{ date: prior, [column]: before }, { date: LATEST, [column]: now }]);
+      assert.strictEqual(served[field], null);
+    });
+  }
+
+  test(`/api/telemetry serves ${field} as the difference of two measured counts: a latest ${column} of 138 beside a prior of 93 gives 45`, async () => {
+    const served = await servedGrowth([{ date: prior, [column]: 93 }, { date: LATEST, [column]: 138 }]);
+    assert.strictEqual(served[field], 45);
+  });
+}
+
+test('/api/telemetry serves every growth figure as null, never 0, when no earlier snapshot is stored', async () => {
+  const served = await servedGrowth([{ date: LATEST, wau: 138, mau: 138, engaged_mau: 138 }]);
+  assert.deepStrictEqual(served, { wauGrowth7d: null, mauGrowth30d: null, engagedGrowth30d: null });
+});
+
+test('/api/telemetry serves the 30-day growth figures as null beside a measured 7-day one when no snapshot is stored 30 days back', async () => {
+  const served = await servedGrowth([
+    { date: '2026-11-25', wau: 93, mau: 93, engaged_mau: 93 },
+    { date: LATEST, wau: 138, mau: 138, engaged_mau: 138 },
+  ]);
+  assert.deepStrictEqual(served, { wauGrowth7d: 45, mauGrowth30d: null, engagedGrowth30d: null });
+});
+
 test('the collector stores NULL for a withheld figure and for a count from 0 to 9, stores 10 or more as is, and keeps every row', async () => {
   const dir = tmp('collect');
   try {
