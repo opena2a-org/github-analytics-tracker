@@ -1,28 +1,28 @@
 {
-  "lastUpdated": "2026-11-08T06:04:45.083Z",
+  "lastUpdated": "2026-11-09T06:05:15.008Z",
   "total": {
-    "adoption": 502967,
-    "adoptionExCrypto": 479942,
-    "downloads": 826351,
-    "downloadsExCrypto": 795337,
-    "npm": 349063,
-    "pypi": 40015,
-    "cloneUniques": 4109,
-    "clones": 327493,
-    "docker": 104611,
+    "adoption": 504023,
+    "adoptionExCrypto": 480987,
+    "downloads": 828283,
+    "downloadsExCrypto": 797178,
+    "npm": 349899,
+    "pypi": 40251,
+    "cloneUniques": 4039,
+    "clones": 328299,
+    "docker": 104665,
     "hf": 5169,
-    "views": 63464,
+    "views": 63701,
     "stars": 448,
     "repos": 48,
     "npmPackages": 41,
     "chromeUsers": 23,
     "chromeExtensions": 1,
     "telemetry": {
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "totalInstalls": null,
-      "wau": 139,
-      "mau": 794,
-      "engagedMau": 53,
+      "wau": 127,
+      "mau": 769,
+      "engagedMau": 55,
       "withheld": {
         "below": 10,
         "label": "fewer than 10"
@@ -33,16 +33,16 @@
     }
   },
   "excludingCrypto": {
-    "npm": 346655,
-    "pypi": 19560,
-    "cloneUniques": 3947,
-    "clones": 319342,
-    "docker": 104611,
-    "downloads": 795337
+    "npm": 347491,
+    "pypi": 19752,
+    "cloneUniques": 3910,
+    "clones": 320101,
+    "docker": 104665,
+    "downloads": 797178
   },
   "series": {
     "downloads": {
-      "value": 826351,
+      "value": 828283,
       "scope": "tracked-orgs",
       "includesCryptoServe": true,
       "method": "gross-sum",
@@ -51,42 +51,42 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-11-07",
+          "asOf": "2026-11-08",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-11-08",
+          "asOf": "2026-11-09",
           "gaps": []
         },
         "clones": {
           "kind": "daily-rows",
           "first": "2025-10-24",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         }
       },
       "components": {
-        "npm": 349063,
-        "pypi": 40015,
-        "docker": 104611,
+        "npm": 349899,
+        "pypi": 40251,
+        "docker": 104665,
         "huggingface": 5169,
-        "clones": 327493
+        "clones": 328299
       },
       "status": "ok"
     },
     "downloadsExCrypto": {
-      "value": 795337,
+      "value": 797178,
       "scope": "tracked-orgs-ex-cryptoserve",
       "includesCryptoServe": false,
       "method": "gross-sum",
@@ -95,42 +95,42 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-11-07",
+          "asOf": "2026-11-08",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-11-08",
+          "asOf": "2026-11-09",
           "gaps": []
         },
         "clones": {
           "kind": "daily-rows",
           "first": "2025-10-24",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         }
       },
       "components": {
-        "npm": 346655,
-        "pypi": 19560,
-        "docker": 104611,
+        "npm": 347491,
+        "pypi": 19752,
+        "docker": 104665,
         "huggingface": 5169,
-        "clones": 319342
+        "clones": 320101
       },
       "status": "ok"
     },
     "adoption": {
-      "value": 502967,
+      "value": 504023,
       "scope": "tracked-orgs",
       "includesCryptoServe": true,
       "method": "mixed-window-sum",
@@ -139,42 +139,42 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-11-07",
+          "asOf": "2026-11-08",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-11-08",
+          "asOf": "2026-11-09",
           "gaps": []
         },
         "cloneUniques": {
           "kind": "rolling-14-day-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         }
       },
       "components": {
-        "npm": 349063,
-        "pypi": 40015,
-        "docker": 104611,
+        "npm": 349899,
+        "pypi": 40251,
+        "docker": 104665,
         "huggingface": 5169,
-        "cloneUniques": 4109
+        "cloneUniques": 4039
       },
       "status": "ok"
     },
     "adoptionExCrypto": {
-      "value": 479942,
+      "value": 480987,
       "scope": "tracked-orgs-ex-cryptoserve",
       "includesCryptoServe": false,
       "method": "mixed-window-sum",
@@ -183,37 +183,37 @@
         "npm": {
           "kind": "daily-rows",
           "first": "2025-01-28",
-          "asOf": "2026-11-07"
+          "asOf": "2026-11-08"
         },
         "pypi": {
           "kind": "daily-rows",
           "first": "2026-02-02",
-          "asOf": "2026-11-07",
+          "asOf": "2026-11-08",
           "note": "pypistats serves 180 days; rows before the first collection are unrecoverable, no backfill exists"
         },
         "docker": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         },
         "huggingface": {
           "kind": "cumulative-snapshot",
           "firstSnapshot": "2026-06-02",
-          "asOf": "2026-11-08",
+          "asOf": "2026-11-09",
           "gaps": []
         },
         "cloneUniques": {
           "kind": "rolling-14-day-snapshot",
           "firstSnapshot": "2026-02-22",
-          "asOf": "2026-11-08"
+          "asOf": "2026-11-09"
         }
       },
       "components": {
-        "npm": 346655,
-        "pypi": 19560,
-        "docker": 104611,
+        "npm": 347491,
+        "pypi": 19752,
+        "docker": 104665,
         "huggingface": 5169,
-        "cloneUniques": 3947
+        "cloneUniques": 3910
       },
       "status": "ok"
     }
@@ -269,7 +269,7 @@
     "asOf": null
   },
   "momentum": {
-    "asOf": "2026-11-08",
+    "asOf": "2026-11-09",
     "method": "Growth is (current - previous) / previous over two adjacent windows of equal length (wow 7 days, mom 30, qoq 90) ending at each series' anchor, the latest collected day with data. Daily-row series sum daily counts; snapshot series take the running total at the window end minus the total the day before the window starts; the count an entity already had on the day it was first collected is reported as carriedIn, not as growth. Acceleration compares this week's growth rate with last week's. CAGR compares the earliest complete window starting at the first day with a non-zero value with the current one and is published only when they are at least a year apart. A figure that cannot be measured is null with a reason; nothing is estimated.",
     "windows": {
       "wow": 7,
@@ -277,30 +277,30 @@
       "qoq": 90
     },
     "snapshot": {
-      "direction": "falling",
-      "downloadsWowGrowthPct": -22.79,
-      "downloadsMomGrowthPct": 85.81,
-      "downloadsQoqGrowthPct": 114.77,
+      "direction": "rising",
+      "downloadsWowGrowthPct": 16.3,
+      "downloadsMomGrowthPct": 77.33,
+      "downloadsQoqGrowthPct": 113.2,
       "sources": {
         "npm": {
-          "wowGrowthPct": -17.44,
+          "wowGrowthPct": -6.33,
           "direction": "falling",
           "accelerating": "rising"
         },
         "pypi": {
-          "wowGrowthPct": 64.97,
+          "wowGrowthPct": 96.22,
           "direction": "rising",
           "accelerating": "rising"
         },
         "clones": {
-          "wowGrowthPct": 16.92,
+          "wowGrowthPct": 46.36,
           "direction": "rising",
           "accelerating": "rising"
         },
         "docker": {
-          "wowGrowthPct": -83.19,
-          "direction": "falling",
-          "accelerating": "falling"
+          "wowGrowthPct": 209.11,
+          "direction": "rising",
+          "accelerating": "rising"
         },
         "huggingface": {
           "wowGrowthPct": -100,
@@ -310,75 +310,75 @@
         "stars": {
           "wowGrowthPct": 0,
           "direction": "flat",
-          "accelerating": "falling"
+          "accelerating": "rising"
         }
       }
     },
     "downloads": {
       "wow": {
-        "current": 26219,
-        "previous": 33960,
-        "growthPct": -22.79,
+        "current": 25730,
+        "previous": 22124,
+        "growthPct": 16.3,
         "days": 7,
         "anchors": {
-          "npm": "2026-11-07",
-          "pypi": "2026-11-07",
-          "clones": "2026-11-07",
-          "docker": "2026-11-08",
-          "huggingface": "2026-11-08"
+          "npm": "2026-11-08",
+          "pypi": "2026-11-08",
+          "clones": "2026-11-08",
+          "docker": "2026-11-09",
+          "huggingface": "2026-11-09"
         },
         "components": {
           "npm": {
-            "current": 13617,
-            "previous": 16493
+            "current": 13280,
+            "previous": 14177
           },
           "pypi": {
-            "current": 617,
-            "previous": 374
+            "current": 779,
+            "previous": 397
           },
           "clones": {
-            "current": 10642,
-            "previous": 9102
+            "current": 10484,
+            "previous": 7163
           },
           "docker": {
-            "current": 1343,
-            "previous": 7987
+            "current": 1187,
+            "previous": 384
           },
           "huggingface": {
             "current": 0,
-            "previous": 4
+            "previous": 3
           }
         },
         "excluded": {}
       },
       "mom": {
-        "current": 253307,
-        "previous": 136323,
-        "growthPct": 85.81,
+        "current": 245707,
+        "previous": 138562,
+        "growthPct": 77.33,
         "days": 30,
         "anchors": {
-          "npm": "2026-11-07",
-          "pypi": "2026-11-07",
-          "clones": "2026-11-07",
-          "docker": "2026-11-08",
-          "huggingface": "2026-11-08"
+          "npm": "2026-11-08",
+          "pypi": "2026-11-08",
+          "clones": "2026-11-08",
+          "docker": "2026-11-09",
+          "huggingface": "2026-11-09"
         },
         "components": {
           "npm": {
-            "current": 122724,
-            "previous": 60099
+            "current": 117939,
+            "previous": 63878
           },
           "pypi": {
-            "current": 2780,
-            "previous": 3111
+            "current": 2789,
+            "previous": 2670
           },
           "clones": {
-            "current": 91832,
-            "previous": 36820
+            "current": 89047,
+            "previous": 37038
           },
           "docker": {
-            "current": 35960,
-            "previous": 35958
+            "current": 35921,
+            "previous": 34641
           },
           "huggingface": {
             "current": 11,
@@ -388,32 +388,32 @@
         "excluded": {}
       },
       "qoq": {
-        "current": 465915,
-        "previous": 216938,
-        "growthPct": 114.77,
+        "current": 465082,
+        "previous": 218146,
+        "growthPct": 113.2,
         "days": 90,
         "anchors": {
-          "npm": "2026-11-07",
-          "pypi": "2026-11-07",
-          "clones": "2026-11-07",
-          "docker": "2026-11-08"
+          "npm": "2026-11-08",
+          "pypi": "2026-11-08",
+          "clones": "2026-11-08",
+          "docker": "2026-11-09"
         },
         "components": {
           "npm": {
-            "current": 216842,
-            "previous": 65662
+            "current": 217062,
+            "previous": 65304
           },
           "pypi": {
-            "current": 9498,
-            "previous": 12904
+            "current": 9696,
+            "previous": 12773
           },
           "clones": {
-            "current": 156997,
-            "previous": 123206
+            "current": 155694,
+            "previous": 124933
           },
           "docker": {
-            "current": 82578,
-            "previous": 15166
+            "current": 82630,
+            "previous": 15136
           }
         },
         "excluded": {
@@ -430,56 +430,56 @@
         },
         "first": "2025-01-28",
         "firstActive": "2026-01-30",
-        "anchor": "2026-11-07",
+        "anchor": "2026-11-08",
         "wow": {
-          "current": 13617,
-          "previous": 16493,
-          "growthPct": -17.44,
+          "current": 13280,
+          "previous": 14177,
+          "growthPct": -6.33,
           "window": {
             "current": {
-              "start": "2026-11-01",
-              "end": "2026-11-07"
+              "start": "2026-11-02",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-10-25",
-              "end": "2026-10-31"
+              "start": "2026-10-26",
+              "end": "2026-11-01"
             }
           }
         },
         "mom": {
-          "current": 122724,
-          "previous": 60099,
-          "growthPct": 104.2,
+          "current": 117939,
+          "previous": 63878,
+          "growthPct": 84.63,
           "window": {
             "current": {
-              "start": "2026-10-09",
-              "end": "2026-11-07"
+              "start": "2026-10-10",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-09-09",
-              "end": "2026-10-08"
+              "start": "2026-09-10",
+              "end": "2026-10-09"
             }
           }
         },
         "qoq": {
-          "current": 216842,
-          "previous": 65662,
-          "growthPct": 230.24,
+          "current": 217062,
+          "previous": 65304,
+          "growthPct": 232.39,
           "window": {
             "current": {
-              "start": "2026-08-10",
-              "end": "2026-11-07"
+              "start": "2026-08-11",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-05-12",
-              "end": "2026-08-09"
+              "start": "2026-05-13",
+              "end": "2026-08-10"
             }
           }
         },
         "acceleration": {
-          "currentWowPct": -17.44,
-          "priorWowPct": -44.15,
-          "deltaPoints": 26.71,
+          "currentWowPct": -6.33,
+          "priorWowPct": -38.12,
+          "deltaPoints": 31.79,
           "direction": "rising"
         },
         "cagr": {
@@ -491,9 +491,9 @@
             "value": 11476
           },
           "to": {
-            "start": "2026-10-09",
-            "end": "2026-11-07",
-            "value": 122724
+            "start": "2026-10-10",
+            "end": "2026-11-08",
+            "value": 117939
           },
           "years": 0.69,
           "reason": "span shorter than one year"
@@ -507,56 +507,56 @@
         },
         "first": "2026-02-02",
         "firstActive": "2026-02-02",
-        "anchor": "2026-11-07",
+        "anchor": "2026-11-08",
         "wow": {
-          "current": 617,
-          "previous": 374,
-          "growthPct": 64.97,
+          "current": 779,
+          "previous": 397,
+          "growthPct": 96.22,
           "window": {
             "current": {
-              "start": "2026-11-01",
-              "end": "2026-11-07"
+              "start": "2026-11-02",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-10-25",
-              "end": "2026-10-31"
+              "start": "2026-10-26",
+              "end": "2026-11-01"
             }
           }
         },
         "mom": {
-          "current": 2780,
-          "previous": 3111,
-          "growthPct": -10.64,
+          "current": 2789,
+          "previous": 2670,
+          "growthPct": 4.46,
           "window": {
             "current": {
-              "start": "2026-10-09",
-              "end": "2026-11-07"
+              "start": "2026-10-10",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-09-09",
-              "end": "2026-10-08"
+              "start": "2026-09-10",
+              "end": "2026-10-09"
             }
           }
         },
         "qoq": {
-          "current": 9498,
-          "previous": 12904,
-          "growthPct": -26.39,
+          "current": 9696,
+          "previous": 12773,
+          "growthPct": -24.09,
           "window": {
             "current": {
-              "start": "2026-08-10",
-              "end": "2026-11-07"
+              "start": "2026-08-11",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-05-12",
-              "end": "2026-08-09"
+              "start": "2026-05-13",
+              "end": "2026-08-10"
             }
           }
         },
         "acceleration": {
-          "currentWowPct": 64.97,
-          "priorWowPct": -39.19,
-          "deltaPoints": 104.16,
+          "currentWowPct": 96.22,
+          "priorWowPct": -32.02,
+          "deltaPoints": 128.24,
           "direction": "rising"
         },
         "cagr": {
@@ -568,9 +568,9 @@
             "value": 10002
           },
           "to": {
-            "start": "2026-10-09",
-            "end": "2026-11-07",
-            "value": 2780
+            "start": "2026-10-10",
+            "end": "2026-11-08",
+            "value": 2789
           },
           "years": 0.68,
           "reason": "span shorter than one year"
@@ -585,56 +585,56 @@
         },
         "first": "2025-10-24",
         "firstActive": "2025-10-24",
-        "anchor": "2026-11-07",
+        "anchor": "2026-11-08",
         "wow": {
-          "current": 10642,
-          "previous": 9102,
-          "growthPct": 16.92,
+          "current": 10484,
+          "previous": 7163,
+          "growthPct": 46.36,
           "window": {
             "current": {
-              "start": "2026-11-01",
-              "end": "2026-11-07"
+              "start": "2026-11-02",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-10-25",
-              "end": "2026-10-31"
+              "start": "2026-10-26",
+              "end": "2026-11-01"
             }
           }
         },
         "mom": {
-          "current": 91832,
-          "previous": 36820,
-          "growthPct": 149.41,
+          "current": 89047,
+          "previous": 37038,
+          "growthPct": 140.42,
           "window": {
             "current": {
-              "start": "2026-10-09",
-              "end": "2026-11-07"
+              "start": "2026-10-10",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-09-09",
-              "end": "2026-10-08"
+              "start": "2026-09-10",
+              "end": "2026-10-09"
             }
           }
         },
         "qoq": {
-          "current": 156997,
-          "previous": 123206,
-          "growthPct": 27.43,
+          "current": 155694,
+          "previous": 124933,
+          "growthPct": 24.62,
           "window": {
             "current": {
-              "start": "2026-08-10",
-              "end": "2026-11-07"
+              "start": "2026-08-11",
+              "end": "2026-11-08"
             },
             "previous": {
-              "start": "2026-05-12",
-              "end": "2026-08-09"
+              "start": "2026-05-13",
+              "end": "2026-08-10"
             }
           }
         },
         "acceleration": {
-          "currentWowPct": 16.92,
-          "priorWowPct": -67.99,
-          "deltaPoints": 84.91,
+          "currentWowPct": 46.36,
+          "priorWowPct": -72.72,
+          "deltaPoints": 119.08,
           "direction": "rising"
         },
         "cagr": {
@@ -646,9 +646,9 @@
             "value": 166
           },
           "to": {
-            "start": "2026-10-09",
-            "end": "2026-11-07",
-            "value": 91832
+            "start": "2026-10-10",
+            "end": "2026-11-08",
+            "value": 89047
           },
           "years": 0.96,
           "reason": "span shorter than one year"
@@ -662,19 +662,19 @@
         },
         "first": "2026-02-22",
         "firstActive": "2026-02-22",
-        "anchor": "2026-11-08",
+        "anchor": "2026-11-09",
         "wow": {
-          "current": 1343,
-          "previous": 7987,
-          "growthPct": -83.19,
+          "current": 1187,
+          "previous": 384,
+          "growthPct": 209.11,
           "window": {
             "current": {
-              "start": "2026-11-02",
-              "end": "2026-11-08"
+              "start": "2026-11-03",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-10-26",
-              "end": "2026-11-01"
+              "start": "2026-10-27",
+              "end": "2026-11-02"
             }
           },
           "carriedIn": {
@@ -683,17 +683,17 @@
           }
         },
         "mom": {
-          "current": 35960,
-          "previous": 35958,
-          "growthPct": 0.01,
+          "current": 35921,
+          "previous": 34641,
+          "growthPct": 3.7,
           "window": {
             "current": {
-              "start": "2026-10-10",
-              "end": "2026-11-08"
+              "start": "2026-10-11",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-09-10",
-              "end": "2026-10-09"
+              "start": "2026-09-11",
+              "end": "2026-10-10"
             }
           },
           "carriedIn": {
@@ -702,17 +702,17 @@
           }
         },
         "qoq": {
-          "current": 82578,
-          "previous": 15166,
-          "growthPct": 444.49,
+          "current": 82630,
+          "previous": 15136,
+          "growthPct": 445.92,
           "window": {
             "current": {
-              "start": "2026-08-11",
-              "end": "2026-11-08"
+              "start": "2026-08-12",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-05-13",
-              "end": "2026-08-10"
+              "start": "2026-05-14",
+              "end": "2026-08-11"
             }
           },
           "carriedIn": {
@@ -721,10 +721,10 @@
           }
         },
         "acceleration": {
-          "currentWowPct": -83.19,
-          "priorWowPct": -69.21,
-          "deltaPoints": -13.98,
-          "direction": "falling"
+          "currentWowPct": 209.11,
+          "priorWowPct": -98.57,
+          "deltaPoints": 307.68,
+          "direction": "rising"
         },
         "cagr": {
           "pct": null,
@@ -734,8 +734,8 @@
             "value": 243
           },
           "to": {
-            "date": "2026-11-08",
-            "value": 104611
+            "date": "2026-11-09",
+            "value": 104665
           },
           "years": 0.71,
           "reason": "span shorter than one year"
@@ -749,19 +749,19 @@
         },
         "first": "2026-06-02",
         "firstActive": "2026-06-02",
-        "anchor": "2026-11-08",
+        "anchor": "2026-11-09",
         "wow": {
           "current": 0,
-          "previous": 4,
+          "previous": 3,
           "growthPct": -100,
           "window": {
             "current": {
-              "start": "2026-11-02",
-              "end": "2026-11-08"
+              "start": "2026-11-03",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-10-26",
-              "end": "2026-11-01"
+              "start": "2026-10-27",
+              "end": "2026-11-02"
             }
           },
           "carriedIn": {
@@ -775,12 +775,12 @@
           "growthPct": -96.72,
           "window": {
             "current": {
-              "start": "2026-10-10",
-              "end": "2026-11-08"
+              "start": "2026-10-11",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-09-10",
-              "end": "2026-10-09"
+              "start": "2026-09-11",
+              "end": "2026-10-10"
             }
           },
           "carriedIn": {
@@ -789,17 +789,17 @@
           }
         },
         "qoq": {
-          "current": 1173,
+          "current": 1154,
           "previous": null,
           "growthPct": null,
           "window": {
             "current": {
-              "start": "2026-08-11",
-              "end": "2026-11-08"
+              "start": "2026-08-12",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-05-13",
-              "end": "2026-08-10"
+              "start": "2026-05-14",
+              "end": "2026-08-11"
             }
           },
           "reason": "series does not cover the previous window",
@@ -810,8 +810,8 @@
         },
         "acceleration": {
           "currentWowPct": -100,
-          "priorWowPct": 0,
-          "deltaPoints": -100,
+          "priorWowPct": -40,
+          "deltaPoints": -60,
           "direction": "falling"
         },
         "cagr": {
@@ -822,7 +822,7 @@
             "value": 1533
           },
           "to": {
-            "date": "2026-11-08",
+            "date": "2026-11-09",
             "value": 5169
           },
           "years": 0.44,
@@ -838,19 +838,19 @@
         },
         "first": "2025-11-07",
         "firstActive": "2025-11-07",
-        "anchor": "2026-11-08",
+        "anchor": "2026-11-09",
         "wow": {
-          "current": 7,
-          "previous": 7,
+          "current": 6,
+          "previous": 6,
           "growthPct": 0,
           "window": {
             "current": {
-              "start": "2026-11-02",
-              "end": "2026-11-08"
+              "start": "2026-11-03",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-10-26",
-              "end": "2026-11-01"
+              "start": "2026-10-27",
+              "end": "2026-11-02"
             }
           },
           "carriedIn": {
@@ -859,17 +859,17 @@
           }
         },
         "mom": {
-          "current": 29,
-          "previous": 78,
-          "growthPct": -62.82,
+          "current": 27,
+          "previous": 79,
+          "growthPct": -65.82,
           "window": {
             "current": {
-              "start": "2026-10-10",
-              "end": "2026-11-08"
+              "start": "2026-10-11",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-09-10",
-              "end": "2026-10-09"
+              "start": "2026-09-11",
+              "end": "2026-10-10"
             }
           },
           "carriedIn": {
@@ -883,12 +883,12 @@
           "growthPct": 106.74,
           "window": {
             "current": {
-              "start": "2026-08-11",
-              "end": "2026-11-08"
+              "start": "2026-08-12",
+              "end": "2026-11-09"
             },
             "previous": {
-              "start": "2026-05-13",
-              "end": "2026-08-10"
+              "start": "2026-05-14",
+              "end": "2026-08-11"
             }
           },
           "carriedIn": {
@@ -898,9 +898,9 @@
         },
         "acceleration": {
           "currentWowPct": 0,
-          "priorWowPct": 16.67,
-          "deltaPoints": -16.67,
-          "direction": "falling"
+          "priorWowPct": -25,
+          "deltaPoints": 25,
+          "direction": "rising"
         },
         "cagr": {
           "pct": 22300,
@@ -910,7 +910,7 @@
             "value": 2
           },
           "to": {
-            "date": "2026-11-08",
+            "date": "2026-11-09",
             "value": 448
           },
           "years": 1
@@ -920,93 +920,93 @@
   },
   "reach": {
     "githubReferrers": {
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "windowDays": 14,
       "referrersPerRepo": 10,
       "repos": 42,
-      "views": 2291,
-      "uniques": 1971,
+      "views": 2103,
+      "uniques": 1823,
       "channels": [
         {
           "channel": "other",
-          "views": 1724,
-          "uniques": 1728,
-          "referrers": 10,
-          "sharePct": 75.25
+          "views": 1585,
+          "uniques": 1585,
+          "referrers": 9,
+          "sharePct": 75.37
         },
         {
           "channel": "github",
-          "views": 317,
-          "uniques": 84,
+          "views": 274,
+          "uniques": 83,
           "referrers": 1,
-          "sharePct": 13.84
+          "sharePct": 13.03
         },
         {
           "channel": "search",
-          "views": 241,
-          "uniques": 154,
+          "views": 234,
+          "uniques": 149,
           "referrers": 4,
-          "sharePct": 10.52
-        },
-        {
-          "channel": "own-site",
-          "views": 4,
-          "uniques": 3,
-          "referrers": 2,
-          "sharePct": 0.17
+          "sharePct": 11.13
         },
         {
           "channel": "social",
+          "views": 5,
+          "uniques": 3,
+          "referrers": 2,
+          "sharePct": 0.24
+        },
+        {
+          "channel": "own-site",
           "views": 3,
-          "uniques": 1,
+          "uniques": 2,
           "referrers": 1,
-          "sharePct": 0.13
+          "sharePct": 0.14
         },
         {
           "channel": "ai-assistant",
           "views": 2,
           "uniques": 1,
           "referrers": 1,
-          "sharePct": 0.09
+          "sharePct": 0.1
         }
       ],
       "referrers": [
         {
           "referrer": "aocr.org",
           "channel": "other",
-          "views": 1702,
-          "uniques": 1708,
+          "views": 1565,
+          "uniques": 1567,
           "repos": 40,
-          "sharePct": 74.29
+          "sharePct": 74.42
         },
         {
           "referrer": "github.com",
           "channel": "github",
-          "views": 317,
-          "uniques": 84,
+          "views": 274,
+          "uniques": 83,
           "repos": 30,
-          "sharePct": 13.84
+          "sharePct": 13.03
         },
         {
           "referrer": "Google",
           "channel": "search",
-          "views": 205,
-          "uniques": 128,
+          "views": 201,
+          "uniques": 125,
           "repos": 13,
-          "sharePct": 8.95
+          "sharePct": 9.56
         },
         {
           "referrer": "Bing",
           "channel": "search",
-          "views": 19,
-          "uniques": 14,
-          "repos": 5,
-          "sharePct": 0.83
+          "views": 17,
+          "uniques": 12,
+          "repos": 4,
+          "sharePct": 0.81
         },
         {
           "referrer": "search.brave.com",
           "channel": "search",
-          "views": 12,
+          "views": 11,
           "uniques": 7,
           "repos": 3,
           "sharePct": 0.52
@@ -1017,7 +1017,7 @@
           "views": 8,
           "uniques": 7,
           "repos": 2,
-          "sharePct": 0.35
+          "sharePct": 0.38
         },
         {
           "referrer": "DuckDuckGo",
@@ -1025,7 +1025,7 @@
           "views": 5,
           "uniques": 5,
           "repos": 5,
-          "sharePct": 0.22
+          "sharePct": 0.24
         },
         {
           "referrer": "com.linkedin.android",
@@ -1033,15 +1033,7 @@
           "views": 3,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.13
-        },
-        {
-          "referrer": "oasb.ai",
-          "channel": "other",
-          "views": 3,
-          "uniques": 3,
-          "repos": 2,
-          "sharePct": 0.13
+          "sharePct": 0.14
         },
         {
           "referrer": "qramm.org",
@@ -1049,7 +1041,7 @@
           "views": 3,
           "uniques": 3,
           "repos": 1,
-          "sharePct": 0.13
+          "sharePct": 0.14
         },
         {
           "referrer": "specs.opena2a.org",
@@ -1057,7 +1049,7 @@
           "views": 3,
           "uniques": 2,
           "repos": 2,
-          "sharePct": 0.13
+          "sharePct": 0.14
         },
         {
           "referrer": "arcanum-sec.github.io",
@@ -1065,7 +1057,7 @@
           "views": 2,
           "uniques": 2,
           "repos": 1,
-          "sharePct": 0.09
+          "sharePct": 0.1
         },
         {
           "referrer": "awesomeagents.ai",
@@ -1073,7 +1065,23 @@
           "views": 2,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.09
+          "sharePct": 0.1
+        },
+        {
+          "referrer": "l.facebook.com",
+          "channel": "social",
+          "views": 2,
+          "uniques": 2,
+          "repos": 1,
+          "sharePct": 0.1
+        },
+        {
+          "referrer": "oasb.ai",
+          "channel": "other",
+          "views": 2,
+          "uniques": 2,
+          "repos": 2,
+          "sharePct": 0.1
         },
         {
           "referrer": "perplexity.ai",
@@ -1081,7 +1089,7 @@
           "views": 2,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.09
+          "sharePct": 0.1
         },
         {
           "referrer": "agentpwn.com",
@@ -1089,7 +1097,7 @@
           "views": 1,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.04
+          "sharePct": 0.05
         },
         {
           "referrer": "awesome.ecosyste.ms",
@@ -1097,23 +1105,7 @@
           "views": 1,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.04
-        },
-        {
-          "referrer": "opena2a.org",
-          "channel": "own-site",
-          "views": 1,
-          "uniques": 1,
-          "repos": 1,
-          "sharePct": 0.04
-        },
-        {
-          "referrer": "vercel.com",
-          "channel": "other",
-          "views": 1,
-          "uniques": 1,
-          "repos": 1,
-          "sharePct": 0.04
+          "sharePct": 0.05
         },
         {
           "referrer": "wiki.cs.sys",
@@ -1121,16 +1113,16 @@
           "views": 1,
           "uniques": 1,
           "repos": 1,
-          "sharePct": 0.04
+          "sharePct": 0.05
         }
       ]
     },
     "pypiPlatforms": {
       "source": "pypistats.org per-package breakdowns, mirrors excluded",
       "pythonVersions": {
-        "asOf": "2026-11-08",
+        "asOf": "2026-11-09",
         "packages": 7,
-        "downloads": 2329,
+        "downloads": 2331,
         "unattributed": null,
         "attributedPct": null,
         "items": [
@@ -1138,19 +1130,19 @@
             "version": "3.12",
             "downloads": 1763,
             "packages": 7,
-            "sharePct": 75.7
+            "sharePct": 75.63
           },
           {
             "version": "3.11",
             "downloads": 310,
             "packages": 7,
-            "sharePct": 13.31
+            "sharePct": 13.3
           },
           {
             "version": "3.14",
             "downloads": 132,
             "packages": 7,
-            "sharePct": 5.67
+            "sharePct": 5.66
           },
           {
             "version": "3.13",
@@ -1175,21 +1167,27 @@
             "downloads": 4,
             "packages": 1,
             "sharePct": 0.17
+          },
+          {
+            "version": "3.15",
+            "downloads": 2,
+            "packages": 2,
+            "sharePct": 0.09
           }
         ]
       },
       "operatingSystems": {
-        "asOf": "2026-11-08",
+        "asOf": "2026-11-09",
         "packages": 7,
-        "downloads": 2329,
-        "unattributed": 4187,
-        "attributedPct": 35.74,
+        "downloads": 2331,
+        "unattributed": 4197,
+        "attributedPct": 35.71,
         "items": [
           {
             "os": "Linux",
-            "downloads": 2044,
+            "downloads": 2046,
             "packages": 7,
-            "sharePct": 87.76
+            "sharePct": 87.77
           },
           {
             "os": "Darwin",
@@ -1211,7 +1209,7 @@
     "contributors": {
       "source": "github_contributors (GitHub contributor statistics, default-branch commits)",
       "firstSnapshot": "2026-03-03",
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "total": 14,
       "botsExcluded": 4,
       "months": [
@@ -1292,7 +1290,7 @@
     "stars": {
       "source": "stargazers.total_stars, canonical repository rows",
       "firstSnapshot": "2025-11-07",
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "months": [
         {
           "month": "2025-11",
@@ -1403,7 +1401,7 @@
     "forks": {
       "source": "forks.total_forks, canonical repository rows",
       "firstSnapshot": "2025-11-07",
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "months": [
         {
           "month": "2025-11",
@@ -1514,7 +1512,7 @@
     "releases": {
       "source": "github_releases (the newest 30 releases per repository, read daily)",
       "firstSnapshot": "2026-03-02",
-      "asOf": "2026-11-08",
+      "asOf": "2026-11-09",
       "total": 314,
       "repos": 16,
       "perQuarter": {
@@ -1524,9 +1522,9 @@
       },
       "recent": {
         "days": 90,
-        "from": "2026-08-11",
-        "to": "2026-11-08",
-        "releases": 18,
+        "from": "2026-08-12",
+        "to": "2026-11-09",
+        "releases": 15,
         "repos": 4,
         "complete": true
       },
