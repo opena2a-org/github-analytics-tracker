@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-09T06:05:14.847Z",
+  "lastUpdated": "2026-11-10T06:05:15.069Z",
   "repository": "opena2a-standards/did-method-opena2a",
   "stats": {
     "allTime": {
-      "views": 435,
-      "clones": 2330
+      "views": 436,
+      "clones": 2333
     },
     "recent14Days": {
       "views": 29,
-      "viewsUnique": 14,
-      "clones": 407,
-      "clonesUnique": 52
+      "viewsUnique": 13,
+      "clones": 402,
+      "clonesUnique": 51
     },
     "stars": 1,
     "forks": 0
