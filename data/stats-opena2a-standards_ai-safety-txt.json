@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-10T06:05:15.066Z",
+  "lastUpdated": "2026-11-11T06:05:27.350Z",
   "repository": "opena2a-standards/ai-safety-txt",
   "stats": {
     "allTime": {
-      "views": 43,
-      "clones": 334
+      "views": 45,
+      "clones": 335
     },
     "recent14Days": {
-      "views": 10,
-      "viewsUnique": 10,
-      "clones": 52,
-      "clonesUnique": 25
+      "views": 12,
+      "viewsUnique": 11,
+      "clones": 41,
+      "clonesUnique": 26
     },
     "stars": 1,
     "forks": 0
