@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-15",
-  "reposDiscovered": 45,
+  "date": "2026-11-16",
+  "reposDiscovered": 46,
   "repos": [
     "opena2a-org/agent-identity-management",
     "opena2a-org/github-analytics-tracker",
@@ -24,6 +24,7 @@
     "opena2a-org/aicomply",
     "opena2a-org/dvaa-demo-captures",
     "opena2a-org/agent-delegation-demo",
+    "opena2a-org/three-party-demo",
     "opena2a-standards/agent-governance-spec",
     "opena2a-standards/awesome-agent-souls",
     "opena2a-standards/agent-trust-protocol",

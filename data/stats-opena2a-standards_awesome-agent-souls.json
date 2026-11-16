@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-15T06:05:05.247Z",
+  "lastUpdated": "2026-11-16T06:05:47.579Z",
   "repository": "opena2a-standards/awesome-agent-souls",
   "stats": {
     "allTime": {
-      "views": 3010,
-      "clones": 1104
+      "views": 3028,
+      "clones": 1105
     },
     "recent14Days": {
-      "views": 715,
-      "viewsUnique": 118,
-      "clones": 26,
-      "clonesUnique": 22
+      "views": 662,
+      "viewsUnique": 110,
+      "clones": 27,
+      "clonesUnique": 23
     },
     "stars": 17,
     "forks": 4
