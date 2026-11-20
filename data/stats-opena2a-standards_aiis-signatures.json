@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-19T06:05:21.075Z",
+  "lastUpdated": "2026-11-20T06:04:55.023Z",
   "repository": "opena2a-standards/aiis-signatures",
   "stats": {
     "allTime": {
-      "views": 191,
-      "clones": 1276
+      "views": 194,
+      "clones": 1285
     },
     "recent14Days": {
-      "views": 27,
-      "viewsUnique": 14,
-      "clones": 403,
-      "clonesUnique": 27
+      "views": 23,
+      "viewsUnique": 13,
+      "clones": 404,
+      "clonesUnique": 28
     },
     "stars": 1,
     "forks": 0
