@@ -1,16 +1,16 @@
 {
-  "lastUpdated": "2026-11-20T06:04:55.020Z",
+  "lastUpdated": "2026-11-21T06:04:48.054Z",
   "repository": "opena2a-org/agent-delegation-demo",
   "stats": {
     "allTime": {
       "views": 3,
-      "clones": 430
+      "clones": 931
     },
     "recent14Days": {
       "views": 3,
       "viewsUnique": 1,
-      "clones": 430,
-      "clonesUnique": 37
+      "clones": 931,
+      "clonesUnique": 39
     },
     "stars": 0,
     "forks": 0
