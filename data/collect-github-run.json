@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-21",
-  "reposDiscovered": 46,
+  "date": "2026-11-22",
+  "reposDiscovered": 45,
   "repos": [
     "opena2a-org/agent-identity-management",
     "opena2a-org/github-analytics-tracker",
@@ -44,7 +44,6 @@
     "opena2a-standards/agent-authorization-protocol",
     "opena2a-standards/aap-conformance",
     "opena2a-standards/ai-safety-txt",
-    "ecolibria/cryptoserve",
     "ecolibria/finops-agent-setup",
     "ecolibria/enterprise-workforce-agents",
     "ecolibria/crypto-census-data"
