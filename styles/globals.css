@@ -139,6 +139,10 @@ a { color: inherit; }
   font-size: 0.66rem; color: var(--ink-4); line-height: 1.6;
 }
 .sidebar-foot .dot { color: var(--up); }
+/* Data past the freshness bound, or with no readable date: the line and its
+   dot read as a warning (the words say so as well). */
+.sidebar-foot.data-warn,
+.sidebar-foot.data-warn .dot { color: #f59e0b; }
 
 /* ---------- Topbar ---------- */
 .topbar {

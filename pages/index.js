@@ -20,6 +20,10 @@ import { SERIES } from '../lib/series';
 // A first-party telemetry count under ten, zero included, is withheld: the API
 // serves it as null and it reads "fewer than 10" here, never 0.
 import { floorCount, formatTelemetryCount, topMeasuredVersion, withWithheldNote, WITHHELD_LABEL } from '../lib/telemetry-withheld';
+// The sidebar date is when the data was collected (the API's dataCollectedAt),
+// never when the page or the API answered: past 30 hours it reads as stale and
+// with no readable stamp as unknown. fmtDate is the page's one date format.
+import { fmtDate, dataFreshness, dataDateLabel } from '../lib/freshness';
 
 /* ============================================================
    Source identity — one place defines color + icon per source
@@ -75,13 +79,8 @@ const tt = {
 const BREAKDOWN_COLORS = ['#6e9bff', '#2dd4bf', '#f5b53c', '#ff7a7a', '#a78bfa', '#4cb8f5', '#ffce4d', '#f472b6', '#34d399', '#fb923c'];
 
 /* ============================================================
-   Formatting helpers
+   Formatting helpers (fmtDate is imported from lib/freshness)
    ============================================================ */
-function fmtDate(s) {
-  if (!s) return '';
-  const d = new Date(s + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
 function fmtNum(n) {
   if (n == null) return '0';
   if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -388,6 +387,10 @@ export default function Dashboard() {
     chrome: overview?.totals?.chrome?.extensions,
   };
   const meta = SOURCES[tab];
+  // The sidebar's data date, on the reader's clock: settled once the overview
+  // has answered (a failed answer reads as unknown, never as fresh).
+  const nowMs = Date.now();
+  const dataDate = (overview || !ovLoading) ? dataFreshness(overview?.dataCollectedAt, nowMs) : null;
 
   return (
     <>
@@ -418,8 +421,8 @@ export default function Dashboard() {
               );
             })}
           </nav>
-          <div className="sidebar-foot">
-            <span className="dot">●</span> {overview?.lastUpdated ? `Updated ${fmtDate(overview.lastUpdated.split('T')[0])}` : 'Loading…'}
+          <div className={`sidebar-foot${dataDate && dataDate.state !== 'fresh' ? ' data-warn' : ''}`}>
+            <span className={dataDate ? 'dot' : undefined}>●</span> {dataDate ? dataDateLabel(overview?.dataCollectedAt, nowMs) : 'Loading…'}
           </div>
         </aside>
 
